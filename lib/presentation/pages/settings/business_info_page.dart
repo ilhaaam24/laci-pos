@@ -1,0 +1,215 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../blocs/business/business_bloc.dart';
+import '../../../domain/entities/business_entity.dart';
+import '../../../core/style/app_colors.dart';
+import '../../../core/utils/app_toast.dart';
+
+class BusinessInfoPage extends StatefulWidget {
+  const BusinessInfoPage({super.key});
+
+  @override
+  State<BusinessInfoPage> createState() => _BusinessInfoPageState();
+}
+
+class _BusinessInfoPageState extends State<BusinessInfoPage> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _nameController;
+  late TextEditingController _addressController;
+  late TextEditingController _phoneController;
+  late TextEditingController _emailController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+    _addressController = TextEditingController();
+    _phoneController = TextEditingController();
+    _emailController = TextEditingController();
+
+    // Load existing info
+    final state = context.read<BusinessBloc>().state;
+    if (state.businessInfo != null) {
+      _populateFields(state.businessInfo!);
+    } else {
+      context.read<BusinessBloc>().add(LoadBusinessInfo());
+    }
+  }
+
+  void _populateFields(BusinessInfo info) {
+    _nameController.text = info.businessName;
+    _addressController.text = info.address ?? '';
+    _phoneController.text = info.phone ?? '';
+    _emailController.text = info.email ?? '';
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _addressController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(title: const Text('Info Bisnis')),
+      body: BlocConsumer<BusinessBloc, BusinessState>(
+        listener: (context, state) {
+          if (state.isSuccess && state.message != null) {
+            AppToast.showSuccess(context, state.message!);
+            Navigator.pop(context);
+            // If we just loaded, populate fields
+          }
+          if (state.isSuccess && state.businessInfo != null) {
+            _populateFields(state.businessInfo!);
+          }
+          if (state.message != null && !state.isSuccess) {
+            AppToast.showError(context, state.message!);
+          }
+        },
+        builder: (context, state) {
+          if (state.isLoading && state.businessInfo == null) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildSectionCard(
+                    title: 'Identitas Toko',
+                    children: [
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Nama Bisnis / Toko *',
+                          prefixIcon: Icon(Icons.storefront_outlined),
+                        ),
+                        validator: (v) => v == null || v.isEmpty
+                            ? 'Nama tidak boleh kosong'
+                            : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _addressController,
+                        decoration: const InputDecoration(
+                          labelText: 'Alamat Lengkap',
+                          prefixIcon: Icon(Icons.location_on_outlined),
+                        ),
+                        maxLines: 3,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildSectionCard(
+                    title: 'Kontak',
+                    children: [
+                      TextFormField(
+                        controller: _phoneController,
+                        decoration: const InputDecoration(
+                          labelText: 'Nomor Telepon',
+                          prefixIcon: Icon(Icons.phone_outlined),
+                        ),
+                        keyboardType: TextInputType.phone,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          prefixIcon: Icon(Icons.email_outlined),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  ElevatedButton(
+                    onPressed: state.isLoading
+                        ? null
+                        : () => _onSave(state.businessInfo),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: Colors.indigo,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: state.isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            'SIMPAN PERUBAHAN',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _onSave(BusinessInfo? currentInfo) {
+    if (_formKey.currentState!.validate() && currentInfo != null) {
+      final updatedInfo = BusinessInfo(
+        id: currentInfo.id,
+        businessName: _nameController.text.trim(),
+        address: _addressController.text.trim(),
+        phone: _phoneController.text.trim(),
+        email: _emailController.text.trim(),
+        logoUrl: currentInfo.logoUrl,
+        createdAt: currentInfo.createdAt,
+        updatedAt: DateTime.now(),
+      );
+
+      context.read<BusinessBloc>().add(UpdateBusinessInfo(updatedInfo));
+    }
+  }
+}
