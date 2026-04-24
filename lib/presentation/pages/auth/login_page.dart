@@ -44,7 +44,7 @@ class _LoginPageState extends State<LoginPage> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.purple.shade50.withOpacity(0.5),
+                  Colors.purple.shade50.withValues(alpha: 0.5),
                   AppColors.background,
                 ],
               ),
@@ -62,7 +62,7 @@ class _LoginPageState extends State<LoginPage> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.purple.withOpacity(0.1),
+                          color: Colors.purple.withValues(alpha: 0.1),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -198,7 +198,7 @@ class _LoginPageState extends State<LoginPage> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         elevation: 4,
-                        shadowColor: Colors.purple.withOpacity(0.4),
+                        shadowColor: Colors.purple.withValues(alpha: 0.4),
                       ),
                       child: isLoading
                           ? const SizedBox(

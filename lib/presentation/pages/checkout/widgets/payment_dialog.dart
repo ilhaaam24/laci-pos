@@ -1,7 +1,9 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:laci/presentation/blocs/business/business_bloc.dart';
 import 'package:laci/presentation/blocs/payment/payment_bloc.dart';
 import 'package:laci/presentation/blocs/payment/payment_event.dart';
 import 'package:laci/presentation/blocs/payment/payment_state.dart';
@@ -15,12 +17,12 @@ class PaymentDialog extends StatefulWidget {
   onConfirm;
 
   const PaymentDialog({
-    Key? key,
+    super.key,
     required this.subtotal,
     this.taxPercent = 0,
     this.discountAmount = 0,
     required this.onConfirm,
-  }) : super(key: key);
+  });
 
   @override
   State<PaymentDialog> createState() => _PaymentDialogState();
@@ -145,7 +147,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
 
                   // Payment Method
                   DropdownButtonFormField<String>(
-                    value: state.paymentMethod,
+                    initialValue: state.paymentMethod,
                     decoration: InputDecoration(
                       labelText: 'Metode Pembayaran',
                       border: OutlineInputBorder(
@@ -221,10 +223,10 @@ class _PaymentDialogState extends State<PaymentDialog> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.success.withOpacity(0.05),
+                          color: AppColors.success.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.success.withOpacity(0.2),
+                            color: AppColors.success.withValues(alpha: 0.2),
                           ),
                         ),
                         child: Row(
@@ -250,6 +252,87 @@ class _PaymentDialogState extends State<PaymentDialog> {
                       ),
                   ],
 
+                  // QRIS Display
+                  if (state.paymentMethod == 'QRIS') ...[
+                    const SizedBox(height: 16),
+                    BlocBuilder<BusinessBloc, BusinessState>(
+                      builder: (context, businessState) {
+                        final qrisUrl = businessState.businessInfo?.qrisUrl;
+                        if (qrisUrl == null) {
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.error.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  color: AppColors.error,
+                                ),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'QRIS belum diatur di pengaturan.',
+                                    style: TextStyle(
+                                      color: AppColors.error,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        return Column(
+                          children: [
+                            const Text(
+                              'Silakan pindai kode QR di bawah ini:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: AppColors.divider),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: CachedNetworkImage(
+                                  imageUrl: qrisUrl,
+                                  height: 250,
+                                  width: double.infinity,
+                                  fit: BoxFit.contain,
+                                  placeholder: (context, url) =>
+                                      CircularProgressIndicator(),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+
                   const SizedBox(height: 24),
 
                   // Confirm Button
@@ -261,7 +344,6 @@ class _PaymentDialogState extends State<PaymentDialog> {
                               state.amountPaid,
                               state.changeAmount,
                             );
-                            Navigator.pop(context);
                           }
                         : null,
                     style: ElevatedButton.styleFrom(

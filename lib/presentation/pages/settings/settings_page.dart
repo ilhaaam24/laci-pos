@@ -4,6 +4,7 @@ import '../products/products_page.dart';
 import '../categories/categories_page.dart';
 import '../customer/customers_page.dart';
 import 'business_info_page.dart';
+import 'printer_page.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import 'package:laci/core/style/app_colors.dart';
 
@@ -71,9 +72,10 @@ class SettingsPage extends StatelessWidget {
             subtitle: 'Sambungkan printer thermal Bluetooth/USB',
             icon: Icons.print_outlined,
             color: Colors.blueGrey,
-            onTap: () {
-              // Navigate to Printer management
-            },
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PrinterPage()),
+            ),
           ),
           _buildSettingTile(
             context,
@@ -110,7 +112,7 @@ class SettingsPage extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.error.withOpacity(0.1),
+            color: AppColors.error.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: const Icon(Icons.logout, color: AppColors.error),
@@ -189,7 +191,7 @@ class SettingsPage extends StatelessWidget {
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: color),

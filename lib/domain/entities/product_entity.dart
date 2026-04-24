@@ -6,6 +6,7 @@ class Product extends Equatable {
   final String name;
   final String? description;
   final double price;
+  final double costPrice;
   final int stock;
   final String? imageUrl;
   final String? sku;
@@ -18,6 +19,7 @@ class Product extends Equatable {
     required this.name,
     this.description,
     required this.price,
+    required this.costPrice,
     required this.stock,
     this.imageUrl,
     this.sku,
@@ -32,6 +34,7 @@ class Product extends Equatable {
     name,
     description,
     price,
+    costPrice,
     stock,
     imageUrl,
     sku,

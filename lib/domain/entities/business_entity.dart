@@ -7,6 +7,7 @@ class BusinessInfo extends Equatable {
   final String? phone;
   final String? email;
   final String? logoUrl;
+  final String? qrisUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -17,6 +18,7 @@ class BusinessInfo extends Equatable {
     this.phone,
     this.email,
     this.logoUrl,
+    this.qrisUrl,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -29,6 +31,7 @@ class BusinessInfo extends Equatable {
     phone,
     email,
     logoUrl,
+    qrisUrl,
     createdAt,
     updatedAt,
   ];

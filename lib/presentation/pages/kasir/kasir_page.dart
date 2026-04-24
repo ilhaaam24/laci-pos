@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../blocs/product/product_bloc.dart';
 import '../../blocs/category/category_bloc.dart';
@@ -85,7 +84,7 @@ class _KasirPageState extends State<KasirPage> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Row(
@@ -254,7 +253,7 @@ class _KasirPageState extends State<KasirPage> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (state is ProductActionSuccess) {
+        if (state.isSuccess) {
           final filteredProducts = state.products.where((p) {
             final matchesSearch = p.name.toLowerCase().contains(
               _searchQuery.toLowerCase(),
@@ -450,7 +449,7 @@ class _KasirPageState extends State<KasirPage> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.purple.withOpacity(0.3),
+                color: Colors.purple.withValues(alpha: 0.3),
                 blurRadius: 10,
                 offset: const Offset(0, 5),
               ),

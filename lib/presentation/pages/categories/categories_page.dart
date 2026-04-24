@@ -124,7 +124,7 @@ class CategoriesPage extends StatelessWidget {
           Icon(
             Icons.category_outlined,
             size: 100,
-            color: Colors.orange.withOpacity(0.2),
+            color: Colors.orange.withValues(alpha: 0.2),
           ),
           const SizedBox(height: 16),
           const Text(

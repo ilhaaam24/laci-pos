@@ -24,6 +24,7 @@ class AddEditProductPage extends StatefulWidget {
 class _AddEditProductPageState extends State<AddEditProductPage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
+  late TextEditingController _costPriceController;
   late TextEditingController _priceController;
   late TextEditingController _stockController;
   late TextEditingController _descriptionController;
@@ -37,6 +38,9 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.product?.name ?? '');
+    _costPriceController = TextEditingController(
+      text: widget.product?.costPrice.toStringAsFixed(0) ?? '',
+    );
     _priceController = TextEditingController(
       text: widget.product?.price.toStringAsFixed(0) ?? '',
     );
@@ -53,6 +57,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
   @override
   void dispose() {
     _nameController.dispose();
+    _costPriceController.dispose();
     _priceController.dispose();
     _stockController.dispose();
     _descriptionController.dispose();
@@ -74,6 +79,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
         id: widget.product?.id ?? const Uuid().v4(),
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
+        costPrice: double.parse(_costPriceController.text),
         price: double.parse(_priceController.text),
         stock: int.parse(_stockController.text),
         categoryId: _selectedCategoryId!,
@@ -225,7 +231,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
                               child: CircularProgressIndicator(),
                             ),
                             errorWidget: (context, url, error) {
-                              print('Error loading image: $error');
+                              debugPrint('Error loading image: $error');
                               return const Icon(
                                 Icons.error_outline,
                                 color: AppColors.error,
@@ -299,34 +305,50 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
             ),
             const SizedBox(height: 20),
 
-            // Price & Stock
+            // Cost Price & Selling Price
             Row(
               children: [
                 Expanded(
                   child: TextFormField(
-                    controller: _priceController,
+                    controller: _costPriceController,
                     decoration: const InputDecoration(
-                      labelText: 'Harga',
+                      labelText: 'Harga Modal',
                       prefixText: 'Rp ',
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     validator: (v) =>
-                        v == null || v.isEmpty ? 'Isi harga' : null,
+                        v == null || v.isEmpty ? 'Isi harga modal' : null,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: TextFormField(
-                    controller: _stockController,
-                    decoration: const InputDecoration(labelText: 'Stok'),
+                    controller: _priceController,
+                    decoration: const InputDecoration(
+                      labelText: 'Harga Jual',
+                      prefixText: 'Rp ',
+                    ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     validator: (v) =>
-                        v == null || v.isEmpty ? 'Isi stok' : null,
+                        v == null || v.isEmpty ? 'Isi harga jual' : null,
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 20),
+
+            // Stock
+            TextFormField(
+              controller: _stockController,
+              decoration: const InputDecoration(
+                labelText: 'Stok',
+                prefixIcon: Icon(Icons.inventory_2_outlined),
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              validator: (v) => v == null || v.isEmpty ? 'Isi stok' : null,
             ),
             const SizedBox(height: 20),
 

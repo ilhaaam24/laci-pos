@@ -8,7 +8,7 @@ import '../../../core/style/app_colors.dart';
 
 class AddEditCategoryPage extends StatefulWidget {
   final Category? category;
-  const AddEditCategoryPage({Key? key, this.category}) : super(key: key);
+  const AddEditCategoryPage({super.key, this.category});
 
   @override
   State<AddEditCategoryPage> createState() => _AddEditCategoryPageState();

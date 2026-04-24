@@ -19,13 +19,14 @@ class BusinessFirebaseDataSourceImpl implements BusinessFirebaseDataSource {
   Future<BusinessInfoModel> getBusinessInfo() async {
     final snapshot = await _collection.limit(1).get();
     if (snapshot.docs.isEmpty) {
-      // Create default business info
       final defaultInfo = BusinessInfoModel(
         id: '',
         businessName: 'Toko Saya',
         address: '-',
         phone: '-',
         email: '-',
+        qrisUrl: '',
+        logoUrl: '',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -36,6 +37,8 @@ class BusinessFirebaseDataSourceImpl implements BusinessFirebaseDataSource {
         address: defaultInfo.address,
         phone: defaultInfo.phone,
         email: defaultInfo.email,
+        logoUrl: defaultInfo.logoUrl,
+        qrisUrl: defaultInfo.qrisUrl,
         createdAt: defaultInfo.createdAt,
         updatedAt: defaultInfo.updatedAt,
       );

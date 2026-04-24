@@ -21,6 +21,7 @@ class BusinessRepositoryImpl implements BusinessRepository {
           phone: model.phone,
           email: model.email,
           logoUrl: model.logoUrl,
+          qrisUrl: model.qrisUrl,
           createdAt: model.createdAt,
           updatedAt: model.updatedAt,
         ),
@@ -42,6 +43,7 @@ class BusinessRepositoryImpl implements BusinessRepository {
         phone: businessInfo.phone,
         email: businessInfo.email,
         logoUrl: businessInfo.logoUrl,
+        qrisUrl: businessInfo.qrisUrl,
         createdAt: businessInfo.createdAt,
         updatedAt: businessInfo.updatedAt,
       );

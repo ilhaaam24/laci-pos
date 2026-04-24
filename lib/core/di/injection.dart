@@ -32,6 +32,7 @@ import '../../presentation/blocs/customer/customer_bloc.dart';
 import '../../presentation/blocs/transaction/transaction_bloc.dart';
 import '../../presentation/blocs/business/business_bloc.dart';
 import '../../presentation/blocs/auth/auth_bloc.dart';
+import '../../presentation/blocs/report/report_bloc.dart';
 
 // Services
 import '../services/image_upload_service.dart';
@@ -124,4 +125,6 @@ Future<void> initializeDependencies() async {
   getIt.registerFactory(() => BusinessBloc(repository: getIt()));
 
   getIt.registerFactory(() => AuthBloc(repository: getIt()));
+
+  getIt.registerFactory(() => ReportBloc(reportService: getIt()));
 }

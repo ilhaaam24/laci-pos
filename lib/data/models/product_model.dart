@@ -3,28 +3,18 @@ import '../../domain/entities/product_entity.dart';
 
 class ProductModel extends Product {
   const ProductModel({
-    required String id,
-    required String categoryId,
-    required String name,
-    String? description,
-    required double price,
-    required int stock,
-    String? imageUrl,
-    String? sku,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-  }) : super(
-         id: id,
-         categoryId: categoryId,
-         name: name,
-         description: description,
-         price: price,
-         stock: stock,
-         imageUrl: imageUrl,
-         sku: sku,
-         createdAt: createdAt,
-         updatedAt: updatedAt,
-       );
+    required super.id,
+    required super.categoryId,
+    required super.name,
+    super.description,
+    required super.price,
+    required super.costPrice,
+    required super.stock,
+    super.imageUrl,
+    super.sku,
+    required super.createdAt,
+    required super.updatedAt,
+  });
 
   factory ProductModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -34,6 +24,7 @@ class ProductModel extends Product {
       name: data['name'] ?? '',
       description: data['description'],
       price: (data['price'] ?? 0).toDouble(),
+      costPrice: (data['costPrice'] ?? 0).toDouble(),
       stock: data['stock'] ?? 0,
       imageUrl: data['imageUrl'],
       sku: data['sku'],
@@ -48,6 +39,7 @@ class ProductModel extends Product {
       'name': name,
       'description': description,
       'price': price,
+      'costPrice': costPrice,
       'stock': stock,
       'imageUrl': imageUrl,
       'sku': sku,
@@ -63,6 +55,7 @@ class ProductModel extends Product {
       name: name,
       description: description,
       price: price,
+      costPrice: costPrice,
       stock: stock,
       imageUrl: imageUrl,
       sku: sku,
@@ -78,6 +71,7 @@ class ProductModel extends Product {
       name: product.name,
       description: product.description,
       price: product.price,
+      costPrice: product.costPrice,
       stock: product.stock,
       imageUrl: product.imageUrl,
       sku: product.sku,

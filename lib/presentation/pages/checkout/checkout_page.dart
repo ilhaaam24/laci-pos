@@ -13,6 +13,8 @@ import '../../../core/di/injection.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
 import 'widgets/payment_dialog.dart';
+import '../../blocs/business/business_bloc.dart';
+import '../../../core/services/printer_service.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -86,13 +88,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           taxPercent: _taxPercent,
           discountAmount: _discountAmount,
           onConfirm: (paymentMethod, amountPaid, changeAmount) {
-            _processPayment(
-              context,
-              cartState,
-              paymentMethod,
-              amountPaid,
-              changeAmount,
-            );
+            _processPayment(cartState, paymentMethod, amountPaid, changeAmount);
           },
         ),
       ),
@@ -100,7 +96,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Future<void> _processPayment(
-    BuildContext context,
     CartState cartState,
     String paymentMethod,
     double amountPaid,
@@ -129,6 +124,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           price: cartItem.price,
           discount: 0,
           subtotal: cartItem.price * cartItem.quantity,
+          costPrice: cartItem.costPrice,
         );
       }).toList();
 
@@ -157,26 +153,36 @@ class _CheckoutPageState extends State<CheckoutPage> {
       await transactionService.processTransaction(transaction);
 
       // Close loading
-      if (mounted) Navigator.pop(context);
+      if (!mounted) return;
+      Navigator.pop(context);
 
       // Show success with AppToast
-      if (mounted) {
-        AppToast.showSuccess(context, 'Transaksi berhasil!');
+      AppToast.showSuccess(context, 'Transaksi berhasil!');
+
+      // Print Receipt if printer is connected
+      final printerService = PrinterService();
+      if (printerService.isConnected) {
+        final businessState = context.read<BusinessBloc>().state;
+        await printerService.printReceipt(
+          transaction: transaction,
+          businessInfo: businessState.businessInfo,
+        );
       }
+
+      if (!mounted) return;
 
       // Clear cart
-      if (mounted) context.read<CartBloc>().add(ClearCart());
+      context.read<CartBloc>().add(ClearCart());
 
       // Navigate back to Kasir
-      if (mounted) Navigator.pop(context);
+      Navigator.pop(context);
     } catch (e) {
       // Close loading
-      if (mounted) Navigator.pop(context);
+      if (!mounted) return;
+      Navigator.pop(context);
 
       // Show error with AppToast
-      if (mounted) {
-        AppToast.showError(context, 'Gagal memproses transaksi: $e');
-      }
+      AppToast.showError(context, 'Gagal memproses transaksi: $e');
     }
   }
 
@@ -187,7 +193,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.teal.withOpacity(0.3)),
+        border: Border.all(color: Colors.teal.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -310,7 +316,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           Icon(
             Icons.shopping_cart_outlined,
             size: 100,
-            color: AppColors.textDisabled.withOpacity(0.2),
+            color: AppColors.textDisabled.withValues(alpha: 0.2),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -442,7 +448,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         color: AppColors.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),

@@ -81,6 +81,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         productId: existingItem.productId,
         productName: existingItem.productName,
         price: existingItem.price,
+        costPrice: existingItem.costPrice,
         quantity: existingItem.quantity + 1,
         subtotal: (existingItem.quantity + 1) * existingItem.price,
       );
@@ -91,6 +92,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           productId: event.product.id,
           productName: event.product.name,
           price: event.product.price,
+          costPrice: event.product.costPrice,
           quantity: 1,
           subtotal: event.product.price,
         ),
@@ -124,6 +126,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         productId: item.productId,
         productName: item.productName,
         price: item.price,
+        costPrice: item.costPrice,
         quantity: item.quantity - 1,
         subtotal: (item.quantity - 1) * item.price,
       );
@@ -148,6 +151,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       productId: item.productId,
       productName: item.productName,
       price: item.price,
+      costPrice: item.costPrice,
       quantity: item.quantity + 1,
       subtotal: (item.quantity + 1) * item.price,
     );

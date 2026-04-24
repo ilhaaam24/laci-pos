@@ -44,17 +44,13 @@ class AuthFirebaseDataSourceImpl implements AuthFirebaseDataSource {
     log('masuk sign in with google');
 
     // 1. Authenticate (Identify the user)
-    final GoogleSignInAccount? googleUser = await _googleSignIn.authenticate();
-    log('google user: ${googleUser?.email}');
+    final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
+    log('google user: ${googleUser.email}');
 
-    if (googleUser == null) {
-      log('Google Sign-In dibatalkan');
-      throw Exception('Google Sign-In dibatalkan');
-    }
+
 
     // 2. Get Authentication data (for idToken)
-    final GoogleSignInAuthentication googleAuth =
-        await googleUser.authentication;
+    final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
     // 3. Request Authorization (for accessToken)
     // We need at least email and profile scopes

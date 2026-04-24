@@ -53,6 +53,7 @@ class ReportService {
         .get();
 
     double totalRevenue = 0;
+    double totalCost = 0;
     int totalTransactions = snapshot.docs.length;
     int totalItems = 0;
 
@@ -60,15 +61,26 @@ class ReportService {
       final data = doc.data();
       totalRevenue += (data['totalAmount'] ?? 0).toDouble();
 
-      // Get items count
+      // Get items count and cost
       final itemsSnapshot = await doc.reference
           .collection(FirebaseCollections.transactionItems)
           .get();
       totalItems += itemsSnapshot.docs.length;
+
+      for (var itemDoc in itemsSnapshot.docs) {
+        final itemData = itemDoc.data();
+        final quantity = itemData['quantity'] ?? 0;
+        final costPrice = itemData['costPrice'] ?? 0;
+        totalCost += (costPrice * quantity).toDouble();
+      }
     }
+
+    final totalProfit = totalRevenue - totalCost;
 
     return {
       'totalRevenue': totalRevenue,
+      'totalCost': totalCost,
+      'totalProfit': totalProfit,
       'totalTransactions': totalTransactions,
       'totalItems': totalItems,
       'averageTransaction': totalTransactions > 0

@@ -76,6 +76,7 @@ class TransactionItem extends Equatable {
   final String productName;
   final int quantity;
   final double price;
+  final double costPrice;
   final double discount;
   final double subtotal;
 
@@ -85,6 +86,7 @@ class TransactionItem extends Equatable {
     required this.productName,
     required this.quantity,
     required this.price,
+    required this.costPrice,
     this.discount = 0,
     required this.subtotal,
   });
@@ -96,6 +98,7 @@ class TransactionItem extends Equatable {
     productName,
     quantity,
     price,
+    costPrice,
     discount,
     subtotal,
   ];

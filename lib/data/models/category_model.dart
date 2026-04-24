@@ -3,20 +3,13 @@ import '../../domain/entities/category_entity.dart';
 
 class CategoryModel extends Category {
   const CategoryModel({
-    required String id,
-    required String name,
-    String? description,
-    String? imageUrl,
-    required DateTime createdAt,
-    required DateTime updatedAt,
-  }) : super(
-         id: id,
-         name: name,
-         description: description,
-         imageUrl: imageUrl,
-         createdAt: createdAt,
-         updatedAt: updatedAt,
-       );
+    required super.id,
+    required super.name,
+    super.description,
+    super.imageUrl,
+    required super.createdAt,
+    required super.updatedAt,
+  });
 
   factory CategoryModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;

@@ -12,6 +12,7 @@ import 'presentation/blocs/transaction/transaction_bloc.dart';
 import 'presentation/blocs/business/business_bloc.dart';
 import 'presentation/blocs/cart/cart_bloc.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
+import 'presentation/blocs/report/report_bloc.dart';
 
 import 'presentation/pages/auth/auth_wrapper.dart';
 import 'core/style/app_theme.dart';
@@ -51,6 +52,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(create: (_) => CartBloc()),
         BlocProvider(create: (_) => getIt<AuthBloc>()..add(AppStarted())),
+        BlocProvider(
+          create: (_) => getIt<ReportBloc>()..add(LoadDailyReport(DateTime.now())),
+        ),
       ],
       child: MaterialApp(
         title: 'Laci POS',

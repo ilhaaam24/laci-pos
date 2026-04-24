@@ -8,6 +8,7 @@ class TransactionItemModel extends TransactionItem {
     required super.productName,
     required super.quantity,
     required super.price,
+    required super.costPrice,
     super.discount = 0,
     required super.subtotal,
   });
@@ -19,6 +20,7 @@ class TransactionItemModel extends TransactionItem {
       productName: map['productName'] ?? '',
       quantity: map['quantity'] ?? 0,
       price: (map['price'] ?? 0).toDouble(),
+      costPrice: (map['costPrice'] ?? 0).toDouble(),
       discount: (map['discount'] ?? 0).toDouble(),
       subtotal: (map['subtotal'] ?? 0).toDouble(),
     );
@@ -31,6 +33,7 @@ class TransactionItemModel extends TransactionItem {
       productName: entity.productName,
       quantity: entity.quantity,
       price: entity.price,
+      costPrice: entity.costPrice,
       discount: entity.discount,
       subtotal: entity.subtotal,
     );
@@ -42,6 +45,7 @@ class TransactionItemModel extends TransactionItem {
       'productName': productName,
       'quantity': quantity,
       'price': price,
+      'costPrice': costPrice,
       'discount': discount,
       'subtotal': subtotal,
     };
@@ -54,6 +58,7 @@ class TransactionItemModel extends TransactionItem {
       productName: productName,
       quantity: quantity,
       price: price,
+      costPrice: costPrice,
       discount: discount,
       subtotal: subtotal,
     );

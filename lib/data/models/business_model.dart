@@ -7,6 +7,7 @@ class BusinessInfoModel {
   final String? phone;
   final String? email;
   final String? logoUrl;
+  final String? qrisUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -17,6 +18,7 @@ class BusinessInfoModel {
     this.phone,
     this.email,
     this.logoUrl,
+    this.qrisUrl,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -30,6 +32,7 @@ class BusinessInfoModel {
       phone: data['phone'],
       email: data['email'],
       logoUrl: data['logoUrl'],
+      qrisUrl: data['qrisUrl'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
     );
@@ -42,6 +45,7 @@ class BusinessInfoModel {
       'phone': phone,
       'email': email,
       'logoUrl': logoUrl,
+      'qrisUrl': qrisUrl,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };

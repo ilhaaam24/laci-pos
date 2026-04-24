@@ -4,6 +4,8 @@ import '../../blocs/business/business_bloc.dart';
 import '../../../domain/entities/business_entity.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
+import '../../../core/di/injection.dart';
+import '../../../core/services/image_upload_service.dart';
 
 class BusinessInfoPage extends StatefulWidget {
   const BusinessInfoPage({super.key});
@@ -130,6 +132,51 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
+                  _buildSectionCard(
+                    title: 'Metode Pembayaran QRIS',
+                    children: [
+                      const Text(
+                        'Unggah gambar QRIS Anda agar pelanggan dapat melakukan pembayaran dengan memindai kode.',
+                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 16),
+                      if (_qrisUrl != null || state.businessInfo?.qrisUrl != null)
+                        Container(
+                          height: 200,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: AppColors.border),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              _qrisUrl ?? state.businessInfo!.qrisUrl!,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 16),
+                      OutlinedButton.icon(
+                        onPressed: _isUploading ? null : _onUploadQRIS,
+                        icon: _isUploading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.qr_code_2),
+                        label: Text(_isUploading ? 'Mengunggah...' : 'Unggah QRIS'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 32),
                   ElevatedButton(
                     onPressed: state.isLoading
@@ -205,11 +252,31 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
         phone: _phoneController.text.trim(),
         email: _emailController.text.trim(),
         logoUrl: currentInfo.logoUrl,
+        qrisUrl: _qrisUrl ?? currentInfo.qrisUrl,
         createdAt: currentInfo.createdAt,
         updatedAt: DateTime.now(),
       );
 
       context.read<BusinessBloc>().add(UpdateBusinessInfo(updatedInfo));
+    }
+  }
+
+  String? _qrisUrl;
+  bool _isUploading = false;
+
+  Future<void> _onUploadQRIS() async {
+    setState(() => _isUploading = true);
+    try {
+      final url = await getIt<ImageUploadService>().pickAndUploadImage(
+        folder: 'qris',
+      );
+      if (url != null) {
+        setState(() => _qrisUrl = url);
+      }
+    } catch (e) {
+      AppToast.showError(context, 'Gagal mengunggah QRIS: $e');
+    } finally {
+      setState(() => _isUploading = false);
     }
   }
 }
