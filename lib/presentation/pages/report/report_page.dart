@@ -4,6 +4,11 @@ import 'package:intl/intl.dart';
 import '../../../core/style/app_colors.dart';
 import '../../blocs/report/report_bloc.dart';
 import '../../blocs/transaction/transaction_bloc.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:month_picker_dialog/month_picker_dialog.dart';
+import 'package:syncfusion_flutter_datepicker/datepicker.dart';
+import '../../../core/services/export_service.dart';
+import '../../blocs/business/business_bloc.dart';
 
 class ReportPage extends StatefulWidget {
   const ReportPage({super.key});
@@ -13,8 +18,10 @@ class ReportPage extends StatefulWidget {
 }
 
 class _ReportPageState extends State<ReportPage> {
-  String _selectedPeriod = 'Bulanan'; // Changed default to Bulanan to see more data
+  String _selectedPeriod =
+      'Bulanan'; // Changed default to Bulanan to see more data
   DateTime _selectedDate = DateTime.now();
+  DateTime? _endDate;
 
   @override
   void initState() {
@@ -27,9 +34,23 @@ class _ReportPageState extends State<ReportPage> {
     if (_selectedPeriod == 'Harian') {
       context.read<ReportBloc>().add(LoadDailyReport(_selectedDate));
     } else if (_selectedPeriod == 'Mingguan') {
-      context.read<ReportBloc>().add(LoadWeeklyReport(_selectedDate));
+      if (_endDate != null) {
+        context.read<ReportBloc>().add(
+          LoadCustomRangeReport(_selectedDate, _endDate!),
+        );
+      } else {
+        final start = _selectedDate.subtract(
+          Duration(days: _selectedDate.weekday - 1),
+        );
+        final end = start.add(const Duration(days: 6));
+        context.read<ReportBloc>().add(LoadCustomRangeReport(start, end));
+      }
     } else if (_selectedPeriod == 'Bulanan') {
       context.read<ReportBloc>().add(LoadMonthlyReport(_selectedDate));
+    } else if (_selectedPeriod == 'Kustom' && _endDate != null) {
+      context.read<ReportBloc>().add(
+        LoadCustomRangeReport(_selectedDate, _endDate!),
+      );
     }
   }
 
@@ -50,6 +71,10 @@ class _ReportPageState extends State<ReportPage> {
             icon: const Icon(Icons.calendar_month),
             onPressed: () => _selectDate(context),
           ),
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            onPressed: _exportReport,
+          ),
         ],
       ),
       body: RefreshIndicator(
@@ -69,6 +94,8 @@ class _ReportPageState extends State<ReportPage> {
               const SizedBox(height: 24),
               _buildReportContent(currencyFormatter),
               const SizedBox(height: 32),
+              _buildTopSellingSection(),
+              const SizedBox(height: 32),
               _buildLastTransactionsHeader(),
               const SizedBox(height: 12),
               _buildTransactionList(currencyFormatter),
@@ -79,18 +106,86 @@ class _ReportPageState extends State<ReportPage> {
     );
   }
 
+  void _exportReport() {
+    final reportState = context.read<ReportBloc>().state;
+    if (reportState is ReportLoaded) {
+      final businessState = context.read<BusinessBloc>().state;
+      final businessInfo = businessState.businessInfo;
+
+      ExportService.exportReportToPdf(
+        reportData: reportState.reportData,
+        period: _selectedPeriod == 'Kustom'
+            ? '${DateFormat('dd MMM').format(_selectedDate)} - ${DateFormat('dd MMM').format(_endDate ?? _selectedDate)}'
+            : _selectedPeriod,
+        businessInfo: businessInfo,
+      );
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Laporan belum dimuat')));
+    }
+  }
+
   Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
+    if (_selectedPeriod == 'Bulanan') {
+      final picked = await showMonthPicker(
+        context: context,
+        initialDate: _selectedDate,
+        firstDate: DateTime(2020),
+        lastDate: DateTime.now(),
+      );
+      if (picked != null) {
+        setState(() {
+          _selectedDate = picked;
+          _endDate = null;
+        });
+        _loadReport();
+      }
+    } else if (_selectedPeriod == 'Kustom' || _selectedPeriod == 'Mingguan') {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          content: SizedBox(
+            height: 350,
+            width: 300,
+            child: SfDateRangePicker(
+              onSelectionChanged: (args) {
+                if (args.value is PickerDateRange) {
+                  if (args.value.startDate != null &&
+                      args.value.endDate != null) {
+                    Navigator.pop(context, args.value);
+                  }
+                }
+              },
+              selectionMode: DateRangePickerSelectionMode.range,
+              initialSelectedRange: PickerDateRange(_selectedDate, _endDate),
+              maxDate: DateTime.now(),
+            ),
+          ),
+        ),
+      ).then((value) {
+        if (value is PickerDateRange) {
+          setState(() {
+            _selectedDate = value.startDate!;
+            _endDate = value.endDate;
+          });
+          _loadReport();
+        }
       });
-      _loadReport();
+    } else {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: _selectedDate,
+        firstDate: DateTime(2020),
+        lastDate: DateTime.now(),
+      );
+      if (picked != null) {
+        setState(() {
+          _selectedDate = picked;
+          _endDate = null;
+        });
+        _loadReport();
+      }
     }
   }
 
@@ -98,10 +193,18 @@ class _ReportPageState extends State<ReportPage> {
     String dateText = '';
     if (_selectedPeriod == 'Harian') {
       dateText = DateFormat('dd MMMM yyyy').format(_selectedDate);
-    } else if (_selectedPeriod == 'Mingguan') {
-      final start = _selectedDate.subtract(Duration(days: _selectedDate.weekday - 1));
-      final end = start.add(const Duration(days: 6));
-      dateText = '${DateFormat('dd MMM').format(start)} - ${DateFormat('dd MMM yyyy').format(end)}';
+    } else if (_selectedPeriod == 'Mingguan' || _selectedPeriod == 'Kustom') {
+      if (_endDate != null) {
+        dateText =
+            '${DateFormat('dd MMM').format(_selectedDate)} - ${DateFormat('dd MMM yyyy').format(_endDate!)}';
+      } else {
+        final start = _selectedDate.subtract(
+          Duration(days: _selectedDate.weekday - 1),
+        );
+        final end = start.add(const Duration(days: 6));
+        dateText =
+            '${DateFormat('dd MMM').format(start)} - ${DateFormat('dd MMM yyyy').format(end)}';
+      }
     } else {
       dateText = DateFormat('MMMM yyyy').format(_selectedDate);
     }
@@ -110,7 +213,7 @@ class _ReportPageState extends State<ReportPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.1),
+          color: AppColors.primary.withOpacity(0.1),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -137,6 +240,7 @@ class _ReportPageState extends State<ReportPage> {
           _buildPeriodButton('Harian'),
           _buildPeriodButton('Mingguan'),
           _buildPeriodButton('Bulanan'),
+          _buildPeriodButton('Kustom'),
         ],
       ),
     );
@@ -187,16 +291,27 @@ class _ReportPageState extends State<ReportPage> {
               padding: const EdgeInsets.all(20.0),
               child: Column(
                 children: [
-                  const Icon(Icons.error_outline, color: AppColors.error, size: 48),
+                  const Icon(
+                    Icons.error_outline,
+                    color: AppColors.error,
+                    size: 48,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Gagal memuat laporan',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  Text(state.message, textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  Text(
+                    state.message,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
                   const SizedBox(height: 16),
-                  ElevatedButton(onPressed: _loadReport, child: const Text('Coba Lagi')),
+                  ElevatedButton(
+                    onPressed: _loadReport,
+                    child: const Text('Coba Lagi'),
+                  ),
                 ],
               ),
             ),
@@ -251,6 +366,151 @@ class _ReportPageState extends State<ReportPage> {
     );
   }
 
+  Widget _buildTopSellingSection() {
+    return BlocBuilder<ReportBloc, ReportState>(
+      builder: (context, state) {
+        if (state is ReportLoaded) {
+          final bestSellers =
+              state.reportData['bestSellingProducts'] as List<dynamic>? ?? [];
+
+          if (bestSellers.isEmpty) return const SizedBox();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Top 5 Produk Terlaris',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                height: 250,
+                padding: const EdgeInsets.fromLTRB(10, 20, 20, 10),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.divider),
+                ),
+                child: BarChart(
+                  BarChartData(
+                    backgroundColor: Colors.white,
+                    alignment: BarChartAlignment.spaceAround,
+                    maxY: _getMaxQuantity(bestSellers).toDouble() + 1,
+                    barTouchData: BarTouchData(
+                      touchTooltipData: BarTouchTooltipData(
+                        tooltipBgColor: AppColors.primary,
+                        getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                          return BarTooltipItem(
+                            '${bestSellers[groupIndex]['productName']}\n',
+                            const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: '${rod.toY.toInt()} terjual',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.normal,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) {
+                            final index = value.toInt();
+                            if (index >= 0 && index < bestSellers.length) {
+                              final name =
+                                  bestSellers[index]['productName'] as String;
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(
+                                  name.length > 8
+                                      ? '${name.substring(0, 6)}..'
+                                      : name,
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              );
+                            }
+                            return const SizedBox();
+                          },
+                          reservedSize: 30,
+                        ),
+                      ),
+                      leftTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                    ),
+                    gridData: const FlGridData(show: false),
+                    borderData: FlBorderData(show: false),
+                    barGroups: bestSellers.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final data = entry.value;
+                      return BarChartGroupData(
+                        x: index,
+                        barRods: [
+                          BarChartRodData(
+                            toY: (data['totalQuantity'] as int).toDouble(),
+                            color: AppColors.primary,
+                            width: 25,
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(6),
+                            ),
+                            backDrawRodData: BackgroundBarChartRodData(
+                              show: true,
+                              toY: _getMaxQuantity(bestSellers).toDouble() + 1,
+                              color: AppColors.divider.withOpacity(0.5),
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+        return const SizedBox();
+      },
+    );
+  }
+
+  int _getMaxQuantity(List<dynamic> data) {
+    if (data.isEmpty) return 0;
+    return data
+        .map((e) => e['totalQuantity'] as int)
+        .reduce((a, b) => a > b ? a : b);
+  }
+
   Widget _buildMainSummaryCard(
     String title,
     String value,
@@ -266,7 +526,7 @@ class _ReportPageState extends State<ReportPage> {
         border: Border.all(color: AppColors.divider),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -277,7 +537,7 @@ class _ReportPageState extends State<ReportPage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: color.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 30),
@@ -387,7 +647,11 @@ class _ReportPageState extends State<ReportPage> {
                 padding: const EdgeInsets.all(40.0),
                 child: Column(
                   children: [
-                    Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey[300]),
+                    Icon(
+                      Icons.receipt_long_outlined,
+                      size: 48,
+                      color: Colors.grey[300],
+                    ),
                     const SizedBox(height: 16),
                     const Text(
                       'Belum ada transaksi sama sekali',
@@ -413,15 +677,26 @@ class _ReportPageState extends State<ReportPage> {
                 child: ListTile(
                   leading: CircleAvatar(
                     backgroundColor: Colors.purple.shade50,
-                    child: const Icon(Icons.receipt_outlined, color: Colors.purple),
+                    child: const Icon(
+                      Icons.receipt_outlined,
+                      color: Colors.purple,
+                    ),
                   ),
                   title: Text(
                     transaction.transactionCode,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
                   subtitle: Text(
-                    DateFormat('dd MMM yyyy, HH:mm').format(transaction.createdAt),
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    DateFormat(
+                      'dd MMM yyyy, HH:mm',
+                    ).format(transaction.createdAt),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   trailing: Text(
                     formatter.format(transaction.totalAmount),

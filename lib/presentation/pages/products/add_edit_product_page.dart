@@ -27,6 +27,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
   late TextEditingController _costPriceController;
   late TextEditingController _priceController;
   late TextEditingController _stockController;
+  late TextEditingController _stockThresholdController;
   late TextEditingController _descriptionController;
 
   String? _selectedCategoryId;
@@ -47,6 +48,9 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
     _stockController = TextEditingController(
       text: widget.product?.stock.toString() ?? '',
     );
+    _stockThresholdController = TextEditingController(
+      text: widget.product?.stockThreshold.toString() ?? '5',
+    );
     _descriptionController = TextEditingController(
       text: widget.product?.description ?? '',
     );
@@ -60,6 +64,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
     _costPriceController.dispose();
     _priceController.dispose();
     _stockController.dispose();
+    _stockThresholdController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -82,6 +87,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
         costPrice: double.parse(_costPriceController.text),
         price: double.parse(_priceController.text),
         stock: int.parse(_stockController.text),
+        stockThreshold: int.parse(_stockThresholdController.text),
         categoryId: _selectedCategoryId!,
         imageUrl: _imageUrl,
         createdAt: widget.product?.createdAt ?? DateTime.now(),
@@ -340,15 +346,34 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
             const SizedBox(height: 20),
 
             // Stock
-            TextFormField(
-              controller: _stockController,
-              decoration: const InputDecoration(
-                labelText: 'Stok',
-                prefixIcon: Icon(Icons.inventory_2_outlined),
-              ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              validator: (v) => v == null || v.isEmpty ? 'Isi stok' : null,
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _stockController,
+                    decoration: const InputDecoration(
+                      labelText: 'Stok Saat Ini',
+                      prefixIcon: Icon(Icons.inventory_2_outlined),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    validator: (v) => v == null || v.isEmpty ? 'Isi stok' : null,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: _stockThresholdController,
+                    decoration: const InputDecoration(
+                      labelText: 'Batas Stok Tipis',
+                      prefixIcon: Icon(Icons.notifications_active_outlined),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    validator: (v) => v == null || v.isEmpty ? 'Isi batas' : null,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 20),
 

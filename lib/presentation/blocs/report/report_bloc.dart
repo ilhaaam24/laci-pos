@@ -29,6 +29,14 @@ class LoadMonthlyReport extends ReportEvent {
   List<Object?> get props => [date];
 }
 
+class LoadCustomRangeReport extends ReportEvent {
+  final DateTime startDate;
+  final DateTime endDate;
+  LoadCustomRangeReport(this.startDate, this.endDate);
+  @override
+  List<Object?> get props => [startDate, endDate];
+}
+
 // States
 abstract class ReportState extends Equatable {
   @override
@@ -61,6 +69,7 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     on<LoadDailyReport>(_onLoadDailyReport);
     on<LoadWeeklyReport>(_onLoadWeeklyReport);
     on<LoadMonthlyReport>(_onLoadMonthlyReport);
+    on<LoadCustomRangeReport>(_onLoadCustomRangeReport);
   }
 
   Future<void> _onLoadDailyReport(
@@ -107,6 +116,22 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
       emit(ReportLoaded(data));
     } catch (e) {
       print('ReportBloc: Monthly Report Error: $e');
+      emit(ReportError(e.toString()));
+    }
+  }
+
+  Future<void> _onLoadCustomRangeReport(
+    LoadCustomRangeReport event,
+    Emitter<ReportState> emit,
+  ) async {
+    emit(ReportLoading());
+    print('ReportBloc: Loading Custom Range Report from ${event.startDate} to ${event.endDate}');
+    try {
+      final data = await reportService.getCustomRangeReport(event.startDate, event.endDate);
+      print('ReportBloc: Custom Range Report Loaded: $data');
+      emit(ReportLoaded(data));
+    } catch (e) {
+      print('ReportBloc: Custom Range Report Error: $e');
       emit(ReportError(e.toString()));
     }
   }

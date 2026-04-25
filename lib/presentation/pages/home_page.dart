@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:laci/presentation/blocs/product/product_bloc.dart';
 import 'products/products_page.dart';
 import '../../core/style/app_colors.dart';
 
@@ -25,6 +27,8 @@ class HomePage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(context),
+            const SizedBox(height: 24),
+            _buildLowStockAlert(context),
             const SizedBox(height: 32),
             _buildQuickActions(context),
             const SizedBox(height: 32),
@@ -58,6 +62,94 @@ class HomePage extends StatelessWidget {
         ),
       ],
     ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.1);
+  }
+
+  Widget _buildLowStockAlert(BuildContext context) {
+    return BlocBuilder<ProductBloc, ProductState>(
+      builder: (context, state) {
+        final lowStockProducts = state.products
+            .where((p) => p.stock <= p.stockThreshold)
+            .toList();
+
+        if (lowStockProducts.isEmpty) return const SizedBox();
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.error.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.error.withOpacity(0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: AppColors.error,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Peringatan Stok Rendah (${lowStockProducts.length})',
+                    style: const TextStyle(
+                      color: AppColors.error,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 80,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: lowStockProducts.length,
+                  itemBuilder: (context, index) {
+                    final p = lowStockProducts[index];
+                    return Container(
+                      width: 150,
+                      margin: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.divider),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            p.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Sisa: ${p.stock}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.error,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ).animate().fadeIn().slideY(begin: 0.2);
+      },
+    );
   }
 
   Widget _buildQuickActions(BuildContext context) {
@@ -141,7 +233,7 @@ class HomePage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: color.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: color, size: 32),

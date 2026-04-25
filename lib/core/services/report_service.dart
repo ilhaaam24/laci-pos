@@ -32,10 +32,10 @@ class ReportService {
     return await _getReport(startDate, endDate);
   }
 
-  // Yearly Report
-  Future<Map<String, dynamic>> getYearlyReport(DateTime date) async {
-    final startDate = DateTime(date.year, 1, 1);
-    final endDate = DateTime(date.year + 1, 1, 1);
+  // Custom Range Report
+  Future<Map<String, dynamic>> getCustomRangeReport(DateTime start, DateTime end) async {
+    final startDate = DateTime(start.year, start.month, start.day);
+    final endDate = DateTime(end.year, end.month, end.day).add(const Duration(days: 1));
     return await _getReport(startDate, endDate);
   }
 
@@ -56,6 +56,8 @@ class ReportService {
     double totalCost = 0;
     int totalTransactions = snapshot.docs.length;
     int totalItems = 0;
+    Map<String, Map<String, dynamic>> productSales = {};
+    Map<String, double> categorySales = {};
 
     for (var doc in snapshot.docs) {
       final data = doc.data();
@@ -69,11 +71,35 @@ class ReportService {
 
       for (var itemDoc in itemsSnapshot.docs) {
         final itemData = itemDoc.data();
+        final productId = itemData['productId'] as String;
+        final productName = itemData['productName'] as String;
         final quantity = itemData['quantity'] ?? 0;
         final costPrice = itemData['costPrice'] ?? 0;
+        final subtotal = (itemData['subtotal'] ?? 0).toDouble();
+
         totalCost += (costPrice * quantity).toDouble();
+
+        // Best Selling Logic
+        if (productSales.containsKey(productId)) {
+          productSales[productId]!['totalQuantity'] += quantity;
+          productSales[productId]!['totalRevenue'] += subtotal;
+        } else {
+          productSales[productId] = {
+            'productId': productId,
+            'productName': productName,
+            'totalQuantity': quantity,
+            'totalRevenue': subtotal,
+          };
+        }
       }
     }
+
+    // Sort best selling products
+    final bestSellingProducts = productSales.values.toList()
+      ..sort(
+        (a, b) =>
+            (b['totalQuantity'] as int).compareTo(a['totalQuantity'] as int),
+      );
 
     final totalProfit = totalRevenue - totalCost;
 
@@ -83,6 +109,7 @@ class ReportService {
       'totalProfit': totalProfit,
       'totalTransactions': totalTransactions,
       'totalItems': totalItems,
+      'bestSellingProducts': bestSellingProducts.take(5).toList(),
       'averageTransaction': totalTransactions > 0
           ? totalRevenue / totalTransactions
           : 0,

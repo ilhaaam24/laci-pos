@@ -164,7 +164,7 @@ class _ProductsPageState extends State<ProductsPage> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    _buildStockBadge(product.stock),
+                    _buildStockBadge(product),
                   ],
                 ),
               ),
@@ -206,8 +206,10 @@ class _ProductsPageState extends State<ProductsPage> {
     );
   }
 
-  Widget _buildStockBadge(int stock) {
-    final bool isLow = stock <= 5 && stock > 0;
+  Widget _buildStockBadge(Product product) {
+    final int stock = product.stock;
+    final int threshold = product.stockThreshold;
+    final bool isLow = stock <= threshold && stock > 0;
     final bool isOut = stock == 0;
 
     Color color = AppColors.success;
@@ -224,7 +226,7 @@ class _ProductsPageState extends State<ProductsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(

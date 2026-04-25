@@ -8,6 +8,7 @@ class Product extends Equatable {
   final double price;
   final double costPrice;
   final int stock;
+  final int stockThreshold;
   final String? imageUrl;
   final String? sku;
   final DateTime createdAt;
@@ -21,6 +22,7 @@ class Product extends Equatable {
     required this.price,
     required this.costPrice,
     required this.stock,
+    this.stockThreshold = 5,
     this.imageUrl,
     this.sku,
     required this.createdAt,
@@ -36,6 +38,7 @@ class Product extends Equatable {
     price,
     costPrice,
     stock,
+    stockThreshold,
     imageUrl,
     sku,
     createdAt,

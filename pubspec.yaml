@@ -45,6 +45,9 @@ dependencies:
   flutter_animate: ^4.5.2
   cherry_toast: ^1.1.0
   permission_handler: ^11.3.1
+  fl_chart: ^0.66.0
+  month_picker_dialog: ^6.7.2
+  syncfusion_flutter_datepicker: ^25.1.37
   
 dev_dependencies:
   flutter_test:
