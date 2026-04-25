@@ -9,6 +9,7 @@ import '../../data/datasources/firebase/customer_firebase_datasource.dart';
 import '../../data/datasources/firebase/transaction_firebase_datasource.dart';
 import '../../data/datasources/firebase/business_firebase_datasource.dart';
 import '../../data/datasources/firebase/auth_firebase_datasource.dart';
+import '../../data/datasources/firebase/promo_firebase_datasource.dart';
 
 // Repositories
 import '../../data/repositories/product_repository_impl.dart';
@@ -17,6 +18,7 @@ import '../../data/repositories/customer_repository_impl.dart';
 import '../../data/repositories/transaction_repository_impl.dart';
 import '../../data/repositories/business_repository_impl.dart';
 import '../../data/repositories/auth_repository_impl.dart';
+import '../../data/repositories/promo_repository_impl.dart';
 
 import '../../domain/repositories/product_repository.dart';
 import '../../domain/repositories/category_repository.dart';
@@ -24,6 +26,7 @@ import '../../domain/repositories/customer_repository.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../../domain/repositories/business_repository.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../../domain/repositories/promo_repository.dart';
 
 // BLoCs
 import '../../presentation/blocs/product/product_bloc.dart';
@@ -33,12 +36,14 @@ import '../../presentation/blocs/transaction/transaction_bloc.dart';
 import '../../presentation/blocs/business/business_bloc.dart';
 import '../../presentation/blocs/auth/auth_bloc.dart';
 import '../../presentation/blocs/report/report_bloc.dart';
+import '../../presentation/blocs/promo/promo_bloc.dart';
 
 // Services
 import '../services/image_upload_service.dart';
 import '../services/report_service.dart';
 import '../services/receipt_service.dart';
 import '../services/transaction_service.dart';
+import '../services/stock_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -63,6 +68,8 @@ Future<void> initializeDependencies() async {
     () => TransactionService(getIt()),
   );
 
+  getIt.registerLazySingleton<StockService>(() => StockService(getIt()));
+
   // Data Sources
   getIt.registerLazySingleton<ProductFirebaseDataSource>(
     () => ProductFirebaseDataSourceImpl(firestore: getIt()),
@@ -86,6 +93,10 @@ Future<void> initializeDependencies() async {
 
   getIt.registerLazySingleton<AuthFirebaseDataSource>(
     () => AuthFirebaseDataSourceImpl(),
+  );
+
+  getIt.registerLazySingleton<PromoFirebaseDataSource>(
+    () => PromoFirebaseDataSourceImpl(firestore: getIt()),
   );
 
   // Repositories
@@ -113,6 +124,10 @@ Future<void> initializeDependencies() async {
     () => AuthRepositoryImpl(dataSource: getIt()),
   );
 
+  getIt.registerLazySingleton<PromoRepository>(
+    () => PromoRepositoryImpl(dataSource: getIt()),
+  );
+
   // BLoCs
   getIt.registerFactory(() => ProductBloc(repository: getIt()));
 
@@ -127,4 +142,6 @@ Future<void> initializeDependencies() async {
   getIt.registerFactory(() => AuthBloc(repository: getIt()));
 
   getIt.registerFactory(() => ReportBloc(reportService: getIt()));
+
+  getIt.registerFactory(() => PromoBloc(repository: getIt()));
 }

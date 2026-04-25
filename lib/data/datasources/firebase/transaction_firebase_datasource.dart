@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as f_store;
 import '../../../core/constants/firebase_collections.dart';
 import '../../models/transaction_model.dart';
+import '../../models/stock_log_model.dart';
+import '../../../domain/entities/stock_log_entity.dart';
 
 abstract class TransactionFirebaseDataSource {
   Future<String> createTransaction(TransactionModel transaction);
@@ -41,14 +43,37 @@ class TransactionFirebaseDataSourceImpl
         final itemModel = TransactionItemModel.fromEntity(item);
         batch.set(itemRef, itemModel.toMap());
 
-        // Update product stock
+        // Update product stock with logging
         final productRef = firestore
             .collection(FirebaseCollections.products)
             .doc(item.productId);
+        
+        final productDoc = await productRef.get();
+        int previousStock = 0;
+        if (productDoc.exists) {
+          previousStock = (productDoc.data() as Map<String, dynamic>)['stock'] ?? 0;
+        }
+        int newStock = previousStock - item.quantity;
+
         batch.update(productRef, {
-          'stock': f_store.FieldValue.increment(-item.quantity),
+          'stock': newStock,
           'updatedAt': f_store.FieldValue.serverTimestamp(),
         });
+
+        // Create Stock Log
+        final logRef = firestore.collection(FirebaseCollections.stockLogs).doc();
+        final stockLog = StockLogModel(
+          id: logRef.id,
+          productId: item.productId,
+          productName: item.productName,
+          type: StockLogType.sale,
+          quantity: -item.quantity,
+          previousStock: previousStock,
+          newStock: newStock,
+          reason: 'Transaksi ${transaction.transactionCode}',
+          createdAt: DateTime.now(),
+        );
+        batch.set(logRef, stockLog.toFirestore());
       }
 
       await batch.commit();

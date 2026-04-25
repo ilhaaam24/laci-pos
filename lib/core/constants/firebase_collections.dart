@@ -5,4 +5,6 @@ class FirebaseCollections {
   static const String transactions = 'transactions';
   static const String transactionItems = 'transaction_items';
   static const String businessInfo = 'business_info';
+  static const String stockLogs = 'stock_logs';
+  static const String promos = 'promos';
 }

@@ -65,15 +65,36 @@ class _ReportPageState extends State<ReportPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16),
         title: const Text('Laporan Transaksi'),
         actions: [
           IconButton(
             icon: const Icon(Icons.calendar_month),
             onPressed: () => _selectDate(context),
           ),
-          IconButton(
-            icon: const Icon(Icons.picture_as_pdf_outlined),
+          const SizedBox(width: 8),
+          TextButton(
+            style: TextButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             onPressed: _exportReport,
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.download_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 4),
+                const Text(
+                  'Export PDF',
+                  style: TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ],
+            ),
           ),
         ],
       ),

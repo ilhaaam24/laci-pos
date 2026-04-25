@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:laci/presentation/blocs/customer/customer_bloc.dart';
+import 'package:laci/presentation/pages/promo/promo_page.dart';
 import '../../../domain/entities/customer_entity.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -12,6 +13,8 @@ import '../../../core/services/transaction_service.dart';
 import '../../../core/di/injection.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
+import '../../blocs/promo/promo_bloc.dart';
+import '../../../domain/entities/promo_entity.dart';
 import 'widgets/payment_dialog.dart';
 import '../../blocs/business/business_bloc.dart';
 import '../../../core/services/printer_service.dart';
@@ -25,8 +28,22 @@ class CheckoutPage extends StatefulWidget {
 
 class _CheckoutPageState extends State<CheckoutPage> {
   final double _taxPercent = 10.0;
-  final double _discountAmount = 0.0;
   Customer? _selectedCustomer;
+  PromoEntity? _selectedPromo;
+
+  double get _discountAmount {
+    if (_selectedPromo == null) return 0.0;
+
+    // Check min purchase
+    final cartState = context.read<CartBloc>().state;
+    if (cartState.totalAmount < _selectedPromo!.minPurchase) return 0.0;
+
+    if (_selectedPromo!.type == PromoType.percentage) {
+      return cartState.totalAmount * (_selectedPromo!.value / 100);
+    } else {
+      return _selectedPromo!.value;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +73,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           return Column(
             children: [
               _buildCustomerSelector(),
+              _buildPromoSelector(),
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.all(16),
@@ -396,7 +414,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 _buildQtyButton(
                   icon: Icons.add,
                   onTap: () => context.read<CartBloc>().add(
-                    DecreaseQuantity(item.productId),
+                    IncrementQuantity(item.productId),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -492,6 +510,203 @@ class _CheckoutPageState extends State<CheckoutPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPromoSelector() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.pinkAccent.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.confirmation_number_outlined,
+            color: _selectedPromo == null ? Colors.grey : Colors.pinkAccent,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _selectedPromo?.name ?? 'Gunakan Promo',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: _selectedPromo == null
+                        ? Colors.grey
+                        : AppColors.textPrimary,
+                  ),
+                ),
+                if (_selectedPromo != null)
+                  Text(
+                    _selectedPromo!.type == PromoType.percentage
+                        ? 'Diskon ${_selectedPromo!.value.toStringAsFixed(0)}%'
+                        : 'Potongan Rp ${NumberFormat('#,###', 'id_ID').format(_selectedPromo!.value)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.pinkAccent,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (_selectedPromo != null)
+            IconButton(
+              icon: const Icon(Icons.close, size: 18, color: AppColors.error),
+              onPressed: () => setState(() => _selectedPromo = null),
+            ),
+          TextButton(
+            onPressed: () => _showPromoPicker(),
+            child: Text(_selectedPromo == null ? 'PILIH' : 'GANTI'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPromoPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        context.read<PromoBloc>().add(LoadPromos());
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          maxChildSize: 0.9,
+          minChildSize: 0.5,
+          expand: false,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.all(8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'Pilih Promo',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Expanded(
+                  child: BlocBuilder<PromoBloc, PromoState>(
+                    builder: (context, state) {
+                      final activePromos = state.promos.where((p) {
+                        final now = DateTime.now();
+                        final isNotFuture =
+                            p.startDate == null || p.startDate!.isBefore(now);
+                        final isNotExpired =
+                            p.endDate == null || p.endDate!.isAfter(now);
+                        return p.isActive && isNotFuture && isNotExpired;
+                      }).toList();
+
+                      if (state.isLoading && state.promos.isEmpty) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (activePromos.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text('Tidak ada promo aktif'),
+                              const SizedBox(height: 12),
+                              TextButton.icon(
+                                onPressed: () {
+                                  Navigator.pop(context); // Close picker
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const PromoPage(),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.add),
+                                label: const Text('Kelola Promo'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      final cartTotal = context
+                          .read<CartBloc>()
+                          .state
+                          .totalAmount;
+
+                      return ListView.builder(
+                        controller: scrollController,
+                        itemCount: activePromos.length,
+                        itemBuilder: (context, index) {
+                          final promo = activePromos[index];
+                          final bool isDisabled = cartTotal < promo.minPurchase;
+
+                          return ListTile(
+                            leading: Icon(
+                              Icons.confirmation_number_outlined,
+                              color: isDisabled
+                                  ? Colors.grey
+                                  : Colors.pinkAccent,
+                            ),
+                            title: Text(
+                              promo.name,
+                              style: TextStyle(
+                                decoration: isDisabled
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                                color: isDisabled ? Colors.grey : null,
+                              ),
+                            ),
+                            subtitle: Text(
+                              promo.minPurchase > 0
+                                  ? 'Min. Belanja: Rp ${NumberFormat('#,###', 'id_ID').format(promo.minPurchase)}'
+                                  : 'Tanpa minimum belanja',
+                              style: TextStyle(
+                                color: isDisabled
+                                    ? AppColors.error.withOpacity(0.5)
+                                    : null,
+                              ),
+                            ),
+                            trailing: isDisabled
+                                ? const Text(
+                                    'Belum cukup',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: AppColors.error,
+                                    ),
+                                  )
+                                : const Icon(Icons.chevron_right),
+                            onTap: isDisabled
+                                ? null
+                                : () {
+                                    setState(() => _selectedPromo = promo);
+                                    Navigator.pop(context);
+                                  },
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

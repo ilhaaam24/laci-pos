@@ -9,6 +9,7 @@ import '../../../domain/entities/product_entity.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
 import 'add_edit_product_page.dart';
+import 'stock_history_page.dart';
 
 class ProductsPage extends StatefulWidget {
   const ProductsPage({super.key});
@@ -256,6 +257,16 @@ class _ProductsPageState extends State<ProductsPage> {
           ),
         ),
         const PopupMenuItem(
+          value: 'history',
+          child: Row(
+            children: [
+              Icon(Icons.history, size: 20),
+              SizedBox(width: 8),
+              Text('Riwayat Stok'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
           value: 'delete',
           child: Row(
             children: [
@@ -272,6 +283,13 @@ class _ProductsPageState extends State<ProductsPage> {
             context,
             MaterialPageRoute(
               builder: (_) => AddEditProductPage(product: product),
+            ),
+          );
+        } else if (value == 'history') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => StockHistoryPage(product: product),
             ),
           );
         } else if (value == 'delete') {

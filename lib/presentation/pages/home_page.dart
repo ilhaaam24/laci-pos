@@ -3,6 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:laci/presentation/blocs/product/product_bloc.dart';
 import 'products/products_page.dart';
+import 'products/stock_history_page.dart';
+import 'promo/promo_page.dart';
 import '../../core/style/app_colors.dart';
 
 class HomePage extends StatelessWidget {
@@ -161,9 +163,10 @@ class HomePage extends StatelessWidget {
         GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
+          crossAxisCount: 3,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 0.85,
           children: [
             _buildMenuCard(
               context,
@@ -173,6 +176,16 @@ class HomePage extends StatelessWidget {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ProductsPage()),
+              ),
+            ),
+            _buildMenuCard(
+              context,
+              title: 'Riwayat Stok',
+              icon: Icons.history,
+              color: Colors.blueAccent,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const StockHistoryPage()),
               ),
             ),
             _buildMenuCard(
@@ -188,6 +201,16 @@ class HomePage extends StatelessWidget {
               icon: Icons.bar_chart_outlined,
               color: Colors.orange,
               onTap: () {},
+            ),
+            _buildMenuCard(
+              context,
+              title: 'Promo',
+              icon: Icons.confirmation_number_outlined,
+              color: Colors.pinkAccent,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PromoPage()),
+              ),
             ),
             _buildMenuCard(
               context,

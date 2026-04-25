@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/constants/firebase_collections.dart';
 import '../../models/product_model.dart';
+import '../../models/stock_log_model.dart';
+import '../../../domain/entities/stock_log_entity.dart';
 
 abstract class ProductFirebaseDataSource {
   Stream<List<ProductModel>> getProducts();
@@ -47,7 +49,31 @@ class ProductFirebaseDataSourceImpl implements ProductFirebaseDataSource {
   @override
   Future<String> createProduct(ProductModel product) async {
     try {
-      final docRef = await _collection.add(product.toFirestore());
+      final batch = firestore.batch();
+      final docRef = _collection.doc(product.id);
+
+      batch.set(docRef, product.toFirestore());
+
+      // Initial Stock Log
+      if (product.stock > 0) {
+        final logRef = firestore
+            .collection(FirebaseCollections.stockLogs)
+            .doc();
+        final log = StockLogModel(
+          id: logRef.id,
+          productId: product.id,
+          productName: product.name,
+          type: StockLogType.stockIn,
+          quantity: product.stock,
+          previousStock: 0,
+          newStock: product.stock,
+          reason: 'Stok awal produk',
+          createdAt: DateTime.now(),
+        );
+        batch.set(logRef, log.toFirestore());
+      }
+
+      await batch.commit();
       return docRef.id;
     } catch (e) {
       throw Exception('Failed to create product: $e');
@@ -57,7 +83,37 @@ class ProductFirebaseDataSourceImpl implements ProductFirebaseDataSource {
   @override
   Future<void> updateProduct(ProductModel product) async {
     try {
-      await _collection.doc(product.id).update(product.toFirestore());
+      final batch = firestore.batch();
+      final docRef = _collection.doc(product.id);
+
+      // Get old product to check stock change
+      final oldDoc = await docRef.get();
+      if (oldDoc.exists) {
+        final oldData = oldDoc.data() as Map<String, dynamic>;
+        final oldStock = oldData['stock'] ?? 0;
+
+        if (oldStock != product.stock) {  
+          final diff = product.stock - oldStock;
+          final logRef = firestore
+              .collection(FirebaseCollections.stockLogs)
+              .doc();
+          final log = StockLogModel(
+            id: logRef.id,
+            productId: product.id,
+            productName: product.name,
+            type: diff > 0 ? StockLogType.stockIn : StockLogType.stockOut,
+            quantity: diff.toInt(),
+            previousStock: oldStock,
+            newStock: product.stock,
+            reason: 'Perubahan manual melalui edit produk',
+            createdAt: DateTime.now(),
+          );
+          batch.set(logRef, log.toFirestore());
+        }
+      }
+
+      batch.update(docRef, product.toFirestore());
+      await batch.commit();
     } catch (e) {
       throw Exception('Failed to update product: $e');
     }
