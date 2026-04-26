@@ -183,11 +183,11 @@ class _ProductsPageState extends State<ProductsPage> {
       height: 70,
       decoration: BoxDecoration(
         color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(48),
         border: Border.all(color: AppColors.border),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(48),
         child: product.imageUrl != null
             ? CachedNetworkImage(
                 imageUrl: product.imageUrl!,

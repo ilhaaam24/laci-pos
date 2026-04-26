@@ -279,129 +279,154 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
             const SizedBox(height: 32),
 
             // Name
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nama Produk',
-                prefixIcon: Icon(Icons.shopping_bag_outlined),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(48),
+                border: Border.all(color: AppColors.divider),
               ),
-              validator: (v) =>
-                  v == null || v.isEmpty ? 'Nama tidak boleh kosong' : null,
-            ),
-            const SizedBox(height: 20),
-
-            // Category Dropdown
-            BlocBuilder<CategoryBloc, CategoryState>(
-              builder: (context, state) {
-                final categories = state.categories;
-
-                return DropdownButtonFormField<String>(
-                  initialValue: _selectedCategoryId,
-                  decoration: const InputDecoration(
-                    labelText: 'Kategori',
-                    prefixIcon: Icon(Icons.category_outlined),
-                  ),
-                  items: categories.map((c) {
-                    return DropdownMenuItem(value: c.id, child: Text(c.name));
-                  }).toList(),
-                  onChanged: (v) => setState(() => _selectedCategoryId = v),
-                  validator: (v) => v == null ? 'Pilih kategori' : null,
-                );
-              },
-            ),
-            const SizedBox(height: 20),
-
-            // Cost Price & Selling Price
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _costPriceController,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _nameController,
                     decoration: const InputDecoration(
-                      labelText: 'Harga Modal',
-                      prefixText: 'Rp ',
+                      labelText: 'Nama Produk',
+                      prefixIcon: Icon(Icons.shopping_bag_outlined),
                     ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    validator: (v) =>
-                        v == null || v.isEmpty ? 'Isi harga modal' : null,
+                    validator: (v) => v == null || v.isEmpty
+                        ? 'Nama tidak boleh kosong'
+                        : null,
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextFormField(
-                    controller: _priceController,
-                    decoration: const InputDecoration(
-                      labelText: 'Harga Jual',
-                      prefixText: 'Rp ',
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    validator: (v) =>
-                        v == null || v.isEmpty ? 'Isi harga jual' : null,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-            // Stock
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _stockController,
-                    decoration: const InputDecoration(
-                      labelText: 'Stok Saat Ini',
-                      prefixIcon: Icon(Icons.inventory_2_outlined),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    validator: (v) => v == null || v.isEmpty ? 'Isi stok' : null,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextFormField(
-                    controller: _stockThresholdController,
-                    decoration: const InputDecoration(
-                      labelText: 'Batas Stok Tipis',
-                      prefixIcon: Icon(Icons.notifications_active_outlined),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    validator: (v) => v == null || v.isEmpty ? 'Isi batas' : null,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
+                  // Category Dropdown
+                  BlocBuilder<CategoryBloc, CategoryState>(
+                    builder: (context, state) {
+                      final categories = state.categories;
 
-            // Description
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Deskripsi (Opsional)',
-                prefixIcon: Icon(Icons.description_outlined),
+                      return DropdownButtonFormField<String>(
+                        initialValue: _selectedCategoryId,
+                        decoration: const InputDecoration(
+                          labelText: 'Kategori',
+                          prefixIcon: Icon(Icons.category_outlined),
+                        ),
+                        items: categories.map((c) {
+                          return DropdownMenuItem(
+                            value: c.id,
+                            child: Text(c.name),
+                          );
+                        }).toList(),
+                        onChanged: (v) =>
+                            setState(() => _selectedCategoryId = v),
+                        validator: (v) => v == null ? 'Pilih kategori' : null,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Cost Price & Selling Price
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _costPriceController,
+                          decoration: const InputDecoration(
+                            labelText: 'Harga Modal',
+                            prefixText: 'Rp ',
+                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          validator: (v) =>
+                              v == null || v.isEmpty ? 'Isi harga modal' : null,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _priceController,
+                          decoration: const InputDecoration(
+                            labelText: 'Harga Jual',
+                            prefixText: 'Rp ',
+                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          validator: (v) =>
+                              v == null || v.isEmpty ? 'Isi harga jual' : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Stock
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _stockController,
+                          decoration: const InputDecoration(
+                            labelText: 'Stok Saat Ini',
+                            prefixIcon: Icon(Icons.inventory_2_outlined),
+                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          validator: (v) =>
+                              v == null || v.isEmpty ? 'Isi stok' : null,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _stockThresholdController,
+                          decoration: const InputDecoration(
+                            labelText: 'Batas Stok',
+                            prefixIcon: Icon(
+                              Icons.notifications_active_outlined,
+                            ),
+                          ),
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          validator: (v) =>
+                              v == null || v.isEmpty ? 'Isi batas' : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Description
+                  TextFormField(
+                    controller: _descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Deskripsi (Opsional)',
+                      prefixIcon: Icon(Icons.description_outlined),
+                    ),
+                    maxLines: 3,
+                  ),
+                ],
               ),
-              maxLines: 3,
             ),
-            const SizedBox(height: 40),
-
-            // Save Button
-            ElevatedButton(
-              onPressed: (_isUploading || _isSaving) ? null : _saveProduct,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(48),
+                border: Border.all(color: AppColors.divider),
               ),
-              child: Text(
-                widget.product == null ? 'TAMBAH PRODUK' : 'SIMPAN PERUBAHAN',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+              child: TextButton(
+                onPressed: (_isUploading || _isSaving) ? null : _saveProduct,
+                child: Text(
+                  widget.product == null ? 'Tambah Produk' : 'Simpan Perubahan',
                 ),
               ),
             ),

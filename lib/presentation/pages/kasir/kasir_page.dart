@@ -110,7 +110,7 @@ class _KasirPageState extends State<KasirPage> {
                     final user = state.user;
                     return CircleAvatar(
                       radius: 18,
-                      backgroundColor: Colors.purple,
+                      backgroundColor: AppColors.primary,
                       backgroundImage: user.photoUrl != null
                           ? NetworkImage(user.photoUrl!)
                           : null,
@@ -129,7 +129,7 @@ class _KasirPageState extends State<KasirPage> {
                   }
                   return const CircleAvatar(
                     radius: 18,
-                    backgroundColor: Colors.purple,
+                    backgroundColor: AppColors.primary,
                     child: Icon(Icons.person, color: Colors.white, size: 18),
                   );
                 },
@@ -179,7 +179,7 @@ class _KasirPageState extends State<KasirPage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.purple.shade700,
+              color: AppColors.primary,
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(Icons.qr_code_scanner, color: Colors.white),
@@ -221,7 +221,7 @@ class _KasirPageState extends State<KasirPage> {
                     if (selected) setState(() => _selectedCategoryId = id);
                   },
                   backgroundColor: AppColors.surface,
-                  selectedColor: Colors.purple.shade700,
+                  selectedColor: AppColors.primary,
                   labelStyle: TextStyle(
                     color: isSelected ? Colors.white : AppColors.textSecondary,
                     fontWeight: isSelected
@@ -232,7 +232,7 @@ class _KasirPageState extends State<KasirPage> {
                     borderRadius: BorderRadius.circular(20),
                     side: BorderSide(
                       color: isSelected
-                          ? Colors.purple.shade700
+                          ? AppColors.primary
                           : AppColors.divider,
                     ),
                   ),
@@ -359,7 +359,7 @@ class _KasirPageState extends State<KasirPage> {
                           Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: Colors.purple.shade700,
+                              color: AppColors.primary,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -424,7 +424,7 @@ class _KasirPageState extends State<KasirPage> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: Colors.purple.shade700,
+                      color: AppColors.primary,
                     ),
                   ),
                 ],
@@ -445,11 +445,11 @@ class _KasirPageState extends State<KasirPage> {
           margin: const EdgeInsets.symmetric(horizontal: 20),
           height: 64,
           decoration: BoxDecoration(
-            color: Colors.purple.shade700,
+            color: AppColors.primary,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.purple.withValues(alpha: 0.3),
+                color: AppColors.primary.withValues(alpha: 0.3),
                 blurRadius: 10,
                 offset: const Offset(0, 5),
               ),

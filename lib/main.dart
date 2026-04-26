@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:laci/core/themes/theme.dart';
 
 import 'core/di/injection.dart';
 
@@ -54,15 +55,18 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => CartBloc()),
         BlocProvider(create: (_) => getIt<AuthBloc>()..add(AppStarted())),
         BlocProvider(
-          create: (_) => getIt<ReportBloc>()..add(LoadDailyReport(DateTime.now())),
+          create: (_) =>
+              getIt<ReportBloc>()..add(LoadDailyReport(DateTime.now())),
         ),
         BlocProvider(create: (_) => getIt<PromoBloc>()..add(LoadPromos())),
       ],
       child: MaterialApp(
         title: 'Laci POS',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
         home: const AuthWrapper(),
+        theme: AppThemeLegacy.lightTheme,
+        darkTheme: AppThemeLegacy.darkTheme,
+        themeMode: ThemeMode.system,
       ),
     );
   }

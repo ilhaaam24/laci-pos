@@ -10,36 +10,39 @@ class AppTheme {
         seedColor: AppColors.primary,
         primary: AppColors.primary,
         secondary: AppColors.secondary,
+        tertiary: AppColors.tertiary,
         surface: AppColors.surface,
         onSurface: AppColors.textPrimary,
+        background: AppColors.background,
         error: AppColors.error,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
       ),
-      textTheme: GoogleFonts.outfitTextTheme().copyWith(
-        displayLarge: GoogleFonts.outfit(
+      textTheme: GoogleFonts.plusJakartaSansTextTheme().copyWith(
+        displayLarge: GoogleFonts.plusJakartaSans(
           color: AppColors.textPrimary,
           fontWeight: FontWeight.bold,
         ),
-        displayMedium: GoogleFonts.outfit(
+        displayMedium: GoogleFonts.plusJakartaSans(
           color: AppColors.textPrimary,
           fontWeight: FontWeight.bold,
         ),
-        titleLarge: GoogleFonts.outfit(
+        titleLarge: GoogleFonts.plusJakartaSans(
           color: AppColors.textPrimary,
           fontWeight: FontWeight.w600,
         ),
-        bodyLarge: GoogleFonts.outfit(color: AppColors.textPrimary),
-        bodyMedium: GoogleFonts.outfit(color: AppColors.textSecondary),
+        bodyLarge: GoogleFonts.plusJakartaSans(color: AppColors.textPrimary),
+        bodyMedium: GoogleFonts.plusJakartaSans(color: AppColors.textSecondary),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.outfit(
+        titleTextStyle: GoogleFonts.plusJakartaSans(
           color: AppColors.textPrimary,
-          fontSize: 20,
+          fontSize: 18,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -60,7 +63,7 @@ class AppTheme {
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 0,
-          textStyle: GoogleFonts.outfit(
+          textStyle: GoogleFonts.plusJakartaSans(
             fontWeight: FontWeight.w600,
             fontSize: 16,
           ),
@@ -85,7 +88,7 @@ class AppTheme {
           horizontal: 16,
           vertical: 16,
         ),
-        hintStyle: GoogleFonts.outfit(color: AppColors.textDisabled),
+        hintStyle: GoogleFonts.plusJakartaSans(color: AppColors.textDisabled),
       ),
     );
   }
