@@ -47,11 +47,12 @@ class TransactionFirebaseDataSourceImpl
         final productRef = firestore
             .collection(FirebaseCollections.products)
             .doc(item.productId);
-        
+
         final productDoc = await productRef.get();
         int previousStock = 0;
         if (productDoc.exists) {
-          previousStock = (productDoc.data() as Map<String, dynamic>)['stock'] ?? 0;
+          previousStock =
+              (productDoc.data() as Map<String, dynamic>)['stock'] ?? 0;
         }
         int newStock = previousStock - item.quantity;
 
@@ -61,7 +62,9 @@ class TransactionFirebaseDataSourceImpl
         });
 
         // Create Stock Log
-        final logRef = firestore.collection(FirebaseCollections.stockLogs).doc();
+        final logRef = firestore
+            .collection(FirebaseCollections.stockLogs)
+            .doc();
         final stockLog = StockLogModel(
           id: logRef.id,
           productId: item.productId,

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+import 'package:intl/intl.dart';
 import '../constants/firebase_collections.dart';
 
 class ReportService {
@@ -33,9 +34,16 @@ class ReportService {
   }
 
   // Custom Range Report
-  Future<Map<String, dynamic>> getCustomRangeReport(DateTime start, DateTime end) async {
+  Future<Map<String, dynamic>> getCustomRangeReport(
+    DateTime start,
+    DateTime end,
+  ) async {
     final startDate = DateTime(start.year, start.month, start.day);
-    final endDate = DateTime(end.year, end.month, end.day).add(const Duration(days: 1));
+    final endDate = DateTime(
+      end.year,
+      end.month,
+      end.day,
+    ).add(const Duration(days: 1));
     return await _getReport(startDate, endDate);
   }
 
@@ -101,6 +109,48 @@ class ReportService {
             (b['totalQuantity'] as int).compareTo(a['totalQuantity'] as int),
       );
 
+    // Calculate daily sales for chart (last 7 days by default or current range)
+    Map<String, double> dailySales = {};
+    for (int i = 0; i < 7; i++) {
+      final date = endDate.subtract(Duration(days: i));
+      final label = DateFormat('E', 'en_US').format(date);
+      dailySales[label] = 0;
+    }
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+      final date = (data['createdAt'] as Timestamp).toDate();
+      final label = DateFormat('E', 'en_US').format(date);
+      if (dailySales.containsKey(label)) {
+        dailySales[label] =
+            (dailySales[label] ?? 0) + (data['totalAmount'] ?? 0).toDouble();
+      }
+    }
+
+    // New Customers count
+    final customersSnapshot = await firestore
+        .collection(FirebaseCollections.customers)
+        .where(
+          'createdAt',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startDate),
+        )
+        .where('createdAt', isLessThan: Timestamp.fromDate(endDate))
+        .get();
+    final newCustomers = customersSnapshot.docs.length;
+
+    // Fetch product images for best sellers
+    final List<Map<String, dynamic>> enrichedBestSellers = [];
+    for (var item in bestSellingProducts.take(5)) {
+      final productDoc = await firestore
+          .collection(FirebaseCollections.products)
+          .doc(item['productId'])
+          .get();
+      enrichedBestSellers.add({
+        ...item,
+        'imageUrl': productDoc.exists ? productDoc.data()!['imageUrl'] : null,
+      });
+    }
+
     final totalProfit = totalRevenue - totalCost;
 
     return {
@@ -109,7 +159,9 @@ class ReportService {
       'totalProfit': totalProfit,
       'totalTransactions': totalTransactions,
       'totalItems': totalItems,
-      'bestSellingProducts': bestSellingProducts.take(5).toList(),
+      'bestSellingProducts': enrichedBestSellers,
+      'dailySales': dailySales,
+      'newCustomers': newCustomers,
       'averageTransaction': totalTransactions > 0
           ? totalRevenue / totalTransactions
           : 0,

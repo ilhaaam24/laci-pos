@@ -47,8 +47,6 @@ class AuthFirebaseDataSourceImpl implements AuthFirebaseDataSource {
     final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
     log('google user: ${googleUser.email}');
 
-
-
     // 2. Get Authentication data (for idToken)
     final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 

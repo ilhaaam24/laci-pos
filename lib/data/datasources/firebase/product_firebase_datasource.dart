@@ -92,7 +92,7 @@ class ProductFirebaseDataSourceImpl implements ProductFirebaseDataSource {
         final oldData = oldDoc.data() as Map<String, dynamic>;
         final oldStock = oldData['stock'] ?? 0;
 
-        if (oldStock != product.stock) {  
+        if (oldStock != product.stock) {
           final diff = product.stock - oldStock;
           final logRef = firestore
               .collection(FirebaseCollections.stockLogs)

@@ -9,7 +9,7 @@ import '../../../domain/entities/product_entity.dart';
 
 class StockHistoryPage extends StatelessWidget {
   final Product? product; // Optional: filter by product
-  
+
   const StockHistoryPage({super.key, this.product});
 
   @override
@@ -20,17 +20,19 @@ class StockHistoryPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(product == null ? 'Riwayat Stok' : 'Riwayat: ${product!.name}'),
+        title: Text(
+          product == null ? 'Riwayat Stok' : 'Riwayat: ${product!.name}',
+        ),
       ),
       body: StreamBuilder<List<StockLog>>(
-        stream: product != null 
-          ? stockService.getStockLogs(product!.id)
-          : stockService.getAllStockLogs(),
+        stream: product != null
+            ? stockService.getStockLogs(product!.id)
+            : stockService.getAllStockLogs(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          
+
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
@@ -149,7 +151,11 @@ class StockHistoryPage extends StatelessWidget {
               const Divider(height: 24),
               Row(
                 children: [
-                  const Icon(Icons.info_outline, size: 14, color: AppColors.textDisabled),
+                  const Icon(
+                    Icons.info_outline,
+                    size: 14,
+                    color: AppColors.textDisabled,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -194,10 +200,7 @@ class StockHistoryPage extends StatelessWidget {
           const SizedBox(height: 16),
           const Text(
             'Belum ada riwayat stok',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 16,
-            ),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
           ),
         ],
       ),

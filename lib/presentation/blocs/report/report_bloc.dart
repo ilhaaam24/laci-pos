@@ -125,9 +125,14 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     Emitter<ReportState> emit,
   ) async {
     emit(ReportLoading());
-    print('ReportBloc: Loading Custom Range Report from ${event.startDate} to ${event.endDate}');
+    print(
+      'ReportBloc: Loading Custom Range Report from ${event.startDate} to ${event.endDate}',
+    );
     try {
-      final data = await reportService.getCustomRangeReport(event.startDate, event.endDate);
+      final data = await reportService.getCustomRangeReport(
+        event.startDate,
+        event.endDate,
+      );
       print('ReportBloc: Custom Range Report Loaded: $data');
       emit(ReportLoaded(data));
     } catch (e) {

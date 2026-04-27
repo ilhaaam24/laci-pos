@@ -62,7 +62,7 @@ class BusinessBloc extends Bloc<BusinessEvent, BusinessState> {
     LoadBusinessInfo event,
     Emitter<BusinessState> emit,
   ) async {
-    emit(state.copyWith(isLoading: true));
+    emit(state.copyWith(isLoading: true, isSuccess: false, message: null));
     final result = await repository.getBusinessInfo();
     result.fold(
       (error) => emit(
@@ -78,7 +78,7 @@ class BusinessBloc extends Bloc<BusinessEvent, BusinessState> {
     UpdateBusinessInfo event,
     Emitter<BusinessState> emit,
   ) async {
-    emit(state.copyWith(isLoading: true));
+    emit(state.copyWith(isLoading: true, isSuccess: false, message: null));
     final result = await repository.updateBusinessInfo(event.businessInfo);
     result.fold(
       (error) => emit(

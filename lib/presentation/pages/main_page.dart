@@ -4,6 +4,7 @@ import '../../core/style/app_colors.dart';
 import '../blocs/cart/cart_bloc.dart';
 import 'kasir/kasir_page.dart';
 import 'checkout/checkout_page.dart';
+import 'products/products_page.dart';
 import 'report/report_page.dart';
 import 'settings/settings_page.dart';
 
@@ -18,6 +19,7 @@ class _MainPageState extends State<MainPage> {
   final List<Widget> _pages = [
     const KasirPage(),
     const CheckoutPage(),
+    const ProductsPage(),
     const ReportPage(),
     const SettingsPage(),
   ];
@@ -57,42 +59,60 @@ class _MainPageState extends State<MainPage> {
                     backgroundColor: AppColors.surface,
                     selectedItemColor: AppColors.primary,
                     unselectedItemColor: AppColors.textDisabled,
+                    showSelectedLabels: true,
+                    showUnselectedLabels: true,
                     selectedLabelStyle: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
                     ),
                     unselectedLabelStyle: const TextStyle(
                       fontWeight: FontWeight.w500,
-                      fontSize: 12,
+                      fontSize: 10,
                     ),
                     items: [
                       const BottomNavigationBarItem(
-                        icon: Icon(Icons.storefront_outlined),
-                        activeIcon: Icon(Icons.storefront),
-                        label: 'Kasir',
+                        icon: Icon(Icons.receipt_outlined),
+                        activeIcon: Icon(Icons.receipt),
+                        label: 'Register',
+                      ),
+                      const BottomNavigationBarItem(
+                        icon: Icon(Icons.assignment_outlined),
+                        activeIcon: Icon(Icons.assignment),
+                        label: 'Orders',
+                      ),
+                      const BottomNavigationBarItem(
+                        icon: Icon(Icons.inventory_2_outlined),
+                        activeIcon: Icon(Icons.inventory_2),
+                        label: 'Inventory',
                       ),
                       BottomNavigationBarItem(
-                        icon: BlocBuilder<CartBloc, CartState>(
-                          builder: (context, state) {
-                            return Badge(
-                              label: Text('${state.items.length}'),
-                              isLabelVisible: state.items.isNotEmpty,
-                              child: const Icon(Icons.shopping_cart_outlined),
-                            );
-                          },
+                        icon: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: tabController.index == 3
+                              ? BoxDecoration(
+                                  color: AppColors.primary,
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary.withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                )
+                              : null,
+                          child: Icon(
+                            Icons.bar_chart,
+                            color: tabController.index == 3
+                                ? Colors.white
+                                : AppColors.textDisabled,
+                          ),
                         ),
-                        activeIcon: const Icon(Icons.shopping_cart),
-                        label: 'Checkout',
+                        label: 'Insights',
                       ),
                       const BottomNavigationBarItem(
-                        icon: Icon(Icons.bar_chart_outlined),
-                        activeIcon: Icon(Icons.bar_chart),
-                        label: 'Laporan',
-                      ),
-                      const BottomNavigationBarItem(
-                        icon: Icon(Icons.settings_outlined),
-                        activeIcon: Icon(Icons.settings),
-                        label: 'Pengaturan',
+                        icon: Icon(Icons.menu),
+                        label: 'Menu',
                       ),
                     ],
                   );

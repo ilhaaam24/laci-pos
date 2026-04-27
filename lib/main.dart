@@ -17,7 +17,6 @@ import 'presentation/blocs/report/report_bloc.dart';
 import 'presentation/blocs/promo/promo_bloc.dart';
 
 import 'presentation/pages/auth/auth_wrapper.dart';
-import 'core/style/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

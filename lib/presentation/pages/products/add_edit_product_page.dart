@@ -415,7 +415,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
                 ],
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -430,6 +430,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
                 ),
               ),
             ),
+            const SizedBox(height: 16),
           ],
         ),
       ),

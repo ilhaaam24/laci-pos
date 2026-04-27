@@ -17,13 +17,16 @@ class StockService {
     String? reason,
   }) async {
     final batch = firestore.batch();
-    final productRef = firestore.collection(FirebaseCollections.products).doc(productId);
-    
+    final productRef = firestore
+        .collection(FirebaseCollections.products)
+        .doc(productId);
+
     // Get current stock to calculate new stock for the log
     final productDoc = await productRef.get();
     if (!productDoc.exists) throw Exception('Produk tidak ditemukan');
-    
-    final currentStock = (productDoc.data() as Map<String, dynamic>)['stock'] ?? 0;
+
+    final currentStock =
+        (productDoc.data() as Map<String, dynamic>)['stock'] ?? 0;
     final newStock = currentStock + quantityChange;
 
     // 1. Update Product Stock
@@ -45,7 +48,7 @@ class StockService {
       reason: reason,
       createdAt: DateTime.now(),
     );
-    
+
     batch.set(logRef, log.toFirestore());
 
     await batch.commit();
@@ -58,24 +61,35 @@ class StockService {
         .where('productId', isEqualTo: productId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => StockLogModel.fromFirestore(doc))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => StockLogModel.fromFirestore(doc))
+              .toList(),
+        );
   }
 
   /// Get all logs with optional date range
   Stream<List<StockLog>> getAllStockLogs({DateTime? start, DateTime? end}) {
-    Query query = firestore.collection(FirebaseCollections.stockLogs).orderBy('createdAt', descending: true);
-    
+    Query query = firestore
+        .collection(FirebaseCollections.stockLogs)
+        .orderBy('createdAt', descending: true);
+
     if (start != null) {
-      query = query.where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(start));
+      query = query.where(
+        'createdAt',
+        isGreaterThanOrEqualTo: Timestamp.fromDate(start),
+      );
     }
     if (end != null) {
-      query = query.where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(end));
+      query = query.where(
+        'createdAt',
+        isLessThanOrEqualTo: Timestamp.fromDate(end),
+      );
     }
 
-    return query.snapshots().map((snapshot) => snapshot.docs
-        .map((doc) => StockLogModel.fromFirestore(doc))
-        .toList());
+    return query.snapshots().map(
+      (snapshot) =>
+          snapshot.docs.map((doc) => StockLogModel.fromFirestore(doc)).toList(),
+    );
   }
 }

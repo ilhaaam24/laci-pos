@@ -24,18 +24,20 @@ class PrinterService {
     ].request();
 
     return statuses[Permission.bluetoothScan]!.isGranted &&
-           statuses[Permission.bluetoothConnect]!.isGranted;
+        statuses[Permission.bluetoothConnect]!.isGranted;
   }
 
   Future<List<BluetoothInfo>> getBluetoothDevices() async {
     final bool permission = await checkPermissions();
     if (!permission) return [];
-    
+
     return await PrintBluetoothThermal.pairedBluetooths;
   }
 
   Future<bool> connect(String macAddress, String name) async {
-    final bool result = await PrintBluetoothThermal.connect(macPrinterAddress: macAddress);
+    final bool result = await PrintBluetoothThermal.connect(
+      macPrinterAddress: macAddress,
+    );
     _isConnected = result;
     if (result) {
       _connectedDeviceName = name;
@@ -60,14 +62,24 @@ class PrinterService {
     return result;
   }
 
-  Future<List<int>> _generateReceipt(TransactionEntity transaction, BusinessInfo? businessInfo) async {
+  Future<List<int>> _generateReceipt(
+    TransactionEntity transaction,
+    BusinessInfo? businessInfo,
+  ) async {
     List<int> bytes = [];
     final profile = await CapabilityProfile.load();
     final generator = Generator(PaperSize.mm58, profile);
 
-    bytes += generator.setStyles(const PosStyles(align: PosAlign.center, bold: true, height: PosTextSize.size2, width: PosTextSize.size2));
+    bytes += generator.setStyles(
+      const PosStyles(
+        align: PosAlign.center,
+        bold: true,
+        height: PosTextSize.size2,
+        width: PosTextSize.size2,
+      ),
+    );
     bytes += generator.text(businessInfo?.businessName ?? 'TOKO LACI POS');
-    
+
     bytes += generator.setStyles(const PosStyles(align: PosAlign.center));
     if (businessInfo?.address != null) {
       bytes += generator.text(businessInfo!.address!);
@@ -75,59 +87,98 @@ class PrinterService {
     if (businessInfo?.phone != null) {
       bytes += generator.text('Telp: ${businessInfo!.phone}');
     }
-    
+
     bytes += generator.hr();
     bytes += generator.text('No: ${transaction.transactionCode}');
-    bytes += generator.text('Tgl: ${DateFormat('dd/MM/yyyy HH:mm').format(transaction.createdAt)}');
+    bytes += generator.text(
+      'Tgl: ${DateFormat('dd/MM/yyyy HH:mm').format(transaction.createdAt)}',
+    );
     if (transaction.customerName != null) {
       bytes += generator.text('Plg: ${transaction.customerName}');
     }
     bytes += generator.hr();
 
     for (var item in transaction.items) {
-      bytes += generator.text(item.productName, styles: const PosStyles(bold: true));
+      bytes += generator.text(
+        item.productName,
+        styles: const PosStyles(bold: true),
+      );
       bytes += generator.row([
         PosColumn(text: '${item.quantity} x ${item.price.toInt()}', width: 8),
-        PosColumn(text: item.subtotal.toInt().toString(), width: 4, styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(
+          text: item.subtotal.toInt().toString(),
+          width: 4,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
       ]);
     }
 
     bytes += generator.hr();
     bytes += generator.row([
       PosColumn(text: 'Subtotal', width: 8),
-      PosColumn(text: transaction.subtotal.toInt().toString(), width: 4, styles: const PosStyles(align: PosAlign.right)),
+      PosColumn(
+        text: transaction.subtotal.toInt().toString(),
+        width: 4,
+        styles: const PosStyles(align: PosAlign.right),
+      ),
     ]);
     if (transaction.taxAmount > 0) {
       bytes += generator.row([
         PosColumn(text: 'Pajak', width: 8),
-        PosColumn(text: transaction.taxAmount.toInt().toString(), width: 4, styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(
+          text: transaction.taxAmount.toInt().toString(),
+          width: 4,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
       ]);
     }
     if (transaction.discountAmount > 0) {
       bytes += generator.row([
         PosColumn(text: 'Diskon', width: 8),
-        PosColumn(text: '-${transaction.discountAmount.toInt()}', width: 4, styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(
+          text: '-${transaction.discountAmount.toInt()}',
+          width: 4,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
       ]);
     }
     bytes += generator.row([
       PosColumn(text: 'Total', width: 8, styles: const PosStyles(bold: true)),
-      PosColumn(text: transaction.totalAmount.toInt().toString(), width: 4, styles: const PosStyles(align: PosAlign.right, bold: true)),
+      PosColumn(
+        text: transaction.totalAmount.toInt().toString(),
+        width: 4,
+        styles: const PosStyles(align: PosAlign.right, bold: true),
+      ),
     ]);
-    
+
     bytes += generator.hr();
     bytes += generator.row([
       PosColumn(text: 'Bayar', width: 8),
-      PosColumn(text: transaction.amountPaid.toInt().toString(), width: 4, styles: const PosStyles(align: PosAlign.right)),
+      PosColumn(
+        text: transaction.amountPaid.toInt().toString(),
+        width: 4,
+        styles: const PosStyles(align: PosAlign.right),
+      ),
     ]);
     bytes += generator.row([
       PosColumn(text: 'Kembali', width: 8),
-      PosColumn(text: transaction.changeAmount.toInt().toString(), width: 4, styles: const PosStyles(align: PosAlign.right)),
+      PosColumn(
+        text: transaction.changeAmount.toInt().toString(),
+        width: 4,
+        styles: const PosStyles(align: PosAlign.right),
+      ),
     ]);
 
     bytes += generator.hr();
     bytes += generator.feed(1);
-    bytes += generator.text('Terima Kasih', styles: const PosStyles(align: PosAlign.center));
-    bytes += generator.text('Sudah Berbelanja', styles: const PosStyles(align: PosAlign.center));
+    bytes += generator.text(
+      'Terima Kasih',
+      styles: const PosStyles(align: PosAlign.center),
+    );
+    bytes += generator.text(
+      'Sudah Berbelanja',
+      styles: const PosStyles(align: PosAlign.center),
+    );
     bytes += generator.feed(2);
     bytes += generator.cut();
 

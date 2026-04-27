@@ -76,12 +76,14 @@ class _PromoPageState extends State<PromoPage> {
   }
 
   Widget _buildPromoCard(PromoEntity promo, NumberFormat formatter, int index) {
-    final bool isExpired = promo.endDate != null && promo.endDate!.isBefore(DateTime.now());
-    final bool isFuture = promo.startDate != null && promo.startDate!.isAfter(DateTime.now());
-    
+    final bool isExpired =
+        promo.endDate != null && promo.endDate!.isBefore(DateTime.now());
+    final bool isFuture =
+        promo.startDate != null && promo.startDate!.isAfter(DateTime.now());
+
     String statusText = 'Aktif';
     Color statusColor = AppColors.success;
-    
+
     if (!promo.isActive) {
       statusText = 'Nonaktif';
       statusColor = AppColors.textDisabled;
@@ -137,7 +139,10 @@ class _PromoPageState extends State<PromoPage> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: statusColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -156,11 +161,18 @@ class _PromoPageState extends State<PromoPage> {
               const Divider(height: 24),
               Row(
                 children: [
-                  const Icon(Icons.shopping_bag_outlined, size: 14, color: AppColors.textSecondary),
+                  const Icon(
+                    Icons.shopping_bag_outlined,
+                    size: 14,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Min. Belanja: ${formatter.format(promo.minPurchase)}',
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -168,11 +180,18 @@ class _PromoPageState extends State<PromoPage> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textSecondary),
+                    const Icon(
+                      Icons.calendar_today_outlined,
+                      size: 14,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'Periode: ${_formatDateRange(promo)}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -209,10 +228,7 @@ class _PromoPageState extends State<PromoPage> {
           const SizedBox(height: 16),
           const Text(
             'Belum ada promo aktif',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 16,
-            ),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -226,7 +242,9 @@ class _PromoPageState extends State<PromoPage> {
             label: const Text('Tambah Promo Sekarang'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ],

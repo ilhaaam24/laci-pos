@@ -231,9 +231,7 @@ class _KasirPageState extends State<KasirPage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                     side: BorderSide(
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.divider,
+                      color: isSelected ? AppColors.primary : AppColors.divider,
                     ),
                   ),
                   showCheckmark: false,

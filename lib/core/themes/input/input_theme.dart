@@ -29,17 +29,13 @@ class InputTheme {
         borderSide: const BorderSide(color: AppColors.error, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      
+
       hintStyle: const TextStyle(
-        color: AppColors.textInput,
+        color: Colors.transparent,
         fontSize: 16,
         fontWeight: FontWeight.w500,
       ),
-      labelStyle: const TextStyle(
-        color: AppColors.textInput,
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-      ),
+
       floatingLabelStyle: const TextStyle(color: AppColors.primary),
       errorStyle: const TextStyle(color: AppColors.error),
       prefixIconColor: AppColors.textInput,

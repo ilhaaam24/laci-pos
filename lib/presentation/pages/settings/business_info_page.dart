@@ -64,7 +64,6 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
           if (state.isSuccess && state.message != null) {
             AppToast.showSuccess(context, state.message!);
             Navigator.pop(context);
-            // If we just loaded, populate fields
           }
           if (state.isSuccess && state.businessInfo != null) {
             _populateFields(state.businessInfo!);
@@ -88,10 +87,17 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                   _buildSectionCard(
                     title: 'Identitas Toko',
                     children: [
+                      const Text(
+                        'Nama Bisnis',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       TextFormField(
                         controller: _nameController,
                         decoration: const InputDecoration(
-                          labelText: 'Nama Bisnis / Toko *',
                           prefixIcon: Icon(Icons.storefront_outlined),
                         ),
                         validator: (v) => v == null || v.isEmpty
@@ -99,10 +105,17 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                             : null,
                       ),
                       const SizedBox(height: 16),
+                      const Text(
+                        'Alamat',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       TextFormField(
                         controller: _addressController,
                         decoration: const InputDecoration(
-                          labelText: 'Alamat Lengkap',
                           prefixIcon: Icon(Icons.location_on_outlined),
                         ),
                         maxLines: 3,
@@ -113,19 +126,33 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                   _buildSectionCard(
                     title: 'Kontak',
                     children: [
+                      const Text(
+                        'Nomor Telepon',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       TextFormField(
                         controller: _phoneController,
                         decoration: const InputDecoration(
-                          labelText: 'Nomor Telepon',
                           prefixIcon: Icon(Icons.phone_outlined),
                         ),
                         keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: 16),
+                      const Text(
+                        'Email',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       TextFormField(
                         controller: _emailController,
                         decoration: const InputDecoration(
-                          labelText: 'Email',
                           prefixIcon: Icon(Icons.email_outlined),
                         ),
                         keyboardType: TextInputType.emailAddress,
@@ -138,10 +165,15 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                     children: [
                       const Text(
                         'Unggah gambar QRIS Anda agar pelanggan dapat melakukan pembayaran dengan memindai kode.',
-                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                       const SizedBox(height: 16),
-                      if (_qrisUrl != null || state.businessInfo?.qrisUrl != null)
+                      if (_qrisUrl != null ||
+                          (state.businessInfo?.qrisUrl != null &&
+                              state.businessInfo!.qrisUrl!.isNotEmpty))
                         Container(
                           height: 200,
                           width: double.infinity,
@@ -152,8 +184,12 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: Image.network(
-                              _qrisUrl ?? state.businessInfo!.qrisUrl!,
+                              _qrisUrl ?? state.businessInfo?.qrisUrl ?? '',
                               fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Center(
+                                    child: Icon(Icons.broken_image_outlined),
+                                  ),
                             ),
                           ),
                         ),
@@ -164,12 +200,19 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.qr_code_2),
-                        label: Text(_isUploading ? 'Mengunggah...' : 'Unggah QRIS'),
+                        label: Text(
+                          _isUploading ? 'Mengunggah...' : 'Unggah QRIS',
+                        ),
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 20,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -177,36 +220,29 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 32),
-                  ElevatedButton(
-                    onPressed: state.isLoading
-                        ? null
-                        : () => _onSave(state.businessInfo),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.indigo,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  const SizedBox(height: 16),
+
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(48),
+                      border: Border.all(color: AppColors.divider),
+                    ),
+                    child: TextButton(
+                      onPressed: state.isLoading || state.businessInfo == null
+                          ? null
+                          : () => _onSave(state.businessInfo),
+                      child: Text(
+                        'Simpan Perubahan',
+                        style: TextStyle(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                    child: state.isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text(
-                            'SIMPAN PERUBAHAN',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
                   ),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -232,7 +268,7 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: AppColors.primary,
               ),
             ),
             const SizedBox(height: 16),
@@ -244,7 +280,12 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
   }
 
   void _onSave(BusinessInfo? currentInfo) {
-    if (_formKey.currentState!.validate() && currentInfo != null) {
+    if (currentInfo == null) {
+      AppToast.showError(context, 'Informasi bisnis belum dimuat');
+      return;
+    }
+
+    if (_formKey.currentState!.validate()) {
       final updatedInfo = BusinessInfo(
         id: currentInfo.id,
         businessName: _nameController.text.trim(),

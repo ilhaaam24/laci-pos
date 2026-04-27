@@ -1,10 +1,10 @@
 import 'package:equatable/equatable.dart';
 
 enum StockLogType {
-  stockIn,      // Adding stock (purchase/restock)
-  stockOut,     // Removing stock (manual/damage)
-  sale,         // Auto reduction from transaction
-  adjustment,   // Manual override/correction
+  stockIn, // Adding stock (purchase/restock)
+  stockOut, // Removing stock (manual/damage)
+  sale, // Auto reduction from transaction
+  adjustment, // Manual override/correction
 }
 
 class StockLog extends Equatable {
@@ -12,7 +12,7 @@ class StockLog extends Equatable {
   final String productId;
   final String productName;
   final StockLogType type;
-  final int quantity;       // The amount changed (+/-)
+  final int quantity; // The amount changed (+/-)
   final int previousStock;
   final int newStock;
   final String? reason;
@@ -32,14 +32,14 @@ class StockLog extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        productId,
-        productName,
-        type,
-        quantity,
-        previousStock,
-        newStock,
-        reason,
-        createdAt,
-      ];
+    id,
+    productId,
+    productName,
+    type,
+    quantity,
+    previousStock,
+    newStock,
+    reason,
+    createdAt,
+  ];
 }

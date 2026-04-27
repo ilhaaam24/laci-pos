@@ -36,7 +36,10 @@ class _PrinterPageState extends State<PrinterPage> {
     setState(() => _connectingAddress = device.macAdress);
     try {
       if (!mounted) return;
-      final success = await _printerService.connect(device.macAdress, device.name);
+      final success = await _printerService.connect(
+        device.macAdress,
+        device.name,
+      );
       if (!mounted) return;
       if (success) {
         AppToast.showSuccess(context, 'Berhasil terhubung ke ${device.name}');
@@ -66,9 +69,16 @@ class _PrinterPageState extends State<PrinterPage> {
         title: const Text('Pengaturan Printer'),
         actions: [
           IconButton(
-            icon: _isScanning 
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Icon(Icons.refresh),
+            icon: _isScanning
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.refresh),
             onPressed: _isScanning ? null : _getPairedDevices,
           ),
         ],
@@ -78,42 +88,72 @@ class _PrinterPageState extends State<PrinterPage> {
           _buildStatusHeader(),
           Expanded(
             child: _devices.isEmpty
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _devices.length,
-                  itemBuilder: (context, index) {
-                    final device = _devices[index];
-                    final isConnecting = _connectingAddress == device.macAdress;
-                    final isConnected = _printerService.isConnected && _printerService.connectedDeviceName == device.name;
+                ? _buildEmptyState()
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _devices.length,
+                    itemBuilder: (context, index) {
+                      final device = _devices[index];
+                      final isConnecting =
+                          _connectingAddress == device.macAdress;
+                      final isConnected =
+                          _printerService.isConnected &&
+                          _printerService.connectedDeviceName == device.name;
 
-                    return Card(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        leading: Icon(
-                          Icons.print_outlined,
-                          color: isConnected ? Colors.green : Colors.grey,
+                      return Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        title: Text(device.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(device.macAdress),
-                        trailing: isConnecting
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                          : isConnected
-                            ? ElevatedButton(
-                                onPressed: _disconnect,
-                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-                                child: const Text('PUTUSKAN', style: TextStyle(color: Colors.white, fontSize: 10)),
-                              )
-                            : ElevatedButton(
-                                onPressed: () => _connect(device),
-                                style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-                                child: const Text('HUBUNGKAN', style: TextStyle(color: Colors.white, fontSize: 10)),
-                              ),
-                      ),
-                    );
-                  },
-                ),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: ListTile(
+                          leading: Icon(
+                            Icons.print_outlined,
+                            color: isConnected ? Colors.green : Colors.grey,
+                          ),
+                          title: Text(
+                            device.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(device.macAdress),
+                          trailing: isConnecting
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : isConnected
+                              ? ElevatedButton(
+                                  onPressed: _disconnect,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.error,
+                                  ),
+                                  child: const Text(
+                                    'PUTUSKAN',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                )
+                              : ElevatedButton(
+                                  onPressed: () => _connect(device),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.teal,
+                                  ),
+                                  child: const Text(
+                                    'HUBUNGKAN',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -130,11 +170,14 @@ class _PrinterPageState extends State<PrinterPage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: (_printerService.isConnected ? Colors.green : Colors.grey).withValues(alpha: 0.1),
+              color: (_printerService.isConnected ? Colors.green : Colors.grey)
+                  .withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              _printerService.isConnected ? Icons.check_circle : Icons.print_disabled,
+              _printerService.isConnected
+                  ? Icons.check_circle
+                  : Icons.print_disabled,
               color: _printerService.isConnected ? Colors.green : Colors.grey,
             ),
           ),
@@ -145,13 +188,19 @@ class _PrinterPageState extends State<PrinterPage> {
               children: [
                 Text(
                   _printerService.isConnected ? 'Terhubung' : 'Tidak Terhubung',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
                 Text(
-                  _printerService.isConnected 
-                    ? 'Printer: ${_printerService.connectedDeviceName}'
-                    : 'Pilih printer dari daftar di bawah',
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  _printerService.isConnected
+                      ? 'Printer: ${_printerService.connectedDeviceName}'
+                      : 'Pilih printer dari daftar di bawah',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
@@ -166,7 +215,11 @@ class _PrinterPageState extends State<PrinterPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.bluetooth_searching, size: 64, color: Colors.grey.shade300),
+          Icon(
+            Icons.bluetooth_searching,
+            size: 64,
+            color: Colors.grey.shade300,
+          ),
           const SizedBox(height: 16),
           const Text(
             'Tidak ada printer Bluetooth terdeteksi',

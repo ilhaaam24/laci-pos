@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../blocs/category/category_bloc.dart';
 import '../../../domain/entities/category_entity.dart';
 import '../../../core/style/app_colors.dart';
+import '../../../core/utils/app_toast.dart';
 
 class AddEditCategoryPage extends StatefulWidget {
   final Category? category;
@@ -18,6 +19,7 @@ class _AddEditCategoryPageState extends State<AddEditCategoryPage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -38,6 +40,8 @@ class _AddEditCategoryPageState extends State<AddEditCategoryPage> {
   void _saveCategory() {
     if (!_formKey.currentState!.validate()) return;
 
+    setState(() => _isSaving = true);
+
     final category = Category(
       id: widget.category?.id ?? const Uuid().v4(),
       name: _nameController.text.trim(),
@@ -48,7 +52,9 @@ class _AddEditCategoryPageState extends State<AddEditCategoryPage> {
 
     if (widget.category == null) {
       context.read<CategoryBloc>().add(CreateCategory(category));
+      AppToast.showSuccess(context, 'Kategori berhasil dibuat');
     } else {
+      AppToast.showSuccess(context, 'Kategori berhasil diubah');
       context.read<CategoryBloc>().add(UpdateCategory(category));
     }
 
@@ -63,50 +69,80 @@ class _AddEditCategoryPageState extends State<AddEditCategoryPage> {
         title: Text(
           widget.category == null ? 'Tambah Kategori' : 'Edit Kategori',
         ),
+        actions: [
+          if (_isSaving)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            )
+          else
+            IconButton(icon: const Icon(Icons.check), onPressed: _saveCategory),
+        ],
       ),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nama Kategori',
-                prefixIcon: Icon(Icons.category_outlined),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(48),
+                border: Border.all(color: AppColors.divider),
               ),
-              validator: (v) =>
-                  v == null || v.isEmpty ? 'Nama tidak boleh kosong' : null,
-              autofocus: true,
-            ),
-            const SizedBox(height: 20),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Deskripsi',
-                prefixIcon: Icon(Icons.description_outlined),
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nama Kategori',
+                      prefixIcon: Icon(Icons.category_outlined),
+                    ),
+                    validator: (v) => v == null || v.isEmpty
+                        ? 'Nama tidak boleh kosong'
+                        : null,
+                    autofocus: true,
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: _descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Deskripsi',
+                      prefixIcon: Icon(Icons.description_outlined),
+                    ),
+                    maxLines: 3,
+                  ),
+                ],
               ),
-              maxLines: 3,
             ),
-            const SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: _saveCategory,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(48),
+                border: Border.all(color: AppColors.divider),
+              ),
+              child: TextButton(
+                onPressed: _isSaving ? null : _saveCategory,
+                child: Text(
+                  widget.category == null
+                      ? 'Tambah Kategori'
+                      : 'Simpan Perubahan',
                 ),
               ),
-              child: Text(
-                widget.category == null
-                    ? 'SIMPAN KATEGORI'
-                    : 'SIMPAN PERUBAHAN',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
             ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
