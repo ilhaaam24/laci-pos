@@ -279,7 +279,7 @@ class _AddEditPromoPageState extends State<AddEditPromoPage> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.1)
+              ? AppColors.primary.withValues(alpha: 0.1)
               : AppColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(

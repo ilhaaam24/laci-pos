@@ -2,11 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/firebase_collections.dart';
 import '../../data/models/stock_log_model.dart';
 import '../../domain/entities/stock_log_entity.dart';
+import './notification_service.dart';
 
 class StockService {
   final FirebaseFirestore firestore;
+  final NotificationService notificationService;
 
-  StockService(this.firestore);
+  StockService(this.firestore, this.notificationService);
 
   /// Records a stock movement and updates the product stock
   Future<void> updateStock({
@@ -25,8 +27,9 @@ class StockService {
     final productDoc = await productRef.get();
     if (!productDoc.exists) throw Exception('Produk tidak ditemukan');
 
-    final currentStock =
-        (productDoc.data() as Map<String, dynamic>)['stock'] ?? 0;
+    final productData = productDoc.data() as Map<String, dynamic>;
+    final currentStock = productData['stock'] ?? 0;
+    final stockThreshold = productData['stockThreshold'] ?? 5;
     final newStock = currentStock + quantityChange;
 
     // 1. Update Product Stock
@@ -52,6 +55,14 @@ class StockService {
     batch.set(logRef, log.toFirestore());
 
     await batch.commit();
+
+    // 3. Check for low stock alert
+    if (newStock <= stockThreshold) {
+      notificationService.showStockAlert(
+        productName: productName,
+        currentStock: newStock,
+      );
+    }
   }
 
   /// Get logs for a specific product

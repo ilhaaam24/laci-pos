@@ -44,6 +44,7 @@ import '../services/report_service.dart';
 import '../services/receipt_service.dart';
 import '../services/transaction_service.dart';
 import '../services/stock_service.dart';
+import '../services/notification_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -65,10 +66,14 @@ Future<void> initializeDependencies() async {
   getIt.registerLazySingleton<ReceiptService>(() => ReceiptService());
 
   getIt.registerLazySingleton<TransactionService>(
-    () => TransactionService(getIt()),
+    () => TransactionService(getIt(), getIt()),
   );
 
-  getIt.registerLazySingleton<StockService>(() => StockService(getIt()));
+  getIt.registerLazySingleton<StockService>(
+    () => StockService(getIt(), getIt()),
+  );
+
+  getIt.registerLazySingleton<NotificationService>(() => NotificationService());
 
   // Data Sources
   getIt.registerLazySingleton<ProductFirebaseDataSource>(
@@ -84,7 +89,10 @@ Future<void> initializeDependencies() async {
   );
 
   getIt.registerLazySingleton<TransactionFirebaseDataSource>(
-    () => TransactionFirebaseDataSourceImpl(firestore: getIt()),
+    () => TransactionFirebaseDataSourceImpl(
+      firestore: getIt(),
+      notificationService: getIt(),
+    ),
   );
 
   getIt.registerLazySingleton<BusinessFirebaseDataSource>(

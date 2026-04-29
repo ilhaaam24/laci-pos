@@ -3,11 +3,13 @@ import 'package:laci/core/constants/firebase_collections.dart';
 import 'package:laci/data/models/transaction_model.dart';
 
 import '../../domain/entities/transaction_entity.dart';
+import './notification_service.dart';
 
 class TransactionService {
   final FirebaseFirestore _firestore;
+  final NotificationService _notificationService;
 
-  TransactionService(this._firestore);
+  TransactionService(this._firestore, this._notificationService);
 
   /// Process transaction with atomic stock update
   Future<String> processTransaction(TransactionEntity transaction) async {
@@ -79,6 +81,15 @@ class TransactionService {
             'stock': newStock,
             'updatedAt': FieldValue.serverTimestamp(),
           });
+
+          // Check for low stock alert
+          final stockThreshold = (snapshot.data() as Map<String, dynamic>)['stockThreshold'] ?? 5;
+          if (newStock <= stockThreshold) {
+            _notificationService.showStockAlert(
+              productName: item.productName,
+              currentStock: newStock,
+            );
+          }
         }
 
         return transactionRef.id;

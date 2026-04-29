@@ -119,7 +119,7 @@ class _ReportPageState extends State<ReportPage> {
                   selectionColor: AppColors.primary,
                   startRangeSelectionColor: AppColors.primary,
                   endRangeSelectionColor: AppColors.primary,
-                  rangeSelectionColor: AppColors.primary.withOpacity(0.1),
+                  rangeSelectionColor: AppColors.primary.withValues(alpha: 0.1),
                 ),
               ),
             ],
@@ -282,7 +282,7 @@ class _ReportPageState extends State<ReportPage> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withOpacity(0.3),
+              color: AppColors.primary.withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
@@ -321,7 +321,7 @@ class _ReportPageState extends State<ReportPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -353,7 +353,7 @@ class _ReportPageState extends State<ReportPage> {
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppColors.primary.withOpacity(0.1)
+                ? AppColors.primary.withValues(alpha: 0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
@@ -415,7 +415,7 @@ class _ReportPageState extends State<ReportPage> {
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF10B981).withOpacity(0.3),
+                color: const Color(0xFF10B981).withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -433,7 +433,7 @@ class _ReportPageState extends State<ReportPage> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Row(
@@ -505,7 +505,7 @@ class _ReportPageState extends State<ReportPage> {
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -649,7 +649,7 @@ class _ReportPageState extends State<ReportPage> {
                             toY: val,
                             color: isToday
                                 ? AppColors.primary
-                                : AppColors.primary.withOpacity(0.2),
+                                : AppColors.primary.withValues(alpha: 0.2),
                             width: 18,
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -702,7 +702,7 @@ class _ReportPageState extends State<ReportPage> {
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -719,7 +719,7 @@ class _ReportPageState extends State<ReportPage> {
                 CircularProgressIndicator(
                   value: 0.75,
                   strokeWidth: 8,
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                   valueColor: const AlwaysStoppedAnimation<Color>(
                     AppColors.primary,
                   ),
@@ -761,7 +761,7 @@ class _ReportPageState extends State<ReportPage> {
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -823,7 +823,7 @@ class _ReportPageState extends State<ReportPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -834,7 +834,7 @@ class _ReportPageState extends State<ReportPage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.05),
+              color: AppColors.primary.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(Icons.receipt_long, color: AppColors.primary),
@@ -920,7 +920,7 @@ class _ReportPageState extends State<ReportPage> {
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.02),
+                              color: Colors.black.withValues(alpha: 0.02),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),

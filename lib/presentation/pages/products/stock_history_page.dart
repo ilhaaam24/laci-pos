@@ -97,7 +97,7 @@ class StockHistoryPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: typeColor.withOpacity(0.1),
+                    color: typeColor.withValues(alpha:0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(icon, color: typeColor, size: 20),

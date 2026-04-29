@@ -525,7 +525,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: Colors.pinkAccent.withOpacity(0.3)),
+        border: Border.all(color: Colors.pinkAccent.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [

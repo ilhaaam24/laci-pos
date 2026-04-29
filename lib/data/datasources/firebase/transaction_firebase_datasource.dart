@@ -1,8 +1,11 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart' as f_store;
 import '../../../core/constants/firebase_collections.dart';
 import '../../models/transaction_model.dart';
 import '../../models/stock_log_model.dart';
 import '../../../domain/entities/stock_log_entity.dart';
+import '../../../core/services/notification_service.dart';
 
 abstract class TransactionFirebaseDataSource {
   Future<String> createTransaction(TransactionModel transaction);
@@ -17,8 +20,12 @@ abstract class TransactionFirebaseDataSource {
 class TransactionFirebaseDataSourceImpl
     implements TransactionFirebaseDataSource {
   final f_store.FirebaseFirestore firestore;
+  final NotificationService notificationService;
 
-  TransactionFirebaseDataSourceImpl({required this.firestore});
+  TransactionFirebaseDataSourceImpl({
+    required this.firestore,
+    required this.notificationService,
+  });
 
   f_store.CollectionReference get _collection =>
       firestore.collection(FirebaseCollections.transactions);
@@ -50,9 +57,11 @@ class TransactionFirebaseDataSourceImpl
 
         final productDoc = await productRef.get();
         int previousStock = 0;
+        int stockThreshold = 5;
         if (productDoc.exists) {
-          previousStock =
-              (productDoc.data() as Map<String, dynamic>)['stock'] ?? 0;
+          final data = productDoc.data() as Map<String, dynamic>;
+          previousStock = data['stock'] ?? 0;
+          stockThreshold = data['stockThreshold'] ?? 5;
         }
         int newStock = previousStock - item.quantity;
 
@@ -77,6 +86,16 @@ class TransactionFirebaseDataSourceImpl
           createdAt: DateTime.now(),
         );
         batch.set(logRef, stockLog.toFirestore());
+
+        // Check for low stock alert
+        log('stok $newStock ${item.productName}');
+        if (newStock <= stockThreshold) {
+          log('stok rendah ${item.productName}');
+          notificationService.showStockAlert(
+            productName: item.productName,
+            currentStock: newStock,
+          );
+        }
       }
 
       await batch.commit();

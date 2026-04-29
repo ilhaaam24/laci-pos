@@ -48,6 +48,8 @@ dependencies:
   fl_chart: ^0.66.0
   month_picker_dialog: ^6.7.2
   syncfusion_flutter_datepicker: ^25.1.37
+  flutter_local_notifications: ^21.0.0
+  workmanager: ^0.9.0+3
   
 dev_dependencies:
   flutter_test:

@@ -5,11 +5,28 @@ import 'package:flutter/material.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  
+
   final firestore = FirebaseFirestore.instance;
-  final snapshot = await firestore.collection('transactions').get();
-  print('Total Transactions: ${snapshot.docs.length}');
-  for (var doc in snapshot.docs) {
-    print('Transaction: ${doc.id} - ${doc.data()}');
+
+  try {
+    final batch = firestore.batch();
+
+    // Ambil dokumen dari koleksi 'products'
+    final productsSnapshot = await firestore.collection('products').get();
+
+    for (var productDoc in productsSnapshot.docs) {
+      final currentStock = productDoc['stock'];
+
+      if (currentStock is! int || currentStock < 0) {
+        batch.update(productDoc.reference, {
+          'stock': 0,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    }
+
+    await batch.commit();
+  } catch (e) {
+    print(e);
   }
 }

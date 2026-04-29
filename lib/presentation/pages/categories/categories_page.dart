@@ -174,9 +174,9 @@ class _CategoriesPageState extends State<CategoriesPage> {
       width: 50,
       height: 50,
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
+        color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
       child: const Icon(Icons.category_outlined, color: AppColors.primary),
     );

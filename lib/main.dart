@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:laci/core/themes/theme.dart';
+import 'package:laci/core/services/notification_service.dart';
+import 'package:laci/core/services/background_service.dart';
 
 import 'core/di/injection.dart';
 
@@ -29,6 +31,13 @@ void main() async {
 
   // Initialize Dependencies
   await initializeDependencies();
+
+  // Initialize Notification Service
+  await getIt<NotificationService>().init();
+
+  // Initialize Background Service
+  await BackgroundService.init();
+  await BackgroundService.scheduleDailySummary();
 
   runApp(const MyApp());
 }
