@@ -77,13 +77,10 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     Emitter<ReportState> emit,
   ) async {
     emit(ReportLoading());
-    print('ReportBloc: Loading Daily Report for ${event.date}');
     try {
       final data = await reportService.getDailyReport(event.date);
-      print('ReportBloc: Daily Report Loaded: $data');
       emit(ReportLoaded(data));
     } catch (e) {
-      print('ReportBloc: Daily Report Error: $e');
       emit(ReportError(e.toString()));
     }
   }
@@ -93,13 +90,10 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     Emitter<ReportState> emit,
   ) async {
     emit(ReportLoading());
-    print('ReportBloc: Loading Weekly Report for ${event.date}');
     try {
       final data = await reportService.getWeeklyReport(event.date);
-      print('ReportBloc: Weekly Report Loaded: $data');
       emit(ReportLoaded(data));
     } catch (e) {
-      print('ReportBloc: Weekly Report Error: $e');
       emit(ReportError(e.toString()));
     }
   }
@@ -109,13 +103,10 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     Emitter<ReportState> emit,
   ) async {
     emit(ReportLoading());
-    print('ReportBloc: Loading Monthly Report for ${event.date}');
     try {
       final data = await reportService.getMonthlyReport(event.date);
-      print('ReportBloc: Monthly Report Loaded: $data');
       emit(ReportLoaded(data));
     } catch (e) {
-      print('ReportBloc: Monthly Report Error: $e');
       emit(ReportError(e.toString()));
     }
   }
@@ -125,18 +116,13 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     Emitter<ReportState> emit,
   ) async {
     emit(ReportLoading());
-    print(
-      'ReportBloc: Loading Custom Range Report from ${event.startDate} to ${event.endDate}',
-    );
     try {
       final data = await reportService.getCustomRangeReport(
         event.startDate,
         event.endDate,
       );
-      print('ReportBloc: Custom Range Report Loaded: $data');
       emit(ReportLoaded(data));
     } catch (e) {
-      print('ReportBloc: Custom Range Report Error: $e');
       emit(ReportError(e.toString()));
     }
   }

@@ -78,31 +78,6 @@ class _KasirPageState extends State<KasirPage> {
           ),
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.stars, color: AppColors.primary, size: 16),
-                    SizedBox(width: 4),
-                    Text(
-                      'PRO',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
               const SizedBox(width: 12),
               BlocBuilder<AuthBloc, AuthState>(
                 builder: (context, state) {
@@ -176,14 +151,6 @@ class _KasirPageState extends State<KasirPage> {
             child: const Icon(Icons.tune, color: AppColors.textSecondary),
           ),
           const SizedBox(width: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.qr_code_scanner, color: Colors.white),
-          ),
         ],
       ),
     );
@@ -289,11 +256,15 @@ class _KasirPageState extends State<KasirPage> {
 
   Widget _buildProductCard(Product product, NumberFormat formatter) {
     return InkWell(
-      onTap: () => context.read<CartBloc>().add(AddToCart(product)),
+      onTap: () {
+        context.read<CartBloc>().add(AddToCart(product));
+        log('Product added to cart: ${product.name}');
+      },
       child: Container(
+        padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(color: AppColors.divider),
         ),
         child: Column(
@@ -302,18 +273,16 @@ class _KasirPageState extends State<KasirPage> {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(20),
-                  ),
+                  borderRadius: const BorderRadius.all(Radius.circular(20)),
                   child: product.imageUrl != null
                       ? CachedNetworkImage(
                           imageUrl: product.imageUrl!,
-                          height: 120,
+                          height: 140,
                           width: double.infinity,
                           fit: BoxFit.cover,
                         )
                       : Container(
-                          height: 120,
+                          height: 140,
                           width: double.infinity,
                           color: AppColors.background,
                           child: const Icon(
@@ -393,8 +362,8 @@ class _KasirPageState extends State<KasirPage> {
                 ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(12),
+            SizedBox.square(dimension: 12),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -402,7 +371,7 @@ class _KasirPageState extends State<KasirPage> {
                     product.name,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      fontSize: 18,
                       color: AppColors.textPrimary,
                     ),
                     maxLines: 1,
@@ -416,7 +385,7 @@ class _KasirPageState extends State<KasirPage> {
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Text(
                     formatter.format(product.price),
                     style: TextStyle(
@@ -442,16 +411,17 @@ class _KasirPageState extends State<KasirPage> {
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 20),
           height: 64,
+          padding: EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             color: AppColors.primary,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(100),
+            // boxShadow: [
+            //   BoxShadow(
+            //     color: AppColors.primary.withValues(alpha: 0.3),
+            //     blurRadius: 10,
+            //     offset: const Offset(0, 5),
+            //   ),
+            // ],
           ),
           child: InkWell(
             onTap: () {

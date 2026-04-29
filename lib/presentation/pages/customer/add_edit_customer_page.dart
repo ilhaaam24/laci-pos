@@ -73,7 +73,7 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
                     TextFormField(
                       controller: _nameController,
                       decoration: const InputDecoration(
-                        labelText: 'Nama Pelanggan *',
+                        hintText: 'Nama Pelanggan',
                         prefixIcon: Icon(Icons.person_outline),
                       ),
                       validator: (v) => v == null || v.isEmpty
@@ -84,9 +84,8 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
                     TextFormField(
                       controller: _phoneController,
                       decoration: const InputDecoration(
-                        labelText: 'Nomor Telepon',
-                        prefixIcon: Icon(Icons.phone_outlined),
                         hintText: '0812xxxxxxxx',
+                        prefixIcon: Icon(Icons.phone_outlined),
                       ),
                       keyboardType: TextInputType.phone,
                     ),
@@ -99,7 +98,6 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
                     TextFormField(
                       controller: _addressController,
                       decoration: const InputDecoration(
-                        labelText: 'Alamat Lengkap',
                         prefixIcon: Icon(Icons.location_on_outlined),
                       ),
                       maxLines: 3,
@@ -107,14 +105,14 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
                   ],
                 ),
                 const SizedBox(height: 32),
-                ElevatedButton(
+                TextButton(
                   onPressed: _onSave,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.teal,
-                    foregroundColor: Colors.white,
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.all(24),
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(100),
                     ),
                   ),
                   child: Text(
@@ -146,7 +144,7 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: AppColors.primary,
               ),
             ),
             const SizedBox(height: 16),
@@ -184,17 +182,23 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
         content: const Text('Apakah Anda yakin ingin menghapus pelanggan ini?'),
         actions: [
           TextButton(
+            style: TextButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              foregroundColor: AppColors.primary,
+            ),
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Batal'),
           ),
-          ElevatedButton(
+          TextButton(
+            style: TextButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () {
               context.read<CustomerBloc>().add(
                 DeleteCustomer(widget.customer!.id),
               );
               Navigator.pop(dialogContext);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Hapus'),
           ),
         ],

@@ -85,6 +85,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ),
               ),
               _buildOrderSummary(context, state, currencyFormatter),
+              SizedBox(height: 24),
             ],
           );
         },
@@ -210,7 +211,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(100),
         border: Border.all(color: Colors.teal.withValues(alpha: 0.3)),
       ),
       child: Row(
@@ -250,6 +251,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
               onPressed: () => setState(() => _selectedCustomer = null),
             ),
           TextButton(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(100),
+              ),
+            ),
             onPressed: () => _showCustomerPicker(),
             child: Text(_selectedCustomer == null ? 'PILIH' : 'GANTI'),
           ),
@@ -366,7 +373,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               height: 50,
               decoration: BoxDecoration(
                 color: AppColors.background,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(100),
               ),
               child: const Icon(
                 Icons.fastfood_outlined,
@@ -461,8 +468,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final grandTotal = state.totalAmount + taxAmount - _discountAmount;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      width: double.infinity,
+      padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
         color: AppColors.surface,
         boxShadow: [
           BoxShadow(
@@ -494,14 +504,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
+            child: TextButton(
               onPressed: () => _showPaymentDialog(context, state),
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+              style: ButtonStyle(),
               child: const Text(
                 'BAYAR SEKARANG',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -519,7 +524,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(100),
         border: Border.all(color: Colors.pinkAccent.withOpacity(0.3)),
       ),
       child: Row(
@@ -562,6 +567,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
               onPressed: () => setState(() => _selectedPromo = null),
             ),
           TextButton(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(100),
+              ),
+            ),
             onPressed: () => _showPromoPicker(),
             child: Text(_selectedPromo == null ? 'PILIH' : 'GANTI'),
           ),
@@ -677,7 +688,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                   : 'Tanpa minimum belanja',
                               style: TextStyle(
                                 color: isDisabled
-                                    ? AppColors.error.withOpacity(0.5)
+                                    ? AppColors.error.withValues(alpha: 0.5)
                                     : null,
                               ),
                             ),

@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/style/app_colors.dart';
-import '../blocs/cart/cart_bloc.dart';
 import 'kasir/kasir_page.dart';
 import 'checkout/checkout_page.dart';
-import 'products/products_page.dart';
 import 'report/report_page.dart';
 import 'settings/settings_page.dart';
 
@@ -19,7 +16,6 @@ class _MainPageState extends State<MainPage> {
   final List<Widget> _pages = [
     const KasirPage(),
     const CheckoutPage(),
-    const ProductsPage(),
     const ReportPage(),
     const SettingsPage(),
   ];
@@ -71,9 +67,9 @@ class _MainPageState extends State<MainPage> {
                     ),
                     items: [
                       const BottomNavigationBarItem(
-                        icon: Icon(Icons.receipt_outlined),
-                        activeIcon: Icon(Icons.receipt),
-                        label: 'Register',
+                        icon: Icon(Icons.point_of_sale),
+                        activeIcon: Icon(Icons.point_of_sale),
+                        label: 'Kasir',
                       ),
                       const BottomNavigationBarItem(
                         icon: Icon(Icons.assignment_outlined),
@@ -81,37 +77,14 @@ class _MainPageState extends State<MainPage> {
                         label: 'Orders',
                       ),
                       const BottomNavigationBarItem(
-                        icon: Icon(Icons.inventory_2_outlined),
-                        activeIcon: Icon(Icons.inventory_2),
-                        label: 'Inventory',
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: tabController.index == 3
-                              ? BoxDecoration(
-                                  color: AppColors.primary,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.primary.withOpacity(0.3),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                )
-                              : null,
-                          child: Icon(
-                            Icons.bar_chart,
-                            color: tabController.index == 3
-                                ? Colors.white
-                                : AppColors.textDisabled,
-                          ),
-                        ),
+                        icon: Icon(Icons.bar_chart),
+                        activeIcon: Icon(Icons.bar_chart),
                         label: 'Insights',
                       ),
                       const BottomNavigationBarItem(
                         icon: Icon(Icons.menu),
+                        activeIcon: Icon(Icons.menu),
+
                         label: 'Menu',
                       ),
                     ],

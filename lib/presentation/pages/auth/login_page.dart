@@ -176,9 +176,9 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {},
-                    child: const Text('Lupa Password?'),
+                  child: GestureDetector(
+                    onTap: () {},
+                    child: Text('Lupa Password?'),
                   ),
                 ).animate().fadeIn(delay: 800.ms),
 
@@ -287,8 +287,8 @@ class _LoginPageState extends State<LoginPage> {
                         'Belum punya akun?',
                         style: TextStyle(color: Colors.grey.shade600),
                       ),
-                      TextButton(
-                        onPressed: () {},
+                      GestureDetector(
+                        onTap: () {},
                         child: const Text(
                           'Daftar Sekarang',
                           style: TextStyle(

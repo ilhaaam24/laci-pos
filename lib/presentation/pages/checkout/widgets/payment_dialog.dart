@@ -85,10 +85,10 @@ class _PaymentDialogState extends State<PaymentDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
       child: Container(
         width: 500,
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(32),
         child: BlocBuilder<PaymentBloc, PaymentState>(
           builder: (context, state) {
             return SingleChildScrollView(
@@ -204,14 +204,23 @@ class _PaymentDialogState extends State<PaymentDialog> {
                       spacing: 8,
                       runSpacing: 8,
                       children: _quickAmounts.map((amount) {
-                        return OutlinedButton(
+                        return TextButton(
                           onPressed: () => _setQuickAmount(amount),
-                          style: OutlinedButton.styleFrom(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            backgroundColor: AppColors.background,
+                            foregroundColor: AppColors.textPrimary,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(100),
                             ),
                           ),
-                          child: Text(_currencyFormatter.format(amount)),
+                          child: Text(
+                            _currencyFormatter.format(amount),
+                            style: const TextStyle(color: AppColors.primary),
+                          ),
                         );
                       }).toList(),
                     ),
@@ -224,10 +233,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: AppColors.success.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.success.withValues(alpha: 0.2),
-                          ),
+                          borderRadius: BorderRadius.circular(100),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -336,7 +342,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                   const SizedBox(height: 24),
 
                   // Confirm Button
-                  ElevatedButton(
+                  TextButton(
                     onPressed: state.isValid
                         ? () {
                             widget.onConfirm(
@@ -346,21 +352,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                             );
                           }
                         : null,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Konfirmasi Pembayaran',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: const Text('Konfirmasi Pembayaran'),
                   ),
                 ],
               ),

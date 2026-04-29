@@ -30,8 +30,8 @@ class InputTheme {
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
 
-      hintStyle: const TextStyle(
-        color: Colors.transparent,
+      hintStyle: TextStyle(
+        color: AppColors.textSecondary,
         fontSize: 16,
         fontWeight: FontWeight.w500,
       ),

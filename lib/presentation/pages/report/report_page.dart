@@ -8,6 +8,7 @@ import 'package:month_picker_dialog/month_picker_dialog.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 
 import '../../../core/style/app_colors.dart';
+import '../../../core/services/export_service.dart';
 import '../../blocs/report/report_bloc.dart';
 import '../../blocs/business/business_bloc.dart';
 
@@ -38,8 +39,8 @@ class _ReportPageState extends State<ReportPage> {
       context.read<ReportBloc>().add(LoadMonthlyReport(_selectedDate));
     } else if (_selectedPeriod == 'Kustom' && _endDate != null) {
       context.read<ReportBloc>().add(
-            LoadCustomRangeReport(_selectedDate, _endDate!),
-          );
+        LoadCustomRangeReport(_selectedDate, _endDate!),
+      );
     }
   }
 
@@ -101,8 +102,10 @@ class _ReportPageState extends State<ReportPage> {
                     }
                   },
                   selectionMode: DateRangePickerSelectionMode.range,
-                  initialSelectedRange:
-                      PickerDateRange(_selectedDate, _endDate),
+                  initialSelectedRange: PickerDateRange(
+                    _selectedDate,
+                    _endDate,
+                  ),
                   maxDate: DateTime.now(),
                   headerStyle: const DateRangePickerHeaderStyle(
                     textStyle: TextStyle(
@@ -148,6 +151,39 @@ class _ReportPageState extends State<ReportPage> {
     }
   }
 
+  Future<void> _handleExport() async {
+    final reportState = context.read<ReportBloc>().state;
+    final businessState = context.read<BusinessBloc>().state;
+
+    if (reportState is ReportLoaded) {
+      try {
+        await ExportService.exportReportToPdf(
+          reportData: reportState.reportData,
+          period: _selectedPeriod,
+          businessInfo: businessState.businessInfo,
+        );
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal mengekspor laporan: $e'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Laporan belum dimuat atau sedang memproses data'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currencyFormatter = NumberFormat.currency(
@@ -170,13 +206,32 @@ class _ReportPageState extends State<ReportPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 10),
-                _buildHeader(),
-                const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _buildSectionTitle('Business Overview', 'Analytics'),
-                    _buildDatePill(),
+                    Row(
+                      children: [
+                        _buildDatePill(),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: _handleExport,
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.divider),
+                            ),
+                            child: const Icon(
+                              Icons.picture_as_pdf_outlined,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -195,78 +250,6 @@ class _ReportPageState extends State<ReportPage> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return BlocBuilder<BusinessBloc, BusinessState>(
-      builder: (context, state) {
-        final businessName = state.businessInfo?.businessName ?? 'Laci POS';
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 45,
-                  height: 45,
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.primary.withOpacity(0.1),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(22.5),
-                    child: state.businessInfo?.logoUrl != null &&
-                            state.businessInfo!.logoUrl!.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: state.businessInfo!.logoUrl!,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => const Center(
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            errorWidget: (context, url, error) => const Icon(
-                              Icons.business,
-                              color: AppColors.primary,
-                            ),
-                          )
-                        : const Icon(Icons.business, color: AppColors.primary),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  businessName,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.divider),
-              ),
-              child: const Icon(Icons.notifications_none,
-                  color: AppColors.textSecondary, size: 20),
-            ),
-          ],
-        );
-      },
     );
   }
 
@@ -319,7 +302,11 @@ class _ReportPageState extends State<ReportPage> {
               ),
             ),
             const SizedBox(width: 4),
-            const Icon(Icons.keyboard_arrow_down, size: 14, color: Colors.white),
+            const Icon(
+              Icons.keyboard_arrow_down,
+              size: 14,
+              color: Colors.white,
+            ),
           ],
         ),
       ),
@@ -365,7 +352,9 @@ class _ReportPageState extends State<ReportPage> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+            color: isSelected
+                ? AppColors.primary.withOpacity(0.1)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -561,7 +550,15 @@ class _ReportPageState extends State<ReportPage> {
                 if (state is ReportLoaded &&
                     state.reportData['dailySales'] != null) {
                   final rawData = state.reportData['dailySales'] as Map;
-                  final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                  final days = [
+                    'Mon',
+                    'Tue',
+                    'Wed',
+                    'Thu',
+                    'Fri',
+                    'Sat',
+                    'Sun',
+                  ];
                   for (var day in days) {
                     data[day] = (rawData[day] ?? 0).toDouble();
                   }
@@ -578,18 +575,36 @@ class _ReportPageState extends State<ReportPage> {
                         sideTitles: SideTitles(
                           showTitles: true,
                           getTitlesWidget: (value, meta) {
-                            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                            if (value.toInt() < days.length && value.toInt() >= 0) {
+                            const days = [
+                              'Mon',
+                              'Tue',
+                              'Wed',
+                              'Thu',
+                              'Fri',
+                              'Sat',
+                              'Sun',
+                            ];
+                            if (value.toInt() < days.length &&
+                                value.toInt() >= 0) {
                               final day = days[value.toInt()];
-                              final isToday = day == DateFormat('E', 'en_US').format(DateTime.now());
+                              final isToday =
+                                  day ==
+                                  DateFormat(
+                                    'E',
+                                    'en_US',
+                                  ).format(DateTime.now());
                               return Padding(
                                 padding: const EdgeInsets.only(top: 8.0),
                                 child: Text(
                                   day,
                                   style: TextStyle(
-                                    color: isToday ? AppColors.primary : AppColors.textDisabled,
+                                    color: isToday
+                                        ? AppColors.primary
+                                        : AppColors.textDisabled,
                                     fontSize: 10,
-                                    fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                                    fontWeight: isToday
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
                                   ),
                                 ),
                               );
@@ -599,24 +614,42 @@ class _ReportPageState extends State<ReportPage> {
                           reservedSize: 22,
                         ),
                       ),
-                      leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      leftTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
                     ),
                     gridData: const FlGridData(show: false),
                     borderData: FlBorderData(show: false),
                     barGroups: [0, 1, 2, 3, 4, 5, 6].map((i) {
-                      final day = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i];
-                      final isToday = day == DateFormat('E', 'en_US').format(DateTime.now());
+                      final day = [
+                        'Mon',
+                        'Tue',
+                        'Wed',
+                        'Thu',
+                        'Fri',
+                        'Sat',
+                        'Sun',
+                      ][i];
+                      final isToday =
+                          day ==
+                          DateFormat('E', 'en_US').format(DateTime.now());
                       double val = (data[day]! / 1000).clamp(5, 100).toDouble();
-                      if (data[day]! == 0) val = 5.0; 
+                      if (data[day]! == 0) val = 5.0;
 
                       return BarChartGroupData(
                         x: i,
                         barRods: [
                           BarChartRodData(
                             toY: val,
-                            color: isToday ? AppColors.primary : AppColors.primary.withOpacity(0.2),
+                            color: isToday
+                                ? AppColors.primary
+                                : AppColors.primary.withOpacity(0.2),
                             width: 18,
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -640,7 +673,8 @@ class _ReportPageState extends State<ReportPage> {
         double avgOrderValue = 0;
         if (state is ReportLoaded) {
           newCustomers = state.reportData['newCustomers'] ?? 0;
-          avgOrderValue = (state.reportData['averageTransaction'] ?? 0).toDouble();
+          avgOrderValue = (state.reportData['averageTransaction'] ?? 0)
+              .toDouble();
         }
 
         return Column(
@@ -686,7 +720,9 @@ class _ReportPageState extends State<ReportPage> {
                   value: 0.75,
                   strokeWidth: 8,
                   backgroundColor: AppColors.primary.withOpacity(0.1),
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    AppColors.primary,
+                  ),
                   strokeCap: StrokeCap.round,
                 ),
                 const Text(
