@@ -9,6 +9,7 @@ class CategoryModel extends Category {
     super.imageUrl,
     required super.createdAt,
     required super.updatedAt,
+    super.businessId,
   });
 
   factory CategoryModel.fromFirestore(DocumentSnapshot doc) {
@@ -20,6 +21,7 @@ class CategoryModel extends Category {
       imageUrl: data['imageUrl'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      businessId: data['businessId'],
     );
   }
 
@@ -30,6 +32,7 @@ class CategoryModel extends Category {
       'imageUrl': imageUrl,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'businessId': businessId,
     };
   }
 
@@ -41,6 +44,7 @@ class CategoryModel extends Category {
       imageUrl: imageUrl,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      businessId: businessId,
     );
   }
 
@@ -52,6 +56,7 @@ class CategoryModel extends Category {
       imageUrl: category.imageUrl,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
+      businessId: category.businessId,
     );
   }
 }

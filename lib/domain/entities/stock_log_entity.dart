@@ -17,6 +17,7 @@ class StockLog extends Equatable {
   final int newStock;
   final String? reason;
   final DateTime createdAt;
+  final String? businessId;
 
   const StockLog({
     required this.id,
@@ -28,6 +29,7 @@ class StockLog extends Equatable {
     required this.newStock,
     this.reason,
     required this.createdAt,
+    this.businessId,
   });
 
   @override
@@ -41,5 +43,6 @@ class StockLog extends Equatable {
     newStock,
     reason,
     createdAt,
+    businessId,
   ];
 }

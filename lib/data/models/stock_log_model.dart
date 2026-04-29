@@ -12,6 +12,7 @@ class StockLogModel extends StockLog {
     required super.newStock,
     super.reason,
     required super.createdAt,
+    super.businessId,
   });
 
   factory StockLogModel.fromFirestore(DocumentSnapshot doc) {
@@ -29,6 +30,7 @@ class StockLogModel extends StockLog {
       newStock: data['newStock'] ?? 0,
       reason: data['reason'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
+      businessId: data['businessId'],
     );
   }
 
@@ -42,6 +44,7 @@ class StockLogModel extends StockLog {
       'newStock': newStock,
       'reason': reason,
       'createdAt': Timestamp.fromDate(createdAt),
+      'businessId': businessId,
     };
   }
 
@@ -56,6 +59,7 @@ class StockLogModel extends StockLog {
       newStock: entity.newStock,
       reason: entity.reason,
       createdAt: entity.createdAt,
+      businessId: entity.businessId,
     );
   }
 }

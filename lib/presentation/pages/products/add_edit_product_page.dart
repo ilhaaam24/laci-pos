@@ -386,10 +386,10 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
                         child: TextFormField(
                           controller: _stockThresholdController,
                           decoration: const InputDecoration(
-                            labelText: 'Batas Stok',
                             prefixIcon: Icon(
                               Icons.notifications_active_outlined,
                             ),
+                            hintText: 'Batas Stok',
                           ),
                           keyboardType: TextInputType.number,
                           inputFormatters: [

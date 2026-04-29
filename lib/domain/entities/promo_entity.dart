@@ -11,6 +11,7 @@ class PromoEntity extends Equatable {
   final bool isActive;
   final DateTime? startDate;
   final DateTime? endDate;
+  final String? businessId;
 
   const PromoEntity({
     required this.id,
@@ -21,6 +22,7 @@ class PromoEntity extends Equatable {
     this.isActive = true,
     this.startDate,
     this.endDate,
+    this.businessId,
   });
 
   @override
@@ -33,5 +35,6 @@ class PromoEntity extends Equatable {
     isActive,
     startDate,
     endDate,
+    businessId,
   ];
 }

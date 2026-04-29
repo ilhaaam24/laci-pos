@@ -85,6 +85,7 @@ class TransactionModel extends TransactionEntity {
     super.completedAt,
     required super.items,
     required super.createdBy,
+    super.businessId,
   });
 
   factory TransactionModel.fromFirestore(
@@ -119,6 +120,7 @@ class TransactionModel extends TransactionEntity {
           : null,
       items: items,
       createdBy: data['createdBy'] ?? '',
+      businessId: data['businessId'],
     );
   }
 
@@ -142,6 +144,7 @@ class TransactionModel extends TransactionEntity {
       completedAt: entity.completedAt,
       items: entity.items,
       createdBy: entity.createdBy,
+      businessId: entity.businessId,
     );
   }
 
@@ -165,6 +168,7 @@ class TransactionModel extends TransactionEntity {
           ? f_store.Timestamp.fromDate(completedAt!)
           : null,
       'createdBy': createdBy,
+      'businessId': businessId,
     };
   }
 
@@ -188,6 +192,7 @@ class TransactionModel extends TransactionEntity {
       completedAt: completedAt,
       items: items,
       createdBy: createdBy,
+      businessId: businessId,
     );
   }
 }

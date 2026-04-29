@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:laci/core/constants/firebase_collections.dart';
 import 'package:laci/data/models/customer_mode.dart';
-import '../../../core/constants/firebase_collections.dart';
+
+import '../../../core/services/session_service.dart';
 
 abstract class CustomerFirebaseDataSource {
   Stream<List<CustomerModel>> getCustomers();
@@ -12,33 +14,47 @@ abstract class CustomerFirebaseDataSource {
 
 class CustomerFirebaseDataSourceImpl implements CustomerFirebaseDataSource {
   final FirebaseFirestore firestore;
+  final SessionService sessionService;
 
-  CustomerFirebaseDataSourceImpl({required this.firestore});
+  CustomerFirebaseDataSourceImpl({
+    required this.firestore,
+    required this.sessionService,
+  });
 
   CollectionReference get _collection =>
       firestore.collection(FirebaseCollections.customers);
 
+  String get _businessId => sessionService.businessId ?? '';
+
   @override
   Stream<List<CustomerModel>> getCustomers() {
-    return _collection.orderBy('createdAt', descending: true).snapshots().map((
-      snapshot,
-    ) {
-      return snapshot.docs
-          .map((doc) => CustomerModel.fromFirestore(doc))
-          .toList();
-    });
+    return _collection
+        .where('businessId', isEqualTo: _businessId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map((doc) => CustomerModel.fromFirestore(doc))
+              .toList();
+        });
   }
 
   @override
   Future<CustomerModel> getCustomerById(String id) async {
     final doc = await _collection.doc(id).get();
     if (!doc.exists) throw Exception('Customer not found');
-    return CustomerModel.fromFirestore(doc);
+    final customer = CustomerModel.fromFirestore(doc);
+    if (customer.businessId != _businessId) {
+      throw Exception('Unauthorized access to customer');
+    }
+    return customer;
   }
 
   @override
   Future<String> createCustomer(CustomerModel customer) async {
-    final docRef = await _collection.add(customer.toFirestore());
+    final data = customer.toFirestore();
+    data['businessId'] = _businessId;
+    final docRef = await _collection.add(data);
     return docRef.id;
   }
 

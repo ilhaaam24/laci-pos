@@ -7,6 +7,7 @@ class Customer extends Equatable {
   final String? address;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? businessId;
 
   const Customer({
     required this.id,
@@ -15,8 +16,10 @@ class Customer extends Equatable {
     this.address,
     required this.createdAt,
     required this.updatedAt,
+    this.businessId,
   });
 
   @override
-  List<Object?> get props => [id, name, phone, address, createdAt, updatedAt];
+  List<Object?> get props =>
+      [id, name, phone, address, createdAt, updatedAt, businessId];
 }

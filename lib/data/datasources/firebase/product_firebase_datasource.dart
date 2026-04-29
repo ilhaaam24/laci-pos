@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../core/constants/firebase_collections.dart';
-import '../../models/product_model.dart';
-import '../../models/stock_log_model.dart';
-import '../../../domain/entities/stock_log_entity.dart';
+import 'package:laci/core/constants/firebase_collections.dart';
+import 'package:laci/data/models/product_model.dart';
+import 'package:laci/data/models/stock_log_model.dart';
+import 'package:laci/domain/entities/stock_log_entity.dart';
+
+import '../../../core/services/session_service.dart';
 
 abstract class ProductFirebaseDataSource {
   Stream<List<ProductModel>> getProducts();
@@ -16,34 +18,42 @@ abstract class ProductFirebaseDataSource {
 
 class ProductFirebaseDataSourceImpl implements ProductFirebaseDataSource {
   final FirebaseFirestore firestore;
+  final SessionService sessionService;
 
-  ProductFirebaseDataSourceImpl({required this.firestore});
+  ProductFirebaseDataSourceImpl({
+    required this.firestore,
+    required this.sessionService,
+  });
 
   CollectionReference get _collection =>
       firestore.collection(FirebaseCollections.products);
 
+  String get _businessId => sessionService.businessId ?? '';
+
   @override
   Stream<List<ProductModel>> getProducts() {
-    return _collection.orderBy('createdAt', descending: true).snapshots().map((
-      snapshot,
-    ) {
-      return snapshot.docs
-          .map((doc) => ProductModel.fromFirestore(doc))
-          .toList();
-    });
+    return _collection
+        .where('businessId', isEqualTo: _businessId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map((doc) => ProductModel.fromFirestore(doc))
+              .toList();
+        });
   }
 
   @override
   Future<ProductModel> getProductById(String id) async {
-    try {
-      final doc = await _collection.doc(id).get();
-      if (!doc.exists) {
-        throw Exception('Product not found');
-      }
-      return ProductModel.fromFirestore(doc);
-    } catch (e) {
-      throw Exception('Failed to fetch product: $e');
+    final doc = await _collection.doc(id).get();
+    if (!doc.exists) {
+      throw Exception('Product not found');
     }
+    final product = ProductModel.fromFirestore(doc);
+    if (product.businessId != _businessId) {
+      throw Exception('Unauthorized access to product');
+    }
+    return product;
   }
 
   @override
@@ -52,7 +62,10 @@ class ProductFirebaseDataSourceImpl implements ProductFirebaseDataSource {
       final batch = firestore.batch();
       final docRef = _collection.doc(product.id);
 
-      batch.set(docRef, product.toFirestore());
+      final data = product.toFirestore();
+      data['businessId'] = _businessId;
+
+      batch.set(docRef, data);
 
       // Initial Stock Log
       if (product.stock > 0) {
@@ -131,6 +144,7 @@ class ProductFirebaseDataSourceImpl implements ProductFirebaseDataSource {
   @override
   Stream<List<ProductModel>> getProductsByCategory(String categoryId) {
     return _collection
+        .where('businessId', isEqualTo: _businessId)
         .where('categoryId', isEqualTo: categoryId)
         .orderBy('createdAt', descending: true)
         .snapshots()

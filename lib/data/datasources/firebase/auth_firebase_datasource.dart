@@ -41,33 +41,61 @@ class AuthFirebaseDataSourceImpl implements AuthFirebaseDataSource {
 
   @override
   Future<UserCredential> signInWithGoogle() async {
-    log('masuk sign in with google');
+    try {
+      log('Starting Google Sign-In flow...');
 
-    // 1. Authenticate (Identify the user)
-    final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
-    log('google user: ${googleUser.email}');
+      // 1. Authenticate (Identify the user)
+      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
 
-    // 2. Get Authentication data (for idToken)
-    final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      log('Google user authenticated: ${googleUser.email}');
 
-    // 3. Request Authorization (for accessToken)
-    // We need at least email and profile scopes
-    final auth = await googleUser.authorizationClient.authorizeScopes([
-      'email',
-      'profile',
-    ]);
+      // 2. Get Authentication data (for idToken)
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
-    final AuthCredential credential = GoogleAuthProvider.credential(
-      accessToken: auth.accessToken,
-      idToken: googleAuth.idToken,
-    );
+      if (googleAuth.idToken == null) {
+        log('ID Token is null. Authentication failed.');
+        throw FirebaseAuthException(
+          code: 'ERROR_MISSING_ID_TOKEN',
+          message: 'Gagal mendapatkan ID Token dari Google',
+        );
+      }
 
-    return await _firebaseAuth.signInWithCredential(credential);
+      // 3. Request Authorization (for accessToken)
+      log('Requesting authorization scopes...');
+      final auth = await googleUser.authorizationClient.authorizeScopes([
+        'email',
+        'profile',
+      ]);
+
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: auth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      log('Signing into Firebase with Google credentials...');
+      return await _firebaseAuth.signInWithCredential(credential);
+    } catch (e, stackTrace) {
+      log('Error during Google Sign-In: $e');
+      log('Stack trace: $stackTrace');
+
+      if (e is FirebaseAuthException) {
+        rethrow;
+      }
+
+      throw FirebaseAuthException(
+        code: 'ERROR_GOOGLE_SIGN_IN',
+        message: 'Gagal login dengan Google: ${e.toString()}',
+      );
+    }
   }
 
   @override
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    try {
+      await _googleSignIn.signOut();
+    } catch (e) {
+      log('Error signing out from Google: $e');
+    }
     return await _firebaseAuth.signOut();
   }
 

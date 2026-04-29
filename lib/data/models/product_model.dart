@@ -15,6 +15,7 @@ class ProductModel extends Product {
     super.sku,
     required super.createdAt,
     required super.updatedAt,
+    super.businessId,
   });
 
   factory ProductModel.fromFirestore(DocumentSnapshot doc) {
@@ -32,6 +33,7 @@ class ProductModel extends Product {
       sku: data['sku'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      businessId: data['businessId'],
     );
   }
 
@@ -48,6 +50,7 @@ class ProductModel extends Product {
       'sku': sku,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'businessId': businessId,
     };
   }
 
@@ -65,6 +68,7 @@ class ProductModel extends Product {
       sku: sku,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      businessId: businessId,
     );
   }
 
@@ -82,6 +86,7 @@ class ProductModel extends Product {
       sku: product.sku,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
+      businessId: product.businessId,
     );
   }
 }

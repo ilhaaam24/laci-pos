@@ -7,6 +7,7 @@ class Category extends Equatable {
   final String? imageUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? businessId;
 
   const Category({
     required this.id,
@@ -15,6 +16,7 @@ class Category extends Equatable {
     this.imageUrl,
     required this.createdAt,
     required this.updatedAt,
+    this.businessId,
   });
 
   @override
@@ -25,5 +27,6 @@ class Category extends Equatable {
     imageUrl,
     createdAt,
     updatedAt,
+    businessId,
   ];
 }

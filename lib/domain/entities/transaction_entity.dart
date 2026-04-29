@@ -23,6 +23,7 @@ class TransactionEntity extends Equatable {
   final DateTime? completedAt;
   final List<TransactionItem> items;
   final String createdBy; // User ID yang melakukan transaksi
+  final String? businessId;
 
   const TransactionEntity({
     required this.id,
@@ -43,6 +44,7 @@ class TransactionEntity extends Equatable {
     this.completedAt,
     required this.items,
     required this.createdBy,
+    this.businessId,
   });
 
   double get grandTotal => subtotal + taxAmount - discountAmount;
@@ -67,6 +69,7 @@ class TransactionEntity extends Equatable {
     completedAt,
     items,
     createdBy,
+    businessId,
   ];
 }
 

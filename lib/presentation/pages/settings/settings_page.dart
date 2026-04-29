@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:laci/domain/entities/user_entity.dart';
 import '../products/products_page.dart';
 import '../categories/categories_page.dart';
 import '../customer/customers_page.dart';
 import 'business_info_page.dart';
 import 'printer_page.dart';
+import 'users_management_page.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import 'package:laci/core/style/app_colors.dart';
 
@@ -13,94 +15,113 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Pengaturan')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildSectionHeader('Manajemen Data'),
-          _buildSettingTile(
-            context,
-            title: 'Kelola Produk',
-            subtitle: 'Tambah, edit, atau hapus produk',
-            icon: Icons.inventory_2_outlined,
-            color: Colors.blue,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ProductsPage()),
-            ),
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        final role = (state is Authenticated) ? state.user.role : UserRole.kasir;
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(title: const Text('Pengaturan')),
+          body: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              if (role.canManageInventory || role.isAdmin) ...[
+                _buildSectionHeader('Manajemen Data'),
+                _buildSettingTile(
+                  context,
+                  title: 'Kelola Produk',
+                  subtitle: 'Tambah, edit, atau hapus produk',
+                  icon: Icons.inventory_2_outlined,
+                  color: Colors.blue,
+                  onTap:
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProductsPage()),
+                      ),
+                ),
+                _buildSettingTile(
+                  context,
+                  title: 'Kelola Kategori',
+                  subtitle: 'Atur kategori produk Anda',
+                  icon: Icons.category_outlined,
+                  color: Colors.orange,
+                  onTap:
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CategoriesPage()),
+                      ),
+                ),
+                _buildSettingTile(
+                  context,
+                  title: 'Kelola Pelanggan',
+                  subtitle: 'Daftar pelanggan dan loyalitas',
+                  icon: Icons.people_outline,
+                  color: Colors.teal,
+                  onTap:
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CustomersPage()),
+                      ),
+                ),
+                const SizedBox(height: 24),
+              ],
+              _buildSectionHeader('Konfigurasi Aplikasi'),
+              if (role.isAdmin || role.isOwner)
+                _buildSettingTile(
+                  context,
+                  title: 'Info Bisnis',
+                  subtitle: 'Nama toko, alamat, dan kontak',
+                  icon: Icons.storefront_outlined,
+                  color: Colors.indigo,
+                  onTap:
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const BusinessInfoPage()),
+                      ),
+                ),
+              _buildSettingTile(
+                context,
+                title: 'Pengaturan Printer',
+                subtitle: 'Sambungkan printer thermal Bluetooth/USB',
+                icon: Icons.print_outlined,
+                color: Colors.blueGrey,
+                onTap:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PrinterPage()),
+                    ),
+              ),
+              if (role.canManageUsers)
+                _buildSettingTile(
+                  context,
+                  title: 'User & Keamanan',
+                  subtitle: 'Atur akses staf dan password',
+                  icon: Icons.lock_outline,
+                  color: Colors.redAccent,
+                  onTap:
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const UsersManagementPage(),
+                        ),
+                      ),
+                ),
+              const SizedBox(height: 24),
+              _buildSectionHeader('Lainnya'),
+              _buildSettingTile(
+                context,
+                title: 'Tentang Aplikasi',
+                subtitle: 'Versi 1.0.0',
+                icon: Icons.info_outline,
+                color: AppColors.textSecondary,
+                onTap: () {},
+              ),
+              const SizedBox(height: 16),
+              _buildLogoutTile(context),
+            ],
           ),
-          _buildSettingTile(
-            context,
-            title: 'Kelola Kategori',
-            subtitle: 'Atur kategori produk Anda',
-            icon: Icons.category_outlined,
-            color: Colors.orange,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const CategoriesPage()),
-            ),
-          ),
-          _buildSettingTile(
-            context,
-            title: 'Kelola Pelanggan',
-            subtitle: 'Daftar pelanggan dan loyalitas',
-            icon: Icons.people_outline,
-            color: Colors.teal,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const CustomersPage()),
-            ),
-          ),
-          const SizedBox(height: 24),
-          _buildSectionHeader('Konfigurasi Aplikasi'),
-          _buildSettingTile(
-            context,
-            title: 'Info Bisnis',
-            subtitle: 'Nama toko, alamat, dan kontak',
-            icon: Icons.storefront_outlined,
-            color: Colors.indigo,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const BusinessInfoPage()),
-            ),
-          ),
-          _buildSettingTile(
-            context,
-            title: 'Pengaturan Printer',
-            subtitle: 'Sambungkan printer thermal Bluetooth/USB',
-            icon: Icons.print_outlined,
-            color: Colors.blueGrey,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const PrinterPage()),
-            ),
-          ),
-          _buildSettingTile(
-            context,
-            title: 'User & Keamanan',
-            subtitle: 'Atur akses staf dan password',
-            icon: Icons.lock_outline,
-            color: Colors.redAccent,
-            onTap: () {
-              // Navigate to User/Security management
-            },
-          ),
-          const SizedBox(height: 24),
-          _buildSectionHeader('Lainnya'),
-          _buildSettingTile(
-            context,
-            title: 'Tentang Aplikasi',
-            subtitle: 'Versi 1.0.0',
-            icon: Icons.info_outline,
-            color: AppColors.textSecondary,
-            onTap: () {},
-          ),
-          const SizedBox(height: 16),
-          _buildLogoutTile(context),
-        ],
-      ),
+        );
+      },
     );
   }
 

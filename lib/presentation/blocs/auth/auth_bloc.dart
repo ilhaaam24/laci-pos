@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/user_entity.dart';
 import '../../../domain/repositories/auth_repository.dart';
+import '../../../core/services/session_service.dart';
+import '../../../core/services/background_service.dart';
 
 // Events
 abstract class AuthEvent extends Equatable {
@@ -53,9 +55,13 @@ class AuthError extends AuthState {
 // BLoC
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository repository;
+  final SessionService sessionService;
   StreamSubscription<UserEntity?>? _authStateSubscription;
 
-  AuthBloc({required this.repository}) : super(AuthInitial()) {
+  AuthBloc({
+    required this.repository,
+    required this.sessionService,
+  }) : super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
     on<SignInRequested>(_onSignInRequested);
     on<GoogleSignInRequested>(_onGoogleSignInRequested);
@@ -71,8 +77,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final result = await repository.getCurrentUser();
     result.fold((error) => emit(Unauthenticated()), (user) {
       if (user != null) {
+        sessionService.setUser(user);
+        if (user.businessId != null) {
+          BackgroundService.scheduleDailySummary(user.businessId!);
+        }
         emit(Authenticated(user));
       } else {
+        sessionService.setUser(null);
         emit(Unauthenticated());
       }
     });
@@ -80,8 +91,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   void _onAuthStatusChanged(_AuthStatusChanged event, Emitter<AuthState> emit) {
     if (event.user != null) {
+      sessionService.setUser(event.user);
+      if (event.user!.businessId != null) {
+        BackgroundService.scheduleDailySummary(event.user!.businessId!);
+      }
       emit(Authenticated(event.user!));
     } else {
+      sessionService.setUser(null);
       emit(Unauthenticated());
     }
   }

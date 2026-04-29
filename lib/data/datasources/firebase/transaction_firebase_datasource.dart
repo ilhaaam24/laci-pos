@@ -7,6 +7,8 @@ import '../../models/stock_log_model.dart';
 import '../../../domain/entities/stock_log_entity.dart';
 import '../../../core/services/notification_service.dart';
 
+import '../../../core/services/session_service.dart';
+
 abstract class TransactionFirebaseDataSource {
   Future<String> createTransaction(TransactionModel transaction);
   Stream<List<TransactionModel>> getTransactions();
@@ -21,14 +23,18 @@ class TransactionFirebaseDataSourceImpl
     implements TransactionFirebaseDataSource {
   final f_store.FirebaseFirestore firestore;
   final NotificationService notificationService;
+  final SessionService sessionService;
 
   TransactionFirebaseDataSourceImpl({
     required this.firestore,
     required this.notificationService,
+    required this.sessionService,
   });
 
   f_store.CollectionReference get _collection =>
       firestore.collection(FirebaseCollections.transactions);
+
+  String get _businessId => sessionService.businessId ?? '';
 
   @override
   Future<String> createTransaction(TransactionModel transaction) async {
@@ -38,7 +44,9 @@ class TransactionFirebaseDataSourceImpl
 
       // Create transaction document
       final transactionRef = _collection.doc(transaction.id);
-      batch.set(transactionRef, transaction.toFirestore());
+      final data = transaction.toFirestore();
+      data['businessId'] = _businessId;
+      batch.set(transactionRef, data);
 
       // Create transaction items as subcollection
       for (var item in transaction.items) {
@@ -74,7 +82,8 @@ class TransactionFirebaseDataSourceImpl
         final logRef = firestore
             .collection(FirebaseCollections.stockLogs)
             .doc();
-        final stockLog = StockLogModel(
+        
+        final logData = StockLogModel(
           id: logRef.id,
           productId: item.productId,
           productName: item.productName,
@@ -84,8 +93,11 @@ class TransactionFirebaseDataSourceImpl
           newStock: newStock,
           reason: 'Transaksi ${transaction.transactionCode}',
           createdAt: DateTime.now(),
-        );
-        batch.set(logRef, stockLog.toFirestore());
+        ).toFirestore();
+        
+        logData['businessId'] = _businessId;
+        
+        batch.set(logRef, logData);
 
         // Check for low stock alert
         log('stok $newStock ${item.productName}');
@@ -108,6 +120,7 @@ class TransactionFirebaseDataSourceImpl
   @override
   Stream<List<TransactionModel>> getTransactions() {
     return _collection
+        .where('businessId', isEqualTo: _businessId)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .asyncMap((snapshot) async {
@@ -124,16 +137,16 @@ class TransactionFirebaseDataSourceImpl
 
   @override
   Future<TransactionModel> getTransactionById(String id) async {
-    try {
-      final doc = await _collection.doc(id).get();
-      if (!doc.exists) {
-        throw Exception('Transaction not found');
-      }
-      final items = await _getTransactionItems(id);
-      return TransactionModel.fromFirestore(doc, items);
-    } catch (e) {
-      throw Exception('Failed to fetch transaction: $e');
+    final doc = await _collection.doc(id).get();
+    if (!doc.exists) {
+      throw Exception('Transaction not found');
     }
+    final items = await _getTransactionItems(id);
+    final transaction = TransactionModel.fromFirestore(doc, items);
+    if (transaction.businessId != _businessId) {
+      throw Exception('Unauthorized access to transaction');
+    }
+    return transaction;
   }
 
   @override
@@ -142,6 +155,7 @@ class TransactionFirebaseDataSourceImpl
     DateTime endDate,
   ) {
     return _collection
+        .where('businessId', isEqualTo: _businessId)
         .where(
           'createdAt',
           isGreaterThanOrEqualTo: f_store.Timestamp.fromDate(startDate),

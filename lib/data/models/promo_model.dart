@@ -11,6 +11,7 @@ class PromoModel extends PromoEntity {
     super.isActive = true,
     super.startDate,
     super.endDate,
+    super.businessId,
   });
 
   factory PromoModel.fromFirestore(DocumentSnapshot doc) {
@@ -31,6 +32,7 @@ class PromoModel extends PromoEntity {
       endDate: data['endDate'] != null
           ? (data['endDate'] as Timestamp).toDate()
           : null,
+      businessId: data['businessId'],
     );
   }
 
@@ -43,6 +45,7 @@ class PromoModel extends PromoEntity {
       'isActive': isActive,
       'startDate': startDate != null ? Timestamp.fromDate(startDate!) : null,
       'endDate': endDate != null ? Timestamp.fromDate(endDate!) : null,
+      'businessId': businessId,
     };
   }
 
@@ -56,6 +59,7 @@ class PromoModel extends PromoEntity {
       isActive: entity.isActive,
       startDate: entity.startDate,
       endDate: entity.endDate,
+      businessId: entity.businessId,
     );
   }
 }

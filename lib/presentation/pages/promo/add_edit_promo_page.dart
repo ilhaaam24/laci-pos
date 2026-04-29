@@ -169,8 +169,10 @@ class _AddEditPromoPageState extends State<AddEditPromoPage> {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               validator: (v) {
                 if (v == null || v.isEmpty) return 'Wajib diisi';
-                if (_selectedType == PromoType.percentage && int.parse(v) > 100)
+                if (_selectedType == PromoType.percentage &&
+                    int.parse(v) > 100) {
                   return 'Maksimal 100%';
+                }
                 return null;
               },
             ),

@@ -9,14 +9,16 @@ void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     try {
       await Firebase.initializeApp();
+      final businessId = inputData?['businessId'];
 
-      if (task == "dailySalesSummary") {
+      if (task == "dailySalesSummary" && businessId != null) {
         final now = DateTime.now();
         final startOfDay = DateTime(now.year, now.month, now.day);
         final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
         final querySnapshot = await FirebaseFirestore.instance
             .collection(FirebaseCollections.transactions)
+            .where('businessId', isEqualTo: businessId)
             .where(
               'createdAt',
               isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
@@ -53,11 +55,12 @@ class BackgroundService {
     await Workmanager().initialize(callbackDispatcher);
   }
 
-  static Future<void> scheduleDailySummary() async {
+  static Future<void> scheduleDailySummary(String businessId) async {
     await Workmanager().registerPeriodicTask(
       "dailySalesSummaryTask",
       "dailySalesSummary",
       frequency: const Duration(hours: 24),
+      inputData: {'businessId': businessId},
       initialDelay: _calculateInitialDelay(),
       constraints: Constraints(networkType: NetworkType.connected),
     );

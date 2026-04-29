@@ -1,22 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../domain/entities/customer_entity.dart';
 
-class CustomerModel {
-  final String id;
-  final String name;
+class CustomerModel extends Customer {
   final String? email;
-  final String? phone;
-  final String? address;
-  final DateTime createdAt;
-  final DateTime updatedAt;
 
-  CustomerModel({
-    required this.id,
-    required this.name,
+  const CustomerModel({
+    required super.id,
+    required super.name,
     this.email,
-    this.phone,
-    this.address,
-    required this.createdAt,
-    required this.updatedAt,
+    super.phone,
+    super.address,
+    required super.createdAt,
+    required super.updatedAt,
+    super.businessId,
   });
 
   factory CustomerModel.fromFirestore(DocumentSnapshot doc) {
@@ -29,6 +25,7 @@ class CustomerModel {
       address: data['address'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      businessId: data['businessId'],
     );
   }
 
@@ -40,6 +37,19 @@ class CustomerModel {
       'address': address,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'businessId': businessId,
     };
+  }
+
+  factory CustomerModel.fromEntity(Customer entity) {
+    return CustomerModel(
+      id: entity.id,
+      name: entity.name,
+      phone: entity.phone,
+      address: entity.address,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+      businessId: entity.businessId,
+    );
   }
 }

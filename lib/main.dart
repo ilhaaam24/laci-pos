@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:laci/core/themes/theme.dart';
 import 'package:laci/core/services/notification_service.dart';
 import 'package:laci/core/services/background_service.dart';
+import 'package:laci/presentation/blocs/users/users_bloc.dart';
 
 import 'core/di/injection.dart';
 
@@ -27,7 +28,9 @@ void main() async {
   await Firebase.initializeApp();
 
   // Initialize Google Sign In
-  await GoogleSignIn.instance.initialize();
+  await GoogleSignIn.instance.initialize(
+    serverClientId: '747380789752-gpu0fjfv3k45a5o1aktjqs4b244j3mm4.apps.googleusercontent.com',
+  );
 
   // Initialize Dependencies
   await initializeDependencies();
@@ -37,7 +40,6 @@ void main() async {
 
   // Initialize Background Service
   await BackgroundService.init();
-  await BackgroundService.scheduleDailySummary();
 
   runApp(const MyApp());
 }
@@ -67,6 +69,7 @@ class MyApp extends StatelessWidget {
               getIt<ReportBloc>()..add(LoadDailyReport(DateTime.now())),
         ),
         BlocProvider(create: (_) => getIt<PromoBloc>()..add(LoadPromos())),
+        BlocProvider(create: (_) => getIt<UsersBloc>()..add(LoadUsers())),
       ],
       child: MaterialApp(
         title: 'Laci POS',

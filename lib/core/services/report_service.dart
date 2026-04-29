@@ -65,7 +65,6 @@ class ReportService {
     int totalTransactions = snapshot.docs.length;
     int totalItems = 0;
     Map<String, Map<String, dynamic>> productSales = {};
-    Map<String, double> categorySales = {};
 
     for (var doc in snapshot.docs) {
       final data = doc.data();

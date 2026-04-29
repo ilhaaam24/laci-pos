@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../core/constants/firebase_collections.dart';
-import '../../models/category_model.dart';
+import 'package:laci/core/constants/firebase_collections.dart';
+import 'package:laci/data/models/category_model.dart';
+
+import '../../../core/services/session_service.dart';
 
 abstract class CategoryFirebaseDataSource {
   Stream<List<CategoryModel>> getCategories();
@@ -12,40 +14,50 @@ abstract class CategoryFirebaseDataSource {
 
 class CategoryFirebaseDataSourceImpl implements CategoryFirebaseDataSource {
   final FirebaseFirestore firestore;
+  final SessionService sessionService;
 
-  CategoryFirebaseDataSourceImpl({required this.firestore});
+  CategoryFirebaseDataSourceImpl({
+    required this.firestore,
+    required this.sessionService,
+  });
 
   CollectionReference get _collection =>
       firestore.collection(FirebaseCollections.categories);
 
+  String get _businessId => sessionService.businessId ?? '';
+
   @override
   Stream<List<CategoryModel>> getCategories() {
-    return _collection.orderBy('createdAt', descending: true).snapshots().map((
-      snapshot,
-    ) {
-      return snapshot.docs
-          .map((doc) => CategoryModel.fromFirestore(doc))
-          .toList();
-    });
+    return _collection
+        .where('businessId', isEqualTo: _businessId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map((doc) => CategoryModel.fromFirestore(doc))
+              .toList();
+        });
   }
 
   @override
   Future<CategoryModel> getCategoryById(String id) async {
-    try {
-      final doc = await _collection.doc(id).get();
-      if (!doc.exists) {
-        throw Exception('Category not found');
-      }
-      return CategoryModel.fromFirestore(doc);
-    } catch (e) {
-      throw Exception('Failed to fetch category: $e');
+    final doc = await _collection.doc(id).get();
+    if (!doc.exists) {
+      throw Exception('Category not found');
     }
+    final category = CategoryModel.fromFirestore(doc);
+    if (category.businessId != _businessId) {
+      throw Exception('Unauthorized access to category');
+    }
+    return category;
   }
 
   @override
   Future<String> createCategory(CategoryModel category) async {
     try {
-      final docRef = await _collection.add(category.toFirestore());
+      final data = category.toFirestore();
+      data['businessId'] = _businessId;
+      final docRef = await _collection.add(data);
       return docRef.id;
     } catch (e) {
       throw Exception('Failed to create category: $e');
