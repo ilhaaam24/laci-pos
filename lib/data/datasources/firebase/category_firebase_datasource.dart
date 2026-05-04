@@ -54,6 +54,9 @@ class CategoryFirebaseDataSourceImpl implements CategoryFirebaseDataSource {
 
   @override
   Future<String> createCategory(CategoryModel category) async {
+    if (_businessId.isEmpty) {
+      throw Exception('Business ID is missing. Please re-login.');
+    }
     try {
       final data = category.toFirestore();
       data['businessId'] = _businessId;
@@ -66,8 +69,13 @@ class CategoryFirebaseDataSourceImpl implements CategoryFirebaseDataSource {
 
   @override
   Future<void> updateCategory(CategoryModel category) async {
+    if (_businessId.isEmpty) {
+      throw Exception('Business ID is missing. Please re-login.');
+    }
     try {
-      await _collection.doc(category.id).update(category.toFirestore());
+      final data = category.toFirestore();
+      data['businessId'] = _businessId;
+      await _collection.doc(category.id).update(data);
     } catch (e) {
       throw Exception('Failed to update category: $e');
     }

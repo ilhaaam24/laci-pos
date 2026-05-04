@@ -1,9 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
+import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -44,7 +46,7 @@ class _LoginPageState extends State<LoginPage> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.purple.shade50.withValues(alpha: 0.5),
+                  AppColors.primaryLight.withValues(alpha: 0.5),
                   AppColors.background,
                 ],
               ),
@@ -62,7 +64,7 @@ class _LoginPageState extends State<LoginPage> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.purple.withValues(alpha: 0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -71,7 +73,7 @@ class _LoginPageState extends State<LoginPage> {
                     child: const Icon(
                       Icons.storefront_rounded,
                       size: 64,
-                      color: Colors.purple,
+                      color: AppColors.primary,
                     ),
                   ).animate().scale(duration: 600.ms, curve: Curves.bounceIn),
                 ),
@@ -120,7 +122,7 @@ class _LoginPageState extends State<LoginPage> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: const BorderSide(
-                              color: Colors.purple,
+                              color: AppColors.primary,
                               width: 1.5,
                             ),
                           ),
@@ -160,7 +162,7 @@ class _LoginPageState extends State<LoginPage> {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: const BorderSide(
-                              color: Colors.purple,
+                              color: AppColors.primary,
                               width: 1.5,
                             ),
                           ),
@@ -191,14 +193,14 @@ class _LoginPageState extends State<LoginPage> {
                     return ElevatedButton(
                       onPressed: isLoading ? null : _handleEmailLogin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple.shade700,
+                        backgroundColor: AppColors.primaryDark,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
                         elevation: 4,
-                        shadowColor: Colors.purple.withValues(alpha: 0.4),
+                        shadowColor: AppColors.primary.withValues(alpha: 0.4),
                       ),
                       child: isLoading
                           ? const SizedBox(
@@ -258,9 +260,14 @@ class _LoginPageState extends State<LoginPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.network(
-                        'https://www.gstatic.com/marketing-cms/assets/images/d5/dc/cfe9ce8b4425b410b49b7f2dd3f3/g.webp=s96-fcrop64=1,00000000ffffffff-rw',
+                      // Image.network(
+                      //   'https://www.gstatic.com/marketing-cms/assets/images/d5/dc/cfe9ce8b4425b410b49b7f2dd3f3/g.webp=s96-fcrop64=1,00000000ffffffff-rw',
+                      //   height: 24,
+                      // ),
+                      Image.asset(
+                        'assets/images/google.png',
                         height: 24,
+                        width: 24,
                       ),
                       const SizedBox(width: 12),
                       const Text(
@@ -281,6 +288,7 @@ class _LoginPageState extends State<LoginPage> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 32),
                   child: Row(
+                    spacing: 4,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
@@ -288,12 +296,17 @@ class _LoginPageState extends State<LoginPage> {
                         style: TextStyle(color: Colors.grey.shade600),
                       ),
                       GestureDetector(
-                        onTap: () {},
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const RegisterPage(),
+                          ),
+                        ),
                         child: const Text(
                           'Daftar Sekarang',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.purple,
+                            color: AppColors.primary,
                           ),
                         ),
                       ),

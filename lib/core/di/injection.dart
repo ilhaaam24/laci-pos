@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:laci/core/services/cloudinary_service.dart';
 
 // Data Sources
 import '../../data/datasources/firebase/product_firebase_datasource.dart';
@@ -67,16 +68,18 @@ Future<void> initializeDependencies() async {
     () => ImageUploadService(getIt()),
   );
 
+  getIt.registerLazySingleton<CloudinaryService>(() => CloudinaryService());
+
   getIt.registerLazySingleton<ReportService>(() => ReportService(getIt()));
 
   getIt.registerLazySingleton<ReceiptService>(() => ReceiptService());
 
   getIt.registerLazySingleton<TransactionService>(
-    () => TransactionService(getIt(), getIt()),
+    () => TransactionService(getIt(), getIt(), getIt()),
   );
 
   getIt.registerLazySingleton<StockService>(
-    () => StockService(getIt(), getIt()),
+    () => StockService(getIt(), getIt(), getIt()),
   );
 
   getIt.registerLazySingleton<NotificationService>(() => NotificationService());
@@ -182,7 +185,9 @@ Future<void> initializeDependencies() async {
     () => AuthBloc(repository: getIt(), sessionService: getIt()),
   );
 
-  getIt.registerFactory(() => ReportBloc(reportService: getIt()));
+  getIt.registerFactory(
+    () => ReportBloc(reportService: getIt(), sessionService: getIt()),
+  );
 
   getIt.registerFactory(() => PromoBloc(repository: getIt()));
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:laci/core/services/session_service.dart';
 import 'package:laci/presentation/blocs/customer/customer_bloc.dart';
 import 'package:laci/presentation/pages/promo/promo_page.dart';
 import '../../../domain/entities/customer_entity.dart';
@@ -134,6 +135,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
       final taxAmount = cartState.totalAmount * (_taxPercent / 100);
       final grandTotal = cartState.totalAmount + taxAmount - _discountAmount;
 
+      final sessionService = getIt<SessionService>();
+      final businessId = sessionService.businessId;
+      final userId = sessionService.currentUser?.id ?? 'unknown';
+
       final items = cartState.items.map((cartItem) {
         return TransactionItem(
           id: const Uuid().v4(),
@@ -144,6 +149,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           discount: 0,
           subtotal: cartItem.price * cartItem.quantity,
           costPrice: cartItem.costPrice,
+          businessId: businessId,
         );
       }).toList();
 
@@ -164,7 +170,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
         createdAt: now,
         completedAt: now,
         items: items,
-        createdBy: 'admin',
+        createdBy: userId,
+        businessId: businessId,
       );
 
       // Process transaction with stock update

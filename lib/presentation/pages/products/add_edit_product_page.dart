@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:laci/core/services/cloudinary_service.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../domain/entities/product_entity.dart';
@@ -110,6 +111,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
 
   Future<void> _handleImageUpload() async {
     final uploadService = getIt<ImageUploadService>();
+    final cloudinaryService = getIt<CloudinaryService>();
 
     showModalBottomSheet(
       context: context,
@@ -125,7 +127,11 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
               title: const Text('Kamera'),
               onTap: () async {
                 Navigator.pop(context);
-                await _pickAndUpload(uploadService, ImageSource.camera);
+                await _pickAndUpload(
+                  uploadService,
+                  cloudinaryService,
+                  ImageSource.camera,
+                );
               },
             ),
             ListTile(
@@ -133,7 +139,11 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
               title: const Text('Galeri'),
               onTap: () async {
                 Navigator.pop(context);
-                await _pickAndUpload(uploadService, ImageSource.gallery);
+                await _pickAndUpload(
+                  uploadService,
+                  cloudinaryService,
+                  ImageSource.gallery,
+                );
               },
             ),
             if (_imageUrl != null)
@@ -159,17 +169,17 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
 
   Future<void> _pickAndUpload(
     ImageUploadService uploadService,
+    CloudinaryService cloudinaryService,
     ImageSource source,
   ) async {
     setState(() => _isUploading = true);
     try {
-      final url = await uploadService.pickAndUploadImage(
-        folder: 'products',
-        source: source,
-      );
-      if (url != null) {
+      final url = await cloudinaryService.uploadImage(source);
+      if (url.isNotEmpty) {
         setState(() => _imageUrl = url);
         if (mounted) AppToast.showSuccess(context, 'Foto berhasil diunggah');
+      } else {
+        if (mounted) AppToast.showError(context, 'Gagal unggah foto');
       }
     } catch (e) {
       if (mounted) AppToast.showError(context, 'Gagal unggah foto: $e');

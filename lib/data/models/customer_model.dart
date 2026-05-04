@@ -23,8 +23,12 @@ class CustomerModel extends Customer {
       email: data['email'],
       phone: data['phone'],
       address: data['address'],
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+      updatedAt: data['updatedAt'] != null
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : DateTime.now(),
       businessId: data['businessId'],
     );
   }

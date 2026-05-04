@@ -11,6 +11,11 @@ abstract class AuthFirebaseDataSource {
 
   Future<UserCredential> signInWithGoogle();
 
+  Future<UserCredential> signUpWithEmail({
+    required String email,
+    required String password,
+  });
+
   Future<void> signOut();
 
   User? getCurrentUser();
@@ -34,6 +39,17 @@ class AuthFirebaseDataSourceImpl implements AuthFirebaseDataSource {
     required String password,
   }) async {
     return await _firebaseAuth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+  }
+
+  @override
+  Future<UserCredential> signUpWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    return await _firebaseAuth.createUserWithEmailAndPassword(
       email: email,
       password: password,
     );

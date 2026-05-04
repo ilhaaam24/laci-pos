@@ -11,6 +11,7 @@ class TransactionItemModel extends TransactionItem {
     required super.costPrice,
     super.discount = 0,
     required super.subtotal,
+    super.businessId,
   });
 
   factory TransactionItemModel.fromMap(Map<String, dynamic> map, String id) {
@@ -23,6 +24,7 @@ class TransactionItemModel extends TransactionItem {
       costPrice: (map['costPrice'] ?? 0).toDouble(),
       discount: (map['discount'] ?? 0).toDouble(),
       subtotal: (map['subtotal'] ?? 0).toDouble(),
+      businessId: map['businessId'],
     );
   }
 
@@ -36,6 +38,7 @@ class TransactionItemModel extends TransactionItem {
       costPrice: entity.costPrice,
       discount: entity.discount,
       subtotal: entity.subtotal,
+      businessId: entity.businessId,
     );
   }
 
@@ -48,7 +51,32 @@ class TransactionItemModel extends TransactionItem {
       'costPrice': costPrice,
       'discount': discount,
       'subtotal': subtotal,
+      'businessId': businessId,
     };
+  }
+
+  TransactionItemModel copyWith({
+    String? id,
+    String? productId,
+    String? productName,
+    int? quantity,
+    double? price,
+    double? costPrice,
+    double? discount,
+    double? subtotal,
+    String? businessId,
+  }) {
+    return TransactionItemModel(
+      id: id ?? this.id,
+      productId: productId ?? this.productId,
+      productName: productName ?? this.productName,
+      quantity: quantity ?? this.quantity,
+      price: price ?? this.price,
+      costPrice: costPrice ?? this.costPrice,
+      discount: discount ?? this.discount,
+      subtotal: subtotal ?? this.subtotal,
+      businessId: businessId ?? this.businessId,
+    );
   }
 
   TransactionItem toEntity() {
@@ -61,6 +89,7 @@ class TransactionItemModel extends TransactionItem {
       costPrice: costPrice,
       discount: discount,
       subtotal: subtotal,
+      businessId: businessId,
     );
   }
 }
@@ -114,7 +143,9 @@ class TransactionModel extends TransactionEntity {
       amountPaid: (data['amountPaid'] ?? 0).toDouble(),
       changeAmount: (data['changeAmount'] ?? 0).toDouble(),
       notes: data['notes'],
-      createdAt: (data['createdAt'] as f_store.Timestamp).toDate(),
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] as f_store.Timestamp).toDate()
+          : DateTime.now(),
       completedAt: data['completedAt'] != null
           ? (data['completedAt'] as f_store.Timestamp).toDate()
           : null,
@@ -170,6 +201,50 @@ class TransactionModel extends TransactionEntity {
       'createdBy': createdBy,
       'businessId': businessId,
     };
+  }
+
+  TransactionModel copyWith({
+    String? id,
+    String? transactionCode,
+    String? customerId,
+    String? customerName,
+    double? subtotal,
+    double? taxAmount,
+    double? discountAmount,
+    double? totalAmount,
+    String? paymentMethod,
+    PaymentStatus? paymentStatus,
+    TransactionStatus? status,
+    double? amountPaid,
+    double? changeAmount,
+    String? notes,
+    DateTime? createdAt,
+    DateTime? completedAt,
+    List<TransactionItem>? items,
+    String? createdBy,
+    String? businessId,
+  }) {
+    return TransactionModel(
+      id: id ?? this.id,
+      transactionCode: transactionCode ?? this.transactionCode,
+      customerId: customerId ?? this.customerId,
+      customerName: customerName ?? this.customerName,
+      subtotal: subtotal ?? this.subtotal,
+      taxAmount: taxAmount ?? this.taxAmount,
+      discountAmount: discountAmount ?? this.discountAmount,
+      totalAmount: totalAmount ?? this.totalAmount,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      status: status ?? this.status,
+      amountPaid: amountPaid ?? this.amountPaid,
+      changeAmount: changeAmount ?? this.changeAmount,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      completedAt: completedAt ?? this.completedAt,
+      items: items ?? this.items,
+      createdBy: createdBy ?? this.createdBy,
+      businessId: businessId ?? this.businessId,
+    );
   }
 
   TransactionEntity toEntity() {

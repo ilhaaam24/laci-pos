@@ -2,7 +2,7 @@ import 'package:dartz/dartz.dart';
 import '../../domain/entities/customer_entity.dart';
 import '../../domain/repositories/customer_repository.dart';
 import '../datasources/firebase/customer_firebase_datasource.dart';
-import '../models/customer_mode.dart';
+import '../models/customer_model.dart';
 
 class CustomerRepositoryImpl implements CustomerRepository {
   final CustomerFirebaseDataSource dataSource;

@@ -4,11 +4,16 @@ import '../../data/models/stock_log_model.dart';
 import '../../domain/entities/stock_log_entity.dart';
 import './notification_service.dart';
 
+import './session_service.dart';
+
 class StockService {
   final FirebaseFirestore firestore;
   final NotificationService notificationService;
+  final SessionService sessionService;
 
-  StockService(this.firestore, this.notificationService);
+  StockService(this.firestore, this.notificationService, this.sessionService);
+
+  String get _businessId => sessionService.businessId ?? '';
 
   /// Records a stock movement and updates the product stock
   Future<void> updateStock({
@@ -50,6 +55,7 @@ class StockService {
       newStock: newStock,
       reason: reason,
       createdAt: DateTime.now(),
+      businessId: _businessId,
     );
 
     batch.set(logRef, log.toFirestore());
@@ -69,6 +75,7 @@ class StockService {
   Stream<List<StockLog>> getStockLogs(String productId) {
     return firestore
         .collection(FirebaseCollections.stockLogs)
+        .where('businessId', isEqualTo: _businessId)
         .where('productId', isEqualTo: productId)
         .orderBy('createdAt', descending: true)
         .snapshots()
@@ -83,6 +90,7 @@ class StockService {
   Stream<List<StockLog>> getAllStockLogs({DateTime? start, DateTime? end}) {
     Query query = firestore
         .collection(FirebaseCollections.stockLogs)
+        .where('businessId', isEqualTo: _businessId)
         .orderBy('createdAt', descending: true);
 
     if (start != null) {

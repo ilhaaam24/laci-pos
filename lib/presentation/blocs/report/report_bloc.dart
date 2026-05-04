@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../../core/services/report_service.dart';
+import '../../../../core/services/session_service.dart';
 
 // Events
 abstract class ReportEvent extends Equatable {
@@ -64,8 +65,12 @@ class ReportError extends ReportState {
 // BLoC
 class ReportBloc extends Bloc<ReportEvent, ReportState> {
   final ReportService reportService;
+  final SessionService sessionService;
 
-  ReportBloc({required this.reportService}) : super(ReportInitial()) {
+  ReportBloc({
+    required this.reportService,
+    required this.sessionService,
+  }) : super(ReportInitial()) {
     on<LoadDailyReport>(_onLoadDailyReport);
     on<LoadWeeklyReport>(_onLoadWeeklyReport);
     on<LoadMonthlyReport>(_onLoadMonthlyReport);
@@ -78,7 +83,8 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
   ) async {
     emit(ReportLoading());
     try {
-      final data = await reportService.getDailyReport(event.date);
+      final businessId = sessionService.businessId ?? '';
+      final data = await reportService.getDailyReport(businessId, event.date);
       emit(ReportLoaded(data));
     } catch (e) {
       emit(ReportError(e.toString()));
@@ -91,7 +97,8 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
   ) async {
     emit(ReportLoading());
     try {
-      final data = await reportService.getWeeklyReport(event.date);
+      final businessId = sessionService.businessId ?? '';
+      final data = await reportService.getWeeklyReport(businessId, event.date);
       emit(ReportLoaded(data));
     } catch (e) {
       emit(ReportError(e.toString()));
@@ -104,7 +111,8 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
   ) async {
     emit(ReportLoading());
     try {
-      final data = await reportService.getMonthlyReport(event.date);
+      final businessId = sessionService.businessId ?? '';
+      final data = await reportService.getMonthlyReport(businessId, event.date);
       emit(ReportLoaded(data));
     } catch (e) {
       emit(ReportError(e.toString()));
@@ -117,9 +125,11 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
   ) async {
     emit(ReportLoading());
     try {
+      final businessId = sessionService.businessId ?? '';
       final data = await reportService.getCustomRangeReport(
-        event.startDate,
-        event.endDate,
+        businessId: businessId,
+        startDate: event.startDate,
+        endDate: event.endDate,
       );
       emit(ReportLoaded(data));
     } catch (e) {

@@ -52,10 +52,10 @@ class _AddEditCategoryPageState extends State<AddEditCategoryPage> {
 
     if (widget.category == null) {
       context.read<CategoryBloc>().add(CreateCategory(category));
-      AppToast.showSuccess(context, 'Kategori berhasil dibuat');
+      AppToast.showSuccess(context, 'Kategori berhasil ditambahkan');
     } else {
-      AppToast.showSuccess(context, 'Kategori berhasil diubah');
       context.read<CategoryBloc>().add(UpdateCategory(category));
+      AppToast.showSuccess(context, 'Kategori berhasil diupdate');
     }
 
     Navigator.pop(context);

@@ -31,8 +31,12 @@ class ProductModel extends Product {
       stockThreshold: data['stockThreshold'] ?? 5,
       imageUrl: data['imageUrl'],
       sku: data['sku'],
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+      updatedAt: data['updatedAt'] != null
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : DateTime.now(),
       businessId: data['businessId'],
     );
   }

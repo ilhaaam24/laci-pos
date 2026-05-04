@@ -82,6 +82,7 @@ class TransactionItem extends Equatable {
   final double costPrice;
   final double discount;
   final double subtotal;
+  final String? businessId;
 
   const TransactionItem({
     required this.id,
@@ -92,6 +93,7 @@ class TransactionItem extends Equatable {
     required this.costPrice,
     this.discount = 0,
     required this.subtotal,
+    this.businessId,
   });
 
   @override
@@ -104,5 +106,6 @@ class TransactionItem extends Equatable {
     costPrice,
     discount,
     subtotal,
+    businessId,
   ];
 }

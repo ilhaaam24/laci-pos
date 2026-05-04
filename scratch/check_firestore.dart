@@ -7,26 +7,12 @@ void main() async {
   await Firebase.initializeApp();
 
   final firestore = FirebaseFirestore.instance;
+  final snapshot = await firestore.collection('transactions').limit(5).get();
 
-  try {
-    final batch = firestore.batch();
-
-    // Ambil dokumen dari koleksi 'products'
-    final productsSnapshot = await firestore.collection('products').get();
-
-    for (var productDoc in productsSnapshot.docs) {
-      final currentStock = productDoc['stock'];
-
-      if (currentStock is! int || currentStock < 0) {
-        batch.update(productDoc.reference, {
-          'stock': 0,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      }
-    }
-
-    await batch.commit();
-  } catch (e) {
-    print(e);
+  print('Found ${snapshot.docs.length} transactions');
+  for (var doc in snapshot.docs) {
+    print(
+      'ID: ${doc.id}, businessId: ${doc.data()['businessId']}, totalAmount: ${doc.data()['totalAmount']}',
+    );
   }
 }

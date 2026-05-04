@@ -398,6 +398,10 @@ class _ReportPageState extends State<ReportPage> {
   Widget _buildProfitCard(NumberFormat formatter) {
     return BlocBuilder<ReportBloc, ReportState>(
       builder: (context, state) {
+        if (state is ReportLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
         double profit = 0;
         if (state is ReportLoaded) {
           profit = (state.reportData['totalProfit'] ?? 0).toDouble();
@@ -442,7 +446,7 @@ class _ReportPageState extends State<ReportPage> {
                         Icon(Icons.auto_awesome, color: Colors.white, size: 14),
                         SizedBox(width: 4),
                         Text(
-                          'Peak Performance',
+                          'Insights',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -477,10 +481,10 @@ class _ReportPageState extends State<ReportPage> {
               const SizedBox(height: 12),
               const Row(
                 children: [
-                  Icon(Icons.arrow_upward, color: Colors.white, size: 16),
+                  Icon(Icons.query_stats, color: Colors.white, size: 16),
                   SizedBox(width: 4),
                   Text(
-                    '+12.5% from last month',
+                    'Real-time data for your business',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -537,14 +541,22 @@ class _ReportPageState extends State<ReportPage> {
             height: 150,
             child: BlocBuilder<ReportBloc, ReportState>(
               builder: (context, state) {
+                if (state is ReportLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (state is ReportError) {
+                  return Center(child: Text(state.message, style: const TextStyle(fontSize: 10, color: AppColors.error)));
+                }
+
                 Map<String, double> data = {
-                  'Mon': 20,
-                  'Tue': 45,
-                  'Wed': 30,
-                  'Thu': 50,
-                  'Fri': 40,
-                  'Sat': 80,
-                  'Sun': 60,
+                  'Mon': 0,
+                  'Tue': 0,
+                  'Wed': 0,
+                  'Thu': 0,
+                  'Fri': 0,
+                  'Sat': 0,
+                  'Sun': 0,
                 };
 
                 if (state is ReportLoaded &&
@@ -875,10 +887,21 @@ class _ReportPageState extends State<ReportPage> {
   Widget _buildTopSellingSection(NumberFormat formatter) {
     return BlocBuilder<ReportBloc, ReportState>(
       builder: (context, state) {
+        if (state is ReportLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
         if (state is ReportLoaded) {
           final bestSellers =
               state.reportData['bestSellingProducts'] as List<dynamic>? ?? [];
-          if (bestSellers.isEmpty) return const SizedBox();
+          if (bestSellers.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24.0),
+                child: Text('Belum ada data penjualan'),
+              ),
+            );
+          }
 
           return Column(
             children: [

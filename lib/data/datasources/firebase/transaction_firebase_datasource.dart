@@ -38,6 +38,9 @@ class TransactionFirebaseDataSourceImpl
 
   @override
   Future<String> createTransaction(TransactionModel transaction) async {
+    if (_businessId.isEmpty) {
+      throw Exception('Business ID is missing. Please re-login.');
+    }
     try {
       // Start a batch write
       final batch = firestore.batch();
@@ -55,7 +58,9 @@ class TransactionFirebaseDataSourceImpl
             .doc();
 
         // Convert TransactionItem to TransactionItemModel to get toMap()
-        final itemModel = TransactionItemModel.fromEntity(item);
+        final itemModel = TransactionItemModel.fromEntity(item).copyWith(
+          businessId: _businessId,
+        );
         batch.set(itemRef, itemModel.toMap());
 
         // Update product stock with logging
@@ -93,9 +98,8 @@ class TransactionFirebaseDataSourceImpl
           newStock: newStock,
           reason: 'Transaksi ${transaction.transactionCode}',
           createdAt: DateTime.now(),
+          businessId: _businessId,
         ).toFirestore();
-        
-        logData['businessId'] = _businessId;
         
         batch.set(logRef, logData);
 

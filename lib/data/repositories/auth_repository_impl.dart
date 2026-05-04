@@ -53,6 +53,29 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<String, UserEntity>> signUpWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final credential = await dataSource.signUpWithEmail(
+        email: email,
+        password: password,
+      );
+      if (credential.user != null) {
+        final userEntity = await _getOrUpdateProfile(credential.user!);
+        return Right(userEntity);
+      } else {
+        return const Left('Gagal mendaftarkan user');
+      }
+    } on FirebaseAuthException catch (e) {
+      return Left(e.message ?? 'Terjadi kesalahan saat pendaftaran');
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
   Future<Either<String, void>> signOut() async {
     try {
       await dataSource.signOut();

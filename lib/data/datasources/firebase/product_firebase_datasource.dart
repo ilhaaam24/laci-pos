@@ -58,6 +58,9 @@ class ProductFirebaseDataSourceImpl implements ProductFirebaseDataSource {
 
   @override
   Future<String> createProduct(ProductModel product) async {
+    if (_businessId.isEmpty) {
+      throw Exception('Business ID is missing. Please re-login.');
+    }
     try {
       final batch = firestore.batch();
       final docRef = _collection.doc(product.id);
@@ -82,6 +85,7 @@ class ProductFirebaseDataSourceImpl implements ProductFirebaseDataSource {
           newStock: product.stock,
           reason: 'Stok awal produk',
           createdAt: DateTime.now(),
+          businessId: _businessId,
         );
         batch.set(logRef, log.toFirestore());
       }
@@ -120,12 +124,15 @@ class ProductFirebaseDataSourceImpl implements ProductFirebaseDataSource {
             newStock: product.stock,
             reason: 'Perubahan manual melalui edit produk',
             createdAt: DateTime.now(),
+            businessId: _businessId,
           );
           batch.set(logRef, log.toFirestore());
         }
       }
 
-      batch.update(docRef, product.toFirestore());
+      final data = product.toFirestore();
+      data['businessId'] = _businessId;
+      batch.update(docRef, data);
       await batch.commit();
     } catch (e) {
       throw Exception('Failed to update product: $e');

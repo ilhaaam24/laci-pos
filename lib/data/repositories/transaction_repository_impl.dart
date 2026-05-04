@@ -14,25 +14,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
     TransactionEntity transaction,
   ) async {
     try {
-      final model = TransactionModel(
-        id: transaction.id,
-        transactionCode: transaction.transactionCode,
-        customerId: transaction.customerId,
-        customerName: transaction.customerName,
-        totalAmount: transaction.totalAmount,
-        paymentMethod: transaction.paymentMethod,
-        status: transaction.status,
-        createdAt: transaction.createdAt,
-        items: transaction.items,
-        subtotal: transaction.subtotal,
-        taxAmount: transaction.taxAmount,
-        discountAmount: transaction.discountAmount,
-        amountPaid: transaction.amountPaid,
-        changeAmount: transaction.changeAmount,
-        createdBy: transaction.createdBy,
-        completedAt: transaction.completedAt,
-        paymentStatus: transaction.paymentStatus,
-      );
+      final model = TransactionModel.fromEntity(transaction);
       final id = await dataSource.createTransaction(model);
       return Right(id);
     } catch (e) {

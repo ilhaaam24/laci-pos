@@ -39,6 +39,9 @@ class PromoFirebaseDataSourceImpl implements PromoFirebaseDataSource {
 
   @override
   Future<String> createPromo(PromoModel promo) async {
+    if (_businessId.isEmpty) {
+      throw Exception('Business ID is missing. Please re-login.');
+    }
     try {
       final data = promo.toFirestore();
       data['businessId'] = _businessId;
@@ -51,8 +54,13 @@ class PromoFirebaseDataSourceImpl implements PromoFirebaseDataSource {
 
   @override
   Future<void> updatePromo(PromoModel promo) async {
+    if (_businessId.isEmpty) {
+      throw Exception('Business ID is missing. Please re-login.');
+    }
     try {
-      await _collection.doc(promo.id).update(promo.toFirestore());
+      final data = promo.toFirestore();
+      data['businessId'] = _businessId;
+      await _collection.doc(promo.id).update(data);
     } catch (e) {
       throw Exception('Failed to update promo: $e');
     }

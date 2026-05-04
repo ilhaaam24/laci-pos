@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:laci/core/constants/firebase_collections.dart';
-import 'package:laci/data/models/customer_mode.dart';
+import 'package:laci/data/models/customer_model.dart';
 
 import '../../../core/services/session_service.dart';
 
@@ -52,6 +52,9 @@ class CustomerFirebaseDataSourceImpl implements CustomerFirebaseDataSource {
 
   @override
   Future<String> createCustomer(CustomerModel customer) async {
+    if (_businessId.isEmpty) {
+      throw Exception('Business ID is missing. Please re-login.');
+    }
     final data = customer.toFirestore();
     data['businessId'] = _businessId;
     final docRef = await _collection.add(data);
@@ -60,7 +63,12 @@ class CustomerFirebaseDataSourceImpl implements CustomerFirebaseDataSource {
 
   @override
   Future<void> updateCustomer(CustomerModel customer) async {
-    await _collection.doc(customer.id).update(customer.toFirestore());
+    if (_businessId.isEmpty) {
+      throw Exception('Business ID is missing. Please re-login.');
+    }
+    final data = customer.toFirestore();
+    data['businessId'] = _businessId;
+    await _collection.doc(customer.id).update(data);
   }
 
   @override

@@ -104,6 +104,12 @@ class UsersManagementPage extends StatelessWidget {
           ),
           actions: [
             TextButton(
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
+              ),
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Batal'),
             ),

@@ -5,14 +5,22 @@ import 'package:laci/data/models/transaction_model.dart';
 import '../../domain/entities/transaction_entity.dart';
 import './notification_service.dart';
 
+import './session_service.dart';
+
 class TransactionService {
   final FirebaseFirestore _firestore;
   final NotificationService _notificationService;
+  final SessionService _sessionService;
 
-  TransactionService(this._firestore, this._notificationService);
+  TransactionService(this._firestore, this._notificationService, this._sessionService);
+
+  String get _businessId => _sessionService.businessId ?? '';
 
   /// Process transaction with atomic stock update
   Future<String> processTransaction(TransactionEntity transaction) async {
+    if (_businessId.isEmpty) {
+      throw Exception('Business ID is missing. Please re-login.');
+    }
     try {
       // Validate stock availability first (outside transaction for quick check)
       await _validateStockAvailability(transaction.items);
@@ -44,7 +52,9 @@ class TransactionService {
             .collection(FirebaseCollections.transactions)
             .doc(transaction.id);
 
-        final transactionModel = TransactionModel.fromEntity(transaction);
+        final transactionModel = TransactionModel.fromEntity(transaction).copyWith(
+          businessId: _businessId,
+        );
         firestoreTransaction.set(
           transactionRef,
           transactionModel.toFirestore(),
@@ -56,9 +66,12 @@ class TransactionService {
               .collection(FirebaseCollections.transactionItems)
               .doc();
 
+          final itemModel = TransactionItemModel.fromEntity(item).copyWith(
+            businessId: _businessId,
+          );
           firestoreTransaction.set(
             itemRef,
-            TransactionItemModel.fromEntity(item).toMap(),
+            itemModel.toMap(),
           );
 
           // 3. Update product stock atomically
@@ -169,6 +182,7 @@ class TransactionService {
   }) async {
     final snapshot = await _firestore
         .collection(FirebaseCollections.products)
+        .where('businessId', isEqualTo: _businessId)
         .where('stock', isLessThanOrEqualTo: threshold)
         .get();
 

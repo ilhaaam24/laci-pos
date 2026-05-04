@@ -24,6 +24,17 @@ class SignInRequested extends AuthEvent {
 
 class GoogleSignInRequested extends AuthEvent {}
 
+class SignUpRequested extends AuthEvent {
+  final String email;
+  final String password;
+  SignUpRequested({
+    required this.email,
+    required this.password,
+  });
+  @override
+  List<Object?> get props => [email, password];
+}
+
 class SignOutRequested extends AuthEvent {}
 
 // States
@@ -65,6 +76,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AppStarted>(_onAppStarted);
     on<SignInRequested>(_onSignInRequested);
     on<GoogleSignInRequested>(_onGoogleSignInRequested);
+    on<SignUpRequested>(_onSignUpRequested);
     on<SignOutRequested>(_onSignOutRequested);
     on<_AuthStatusChanged>(_onAuthStatusChanged);
 
@@ -126,6 +138,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     result.fold((error) => emit(AuthError(error)), (user) {
       emit(Authenticated(user));
     });
+  }
+
+  Future<void> _onSignUpRequested(
+    SignUpRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    final result = await repository.signUpWithEmail(
+      email: event.email,
+      password: event.password,
+    );
+    result.fold(
+      (error) => emit(AuthError(error)),
+      (_) {}, // Status will be updated by stream
+    );
   }
 
   Future<void> _onSignOutRequested(
