@@ -546,7 +546,15 @@ class _ReportPageState extends State<ReportPage> {
                 }
 
                 if (state is ReportError) {
-                  return Center(child: Text(state.message, style: const TextStyle(fontSize: 10, color: AppColors.error)));
+                  return Center(
+                    child: Text(
+                      state.message,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.error,
+                      ),
+                    ),
+                  );
                 }
 
                 Map<String, double> data = {
@@ -916,8 +924,8 @@ class _ReportPageState extends State<ReportPage> {
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  TextButton(
-                    onPressed: () {},
+                  GestureDetector(
+                    onTap: () {},
                     child: const Text(
                       'View All',
                       style: TextStyle(

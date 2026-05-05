@@ -1,26 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../domain/entities/business_entity.dart';
 
-class BusinessInfoModel {
-  final String id;
-  final String businessName;
-  final String? address;
-  final String? phone;
-  final String? email;
-  final String? logoUrl;
-  final String? qrisUrl;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  BusinessInfoModel({
-    required this.id,
-    required this.businessName,
-    this.address,
-    this.phone,
-    this.email,
-    this.logoUrl,
-    this.qrisUrl,
-    required this.createdAt,
-    required this.updatedAt,
+class BusinessInfoModel extends BusinessInfo {
+  const BusinessInfoModel({
+    required super.id,
+    required super.businessName,
+    super.address,
+    super.phone,
+    super.email,
+    super.logoUrl,
+    super.qrisUrl,
+    required super.createdAt,
+    required super.updatedAt,
   });
 
   factory BusinessInfoModel.fromFirestore(DocumentSnapshot doc) {
@@ -35,6 +26,20 @@ class BusinessInfoModel {
       qrisUrl: data['qrisUrl'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+    );
+  }
+
+  BusinessInfo toEntity() {
+    return BusinessInfo(
+      id: id,
+      businessName: businessName,
+      address: address,
+      phone: phone,
+      email: email,
+      logoUrl: logoUrl,
+      qrisUrl: qrisUrl,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
     );
   }
 

@@ -1,22 +1,35 @@
 import 'package:dartz/dartz.dart';
+import '../../core/services/session_service.dart';
 import '../../domain/entities/product_entity.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../datasources/firebase/product_firebase_datasource.dart';
+import '../datasources/local/local_database.dart';
+import '../datasources/local/product_local_datasource.dart';
 import '../models/product_model.dart';
 
 class ProductRepositoryImpl implements ProductRepository {
-  final ProductFirebaseDataSource dataSource;
+  final ProductFirebaseDataSource remoteDataSource;
+  final ProductLocalDataSource localDataSource;
+  final LocalDatabase localDatabase;
+  final SessionService sessionService;
 
-  ProductRepositoryImpl({required this.dataSource});
+  ProductRepositoryImpl({
+    required this.remoteDataSource,
+    required this.localDataSource,
+    required this.localDatabase,
+    required this.sessionService,
+  });
+
+  String get _businessId => sessionService.businessId ?? '';
 
   @override
   Stream<Either<String, List<Product>>> getProducts() {
     try {
-      return dataSource.getProducts().map(
-        (products) => Right<String, List<Product>>(
-          products.map((model) => model.toEntity()).toList(),
-        ),
-      );
+      return localDataSource.watchProducts(_businessId).map(
+            (products) => Right<String, List<Product>>(
+              products.map((model) => model.toEntity()).toList(),
+            ),
+          );
     } catch (e) {
       return Stream.value(Left(e.toString()));
     }
@@ -25,8 +38,11 @@ class ProductRepositoryImpl implements ProductRepository {
   @override
   Future<Either<String, Product>> getProductById(String id) async {
     try {
-      final result = await dataSource.getProductById(id);
-      return Right(result.toEntity());
+      final result = await localDataSource.getProductById(id);
+      if (result != null) {
+        return Right(result.toEntity());
+      }
+      return const Left('Produk tidak ditemukan di lokal');
     } catch (e) {
       return Left(e.toString());
     }
@@ -35,9 +51,21 @@ class ProductRepositoryImpl implements ProductRepository {
   @override
   Future<Either<String, String>> createProduct(Product product) async {
     try {
-      final model = ProductModel.fromEntity(product);
-      final id = await dataSource.createProduct(model);
-      return Right(id);
+      final model = ProductModel.fromEntity(product).copyWith(
+        businessId: _businessId,
+      );
+      
+      // 1. Save to local DB
+      await localDataSource.upsertProduct(model, syncStatus: 'pendingUpload');
+      
+      // 2. Add to sync queue
+      await localDatabase.addToSyncQueue(
+        syncEntityName: 'products',
+        documentId: model.id,
+        operation: 'create',
+      );
+      
+      return Right(model.id);
     } catch (e) {
       return Left(e.toString());
     }
@@ -47,7 +75,17 @@ class ProductRepositoryImpl implements ProductRepository {
   Future<Either<String, void>> updateProduct(Product product) async {
     try {
       final model = ProductModel.fromEntity(product);
-      await dataSource.updateProduct(model);
+      
+      // 1. Update local DB
+      await localDataSource.upsertProduct(model, syncStatus: 'pendingUpload');
+      
+      // 2. Add to sync queue
+      await localDatabase.addToSyncQueue(
+        syncEntityName: 'products',
+        documentId: model.id,
+        operation: 'update',
+      );
+      
       return const Right(null);
     } catch (e) {
       return Left(e.toString());
@@ -57,7 +95,16 @@ class ProductRepositoryImpl implements ProductRepository {
   @override
   Future<Either<String, void>> deleteProduct(String id) async {
     try {
-      await dataSource.deleteProduct(id);
+      // 1. Mark as deleted in local DB
+      await localDataSource.markAsDeleted(id);
+      
+      // 2. Add to sync queue
+      await localDatabase.addToSyncQueue(
+        syncEntityName: 'products',
+        documentId: id,
+        operation: 'delete',
+      );
+      
       return const Right(null);
     } catch (e) {
       return Left(e.toString());
@@ -69,11 +116,13 @@ class ProductRepositoryImpl implements ProductRepository {
     String categoryId,
   ) {
     try {
-      return dataSource
-          .getProductsByCategory(categoryId)
-          .map(
+      // We could add a more specific query in localDataSource if needed
+      return localDataSource.watchProducts(_businessId).map(
             (products) => Right<String, List<Product>>(
-              products.map((model) => model.toEntity()).toList(),
+              products
+                  .where((p) => p.categoryId == categoryId)
+                  .map((model) => model.toEntity())
+                  .toList(),
             ),
           );
     } catch (e) {

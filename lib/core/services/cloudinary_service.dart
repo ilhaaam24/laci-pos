@@ -37,14 +37,11 @@ class CloudinaryService {
       if (response.statusCode == 200) {
         // Upload successful
         final imageUrl = response.data['secure_url'];
-        print('Image uploaded successfully: $imageUrl');
         return imageUrl;
       } else {
-        print('Error uploading image: ${response.data['error']['message']}');
         return '';
       }
     } catch (e) {
-      print('Cloudinary Exception: $e');
       return '';
     }
   }

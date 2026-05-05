@@ -13,6 +13,7 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../../domain/entities/product_entity.dart';
 import '../../../domain/entities/category_entity.dart';
 import '../../../core/style/app_colors.dart';
+import '../../widgets/sync_status_indicator.dart';
 
 class KasirPage extends StatefulWidget {
   const KasirPage({super.key});
@@ -79,6 +80,7 @@ class _KasirPageState extends State<KasirPage> {
           ),
           Row(
             children: [
+              const SyncStatusIndicator(),
               const SizedBox(width: 12),
               BlocBuilder<AuthBloc, AuthState>(
                 builder: (context, state) {

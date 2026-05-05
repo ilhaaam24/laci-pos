@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:laci/core/services/cloudinary_service.dart';
 import '../../blocs/business/business_bloc.dart';
 import '../../../domain/entities/business_entity.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
 import '../../../core/di/injection.dart';
-import '../../../core/services/image_upload_service.dart';
 
 class BusinessInfoPage extends StatefulWidget {
   const BusinessInfoPage({super.key});
@@ -303,17 +304,15 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
   }
 
   String? _qrisUrl;
-  bool _isUploading = false;
+  bool _isUploading = false;  
 
   Future<void> _onUploadQRIS() async {
     setState(() => _isUploading = true);
     try {
-      final url = await getIt<ImageUploadService>().pickAndUploadImage(
-        folder: 'qris',
+      final url = await getIt<CloudinaryService>().uploadImage(
+        ImageSource.gallery,
       );
-      if (url != null) {
-        setState(() => _qrisUrl = url);
-      }
+      setState(() => _qrisUrl = url);
     } catch (e) {
       AppToast.showError(context, 'Gagal mengunggah QRIS: $e');
     } finally {

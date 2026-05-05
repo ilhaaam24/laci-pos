@@ -1,33 +1,46 @@
 import 'package:dartz/dartz.dart';
+import '../../core/services/session_service.dart';
 import '../../domain/entities/customer_entity.dart';
 import '../../domain/repositories/customer_repository.dart';
 import '../datasources/firebase/customer_firebase_datasource.dart';
+import '../datasources/local/customer_local_datasource.dart';
+import '../datasources/local/local_database.dart';
 import '../models/customer_model.dart';
 
 class CustomerRepositoryImpl implements CustomerRepository {
-  final CustomerFirebaseDataSource dataSource;
+  final CustomerFirebaseDataSource remoteDataSource;
+  final CustomerLocalDataSource localDataSource;
+  final LocalDatabase localDatabase;
+  final SessionService sessionService;
 
-  CustomerRepositoryImpl({required this.dataSource});
+  CustomerRepositoryImpl({
+    required this.remoteDataSource,
+    required this.localDataSource,
+    required this.localDatabase,
+    required this.sessionService,
+  });
+
+  String get _businessId => sessionService.businessId ?? '';
 
   @override
   Stream<Either<String, List<Customer>>> getCustomers() {
     try {
-      return dataSource.getCustomers().map(
-        (models) => Right<String, List<Customer>>(
-          models
-              .map(
-                (model) => Customer(
-                  id: model.id,
-                  name: model.name,
-                  phone: model.phone,
-                  address: model.address,
-                  createdAt: model.createdAt,
-                  updatedAt: model.updatedAt,
-                ),
-              )
-              .toList(),
-        ),
-      );
+      return localDataSource.watchCustomers(_businessId).map(
+            (models) => Right<String, List<Customer>>(
+              models
+                  .map(
+                    (model) => Customer(
+                      id: model.id,
+                      name: model.name,
+                      phone: model.phone,
+                      address: model.address,
+                      createdAt: model.createdAt,
+                      updatedAt: model.updatedAt,
+                    ),
+                  )
+                  .toList(),
+            ),
+          );
     } catch (e) {
       return Stream.value(Left(e.toString()));
     }
@@ -36,17 +49,20 @@ class CustomerRepositoryImpl implements CustomerRepository {
   @override
   Future<Either<String, Customer>> getCustomerById(String id) async {
     try {
-      final model = await dataSource.getCustomerById(id);
-      return Right(
-        Customer(
-          id: model.id,
-          name: model.name,
-          phone: model.phone,
-          address: model.address,
-          createdAt: model.createdAt,
-          updatedAt: model.updatedAt,
-        ),
-      );
+      final model = await localDataSource.getCustomerById(id);
+      if (model != null) {
+        return Right(
+          Customer(
+            id: model.id,
+            name: model.name,
+            phone: model.phone,
+            address: model.address,
+            createdAt: model.createdAt,
+            updatedAt: model.updatedAt,
+          ),
+        );
+      }
+      return const Left('Customer tidak ditemukan di lokal');
     } catch (e) {
       return Left(e.toString());
     }
@@ -55,16 +71,21 @@ class CustomerRepositoryImpl implements CustomerRepository {
   @override
   Future<Either<String, String>> createCustomer(Customer customer) async {
     try {
-      final model = CustomerModel(
-        id: customer.id,
-        name: customer.name,
-        phone: customer.phone,
-        address: customer.address,
-        createdAt: customer.createdAt,
-        updatedAt: customer.updatedAt,
+      final model = CustomerModel.fromEntity(customer).copyWith(
+        businessId: _businessId,
       );
-      final id = await dataSource.createCustomer(model);
-      return Right(id);
+      
+      // 1. Save to local
+      await localDataSource.upsertCustomer(model, syncStatus: 'pendingUpload');
+      
+      // 2. Add to sync queue
+      await localDatabase.addToSyncQueue(
+        syncEntityName: 'customers',
+        documentId: model.id,
+        operation: 'create',
+      );
+      
+      return Right(model.id);
     } catch (e) {
       return Left(e.toString());
     }
@@ -73,15 +94,18 @@ class CustomerRepositoryImpl implements CustomerRepository {
   @override
   Future<Either<String, void>> updateCustomer(Customer customer) async {
     try {
-      final model = CustomerModel(
-        id: customer.id,
-        name: customer.name,
-        phone: customer.phone,
-        address: customer.address,
-        createdAt: customer.createdAt,
-        updatedAt: customer.updatedAt,
+      final model = CustomerModel.fromEntity(customer);
+      
+      // 1. Update local
+      await localDataSource.upsertCustomer(model, syncStatus: 'pendingUpload');
+      
+      // 2. Add to sync queue
+      await localDatabase.addToSyncQueue(
+        syncEntityName: 'customers',
+        documentId: model.id,
+        operation: 'update',
       );
-      await dataSource.updateCustomer(model);
+      
       return const Right(null);
     } catch (e) {
       return Left(e.toString());
@@ -91,7 +115,16 @@ class CustomerRepositoryImpl implements CustomerRepository {
   @override
   Future<Either<String, void>> deleteCustomer(String id) async {
     try {
-      await dataSource.deleteCustomer(id);
+      // 1. Mark as deleted locally
+      await localDataSource.markAsDeleted(id);
+      
+      // 2. Add to sync queue
+      await localDatabase.addToSyncQueue(
+        syncEntityName: 'customers',
+        documentId: id,
+        operation: 'delete',
+      );
+      
       return const Right(null);
     } catch (e) {
       return Left(e.toString());

@@ -63,4 +63,24 @@ class CategoryModel extends Category {
       businessId: category.businessId,
     );
   }
+
+  CategoryModel copyWith({
+    String? id,
+    String? name,
+    String? description,
+    String? imageUrl,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? businessId,
+  }) {
+    return CategoryModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      imageUrl: imageUrl ?? this.imageUrl,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      businessId: businessId ?? this.businessId,
+    );
+  }
 }

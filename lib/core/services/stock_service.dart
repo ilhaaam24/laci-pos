@@ -1,21 +1,29 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../constants/firebase_collections.dart';
+import 'package:laci/data/datasources/local/local_database.dart';
+import 'package:laci/data/datasources/local/product_local_datasource.dart';
+import 'package:laci/data/datasources/local/stock_log_local_datasource.dart';
 import '../../data/models/stock_log_model.dart';
 import '../../domain/entities/stock_log_entity.dart';
 import './notification_service.dart';
-
 import './session_service.dart';
 
 class StockService {
-  final FirebaseFirestore firestore;
+  final LocalDatabase localDatabase;
+  final ProductLocalDataSource productLocal;
+  final StockLogLocalDataSource stockLogLocal;
   final NotificationService notificationService;
   final SessionService sessionService;
 
-  StockService(this.firestore, this.notificationService, this.sessionService);
+  StockService(
+    this.localDatabase,
+    this.productLocal,
+    this.stockLogLocal,
+    this.notificationService,
+    this.sessionService,
+  );
 
   String get _businessId => sessionService.businessId ?? '';
 
-  /// Records a stock movement and updates the product stock
+  /// Records a stock movement and updates the product stock locally
   Future<void> updateStock({
     required String productId,
     required String productName,
@@ -23,47 +31,47 @@ class StockService {
     required StockLogType type,
     String? reason,
   }) async {
-    final batch = firestore.batch();
-    final productRef = firestore
-        .collection(FirebaseCollections.products)
-        .doc(productId);
+    final product = await productLocal.getProductById(productId);
+    if (product == null) throw Exception('Produk tidak ditemukan');
 
-    // Get current stock to calculate new stock for the log
-    final productDoc = await productRef.get();
-    if (!productDoc.exists) throw Exception('Produk tidak ditemukan');
-
-    final productData = productDoc.data() as Map<String, dynamic>;
-    final currentStock = productData['stock'] ?? 0;
-    final stockThreshold = productData['stockThreshold'] ?? 5;
+    final currentStock = product.stock;
     final newStock = currentStock + quantityChange;
 
-    // 1. Update Product Stock
-    batch.update(productRef, {
-      'stock': newStock,
-      'updatedAt': FieldValue.serverTimestamp(),
+    await localDatabase.transaction(() async {
+      // 1. Update Product Stock locally
+      await productLocal.updateStock(productId, newStock);
+
+      // 2. Create Local Stock Log
+      final log = StockLogModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString() + productId,
+        productId: productId,
+        productName: productName,
+        type: type,
+        quantity: quantityChange,
+        previousStock: currentStock,
+        newStock: newStock,
+        reason: reason,
+        createdAt: DateTime.now(),
+        businessId: _businessId,
+      );
+      await stockLogLocal.insertStockLog(log, syncStatus: 'pendingUpload');
+
+      // 3. Add to sync queue
+      await localDatabase.addToSyncQueue(
+        syncEntityName: 'stock_logs',
+        documentId: log.id,
+        operation: 'create',
+      );
+      
+      await localDatabase.addToSyncQueue(
+        syncEntityName: 'products',
+        documentId: productId,
+        operation: 'update',
+      );
     });
 
-    // 2. Create Stock Log
-    final logRef = firestore.collection(FirebaseCollections.stockLogs).doc();
-    final log = StockLogModel(
-      id: logRef.id,
-      productId: productId,
-      productName: productName,
-      type: type,
-      quantity: quantityChange,
-      previousStock: currentStock,
-      newStock: newStock,
-      reason: reason,
-      createdAt: DateTime.now(),
-      businessId: _businessId,
-    );
-
-    batch.set(logRef, log.toFirestore());
-
-    await batch.commit();
-
-    // 3. Check for low stock alert
-    if (newStock <= stockThreshold) {
+    // 4. Check for low stock alert
+    if (newStock <= product.stockThreshold) {
       notificationService.showStockAlert(
         productName: productName,
         currentStock: newStock,
@@ -71,44 +79,13 @@ class StockService {
     }
   }
 
-  /// Get logs for a specific product
+  /// Get logs for a specific product locally
   Stream<List<StockLog>> getStockLogs(String productId) {
-    return firestore
-        .collection(FirebaseCollections.stockLogs)
-        .where('businessId', isEqualTo: _businessId)
-        .where('productId', isEqualTo: productId)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => StockLogModel.fromFirestore(doc))
-              .toList(),
-        );
+    return stockLogLocal.watchStockLogs(_businessId, productId: productId);
   }
 
-  /// Get all logs with optional date range
-  Stream<List<StockLog>> getAllStockLogs({DateTime? start, DateTime? end}) {
-    Query query = firestore
-        .collection(FirebaseCollections.stockLogs)
-        .where('businessId', isEqualTo: _businessId)
-        .orderBy('createdAt', descending: true);
-
-    if (start != null) {
-      query = query.where(
-        'createdAt',
-        isGreaterThanOrEqualTo: Timestamp.fromDate(start),
-      );
-    }
-    if (end != null) {
-      query = query.where(
-        'createdAt',
-        isLessThanOrEqualTo: Timestamp.fromDate(end),
-      );
-    }
-
-    return query.snapshots().map(
-      (snapshot) =>
-          snapshot.docs.map((doc) => StockLogModel.fromFirestore(doc)).toList(),
-    );
+  /// Get all logs locally
+  Stream<List<StockLog>> getAllStockLogs() {
+    return stockLogLocal.watchStockLogs(_businessId);
   }
 }

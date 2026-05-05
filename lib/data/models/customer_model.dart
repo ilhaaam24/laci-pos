@@ -56,4 +56,26 @@ class CustomerModel extends Customer {
       businessId: entity.businessId,
     );
   }
+
+  CustomerModel copyWith({
+    String? id,
+    String? name,
+    String? email,
+    String? phone,
+    String? address,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? businessId,
+  }) {
+    return CustomerModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      address: address ?? this.address,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      businessId: businessId ?? this.businessId,
+    );
+  }
 }

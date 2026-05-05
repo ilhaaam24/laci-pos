@@ -93,4 +93,36 @@ class ProductModel extends Product {
       businessId: product.businessId,
     );
   }
+
+  ProductModel copyWith({
+    String? id,
+    String? categoryId,
+    String? name,
+    String? description,
+    double? price,
+    double? costPrice,
+    int? stock,
+    int? stockThreshold,
+    String? imageUrl,
+    String? sku,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? businessId,
+  }) {
+    return ProductModel(
+      id: id ?? this.id,
+      categoryId: categoryId ?? this.categoryId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      costPrice: costPrice ?? this.costPrice,
+      stock: stock ?? this.stock,
+      stockThreshold: stockThreshold ?? this.stockThreshold,
+      imageUrl: imageUrl ?? this.imageUrl,
+      sku: sku ?? this.sku,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      businessId: businessId ?? this.businessId,
+    );
+  }
 }

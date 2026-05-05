@@ -62,4 +62,28 @@ class PromoModel extends PromoEntity {
       businessId: entity.businessId,
     );
   }
+
+  PromoModel copyWith({
+    String? id,
+    String? name,
+    PromoType? type,
+    double? value,
+    double? minPurchase,
+    bool? isActive,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? businessId,
+  }) {
+    return PromoModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      value: value ?? this.value,
+      minPurchase: minPurchase ?? this.minPurchase,
+      isActive: isActive ?? this.isActive,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      businessId: businessId ?? this.businessId,
+    );
+  }
 }
