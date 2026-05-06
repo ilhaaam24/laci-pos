@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:uuid/uuid.dart';
 import '../../core/services/session_service.dart';
 import '../../domain/entities/product_entity.dart';
 import '../../domain/repositories/product_repository.dart';
@@ -51,7 +52,9 @@ class ProductRepositoryImpl implements ProductRepository {
   @override
   Future<Either<String, String>> createProduct(Product product) async {
     try {
+      final productId = product.id.isEmpty ? const Uuid().v4() : product.id;
       final model = ProductModel.fromEntity(product).copyWith(
+        id: productId,
         businessId: _businessId,
       );
       

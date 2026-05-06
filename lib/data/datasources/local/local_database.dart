@@ -57,6 +57,9 @@ class LocalCustomers extends Table {
   TextColumn get email => text().nullable()();
   TextColumn get phone => text().nullable()();
   TextColumn get address => text().nullable()();
+  RealColumn get totalSpent => real().withDefault(const Constant(0))();
+  DateTimeColumn get lastTransactionDate => dateTime().nullable()();
+  IntColumn get loyaltyPoints => integer().withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   TextColumn get businessId => text().nullable()();
@@ -214,7 +217,7 @@ class LocalDatabase extends _$LocalDatabase {
   LocalDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
@@ -223,7 +226,12 @@ class LocalDatabase extends _$LocalDatabase {
         await m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        // Future migrations go here
+        if (from < 2) {
+          // Add new columns to LocalCustomers
+          await m.addColumn(localCustomers, localCustomers.totalSpent);
+          await m.addColumn(localCustomers, localCustomers.lastTransactionDate);
+          await m.addColumn(localCustomers, localCustomers.loyaltyPoints);
+        }
       },
     );
   }

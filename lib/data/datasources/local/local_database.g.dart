@@ -1490,6 +1490,41 @@ class $LocalCustomersTable extends LocalCustomers
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _totalSpentMeta = const VerificationMeta(
+    'totalSpent',
+  );
+  @override
+  late final GeneratedColumn<double> totalSpent = GeneratedColumn<double>(
+    'total_spent',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastTransactionDateMeta =
+      const VerificationMeta('lastTransactionDate');
+  @override
+  late final GeneratedColumn<DateTime> lastTransactionDate =
+      GeneratedColumn<DateTime>(
+        'last_transaction_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _loyaltyPointsMeta = const VerificationMeta(
+    'loyaltyPoints',
+  );
+  @override
+  late final GeneratedColumn<int> loyaltyPoints = GeneratedColumn<int>(
+    'loyalty_points',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1553,6 +1588,9 @@ class $LocalCustomersTable extends LocalCustomers
     email,
     phone,
     address,
+    totalSpent,
+    lastTransactionDate,
+    loyaltyPoints,
     createdAt,
     updatedAt,
     businessId,
@@ -1600,6 +1638,30 @@ class $LocalCustomersTable extends LocalCustomers
       context.handle(
         _addressMeta,
         address.isAcceptableOrUnknown(data['address']!, _addressMeta),
+      );
+    }
+    if (data.containsKey('total_spent')) {
+      context.handle(
+        _totalSpentMeta,
+        totalSpent.isAcceptableOrUnknown(data['total_spent']!, _totalSpentMeta),
+      );
+    }
+    if (data.containsKey('last_transaction_date')) {
+      context.handle(
+        _lastTransactionDateMeta,
+        lastTransactionDate.isAcceptableOrUnknown(
+          data['last_transaction_date']!,
+          _lastTransactionDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('loyalty_points')) {
+      context.handle(
+        _loyaltyPointsMeta,
+        loyaltyPoints.isAcceptableOrUnknown(
+          data['loyalty_points']!,
+          _loyaltyPointsMeta,
+        ),
       );
     }
     if (data.containsKey('created_at')) {
@@ -1668,6 +1730,18 @@ class $LocalCustomersTable extends LocalCustomers
         DriftSqlType.string,
         data['${effectivePrefix}address'],
       ),
+      totalSpent: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}total_spent'],
+      )!,
+      lastTransactionDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_transaction_date'],
+      ),
+      loyaltyPoints: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}loyalty_points'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1703,6 +1777,9 @@ class LocalCustomer extends DataClass implements Insertable<LocalCustomer> {
   final String? email;
   final String? phone;
   final String? address;
+  final double totalSpent;
+  final DateTime? lastTransactionDate;
+  final int loyaltyPoints;
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? businessId;
@@ -1714,6 +1791,9 @@ class LocalCustomer extends DataClass implements Insertable<LocalCustomer> {
     this.email,
     this.phone,
     this.address,
+    required this.totalSpent,
+    this.lastTransactionDate,
+    required this.loyaltyPoints,
     required this.createdAt,
     required this.updatedAt,
     this.businessId,
@@ -1734,6 +1814,11 @@ class LocalCustomer extends DataClass implements Insertable<LocalCustomer> {
     if (!nullToAbsent || address != null) {
       map['address'] = Variable<String>(address);
     }
+    map['total_spent'] = Variable<double>(totalSpent);
+    if (!nullToAbsent || lastTransactionDate != null) {
+      map['last_transaction_date'] = Variable<DateTime>(lastTransactionDate);
+    }
+    map['loyalty_points'] = Variable<int>(loyaltyPoints);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     if (!nullToAbsent || businessId != null) {
@@ -1759,6 +1844,11 @@ class LocalCustomer extends DataClass implements Insertable<LocalCustomer> {
       address: address == null && nullToAbsent
           ? const Value.absent()
           : Value(address),
+      totalSpent: Value(totalSpent),
+      lastTransactionDate: lastTransactionDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastTransactionDate),
+      loyaltyPoints: Value(loyaltyPoints),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       businessId: businessId == null && nullToAbsent
@@ -1782,6 +1872,11 @@ class LocalCustomer extends DataClass implements Insertable<LocalCustomer> {
       email: serializer.fromJson<String?>(json['email']),
       phone: serializer.fromJson<String?>(json['phone']),
       address: serializer.fromJson<String?>(json['address']),
+      totalSpent: serializer.fromJson<double>(json['totalSpent']),
+      lastTransactionDate: serializer.fromJson<DateTime?>(
+        json['lastTransactionDate'],
+      ),
+      loyaltyPoints: serializer.fromJson<int>(json['loyaltyPoints']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       businessId: serializer.fromJson<String?>(json['businessId']),
@@ -1798,6 +1893,9 @@ class LocalCustomer extends DataClass implements Insertable<LocalCustomer> {
       'email': serializer.toJson<String?>(email),
       'phone': serializer.toJson<String?>(phone),
       'address': serializer.toJson<String?>(address),
+      'totalSpent': serializer.toJson<double>(totalSpent),
+      'lastTransactionDate': serializer.toJson<DateTime?>(lastTransactionDate),
+      'loyaltyPoints': serializer.toJson<int>(loyaltyPoints),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'businessId': serializer.toJson<String?>(businessId),
@@ -1812,6 +1910,9 @@ class LocalCustomer extends DataClass implements Insertable<LocalCustomer> {
     Value<String?> email = const Value.absent(),
     Value<String?> phone = const Value.absent(),
     Value<String?> address = const Value.absent(),
+    double? totalSpent,
+    Value<DateTime?> lastTransactionDate = const Value.absent(),
+    int? loyaltyPoints,
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<String?> businessId = const Value.absent(),
@@ -1823,6 +1924,11 @@ class LocalCustomer extends DataClass implements Insertable<LocalCustomer> {
     email: email.present ? email.value : this.email,
     phone: phone.present ? phone.value : this.phone,
     address: address.present ? address.value : this.address,
+    totalSpent: totalSpent ?? this.totalSpent,
+    lastTransactionDate: lastTransactionDate.present
+        ? lastTransactionDate.value
+        : this.lastTransactionDate,
+    loyaltyPoints: loyaltyPoints ?? this.loyaltyPoints,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     businessId: businessId.present ? businessId.value : this.businessId,
@@ -1836,6 +1942,15 @@ class LocalCustomer extends DataClass implements Insertable<LocalCustomer> {
       email: data.email.present ? data.email.value : this.email,
       phone: data.phone.present ? data.phone.value : this.phone,
       address: data.address.present ? data.address.value : this.address,
+      totalSpent: data.totalSpent.present
+          ? data.totalSpent.value
+          : this.totalSpent,
+      lastTransactionDate: data.lastTransactionDate.present
+          ? data.lastTransactionDate.value
+          : this.lastTransactionDate,
+      loyaltyPoints: data.loyaltyPoints.present
+          ? data.loyaltyPoints.value
+          : this.loyaltyPoints,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       businessId: data.businessId.present
@@ -1858,6 +1973,9 @@ class LocalCustomer extends DataClass implements Insertable<LocalCustomer> {
           ..write('email: $email, ')
           ..write('phone: $phone, ')
           ..write('address: $address, ')
+          ..write('totalSpent: $totalSpent, ')
+          ..write('lastTransactionDate: $lastTransactionDate, ')
+          ..write('loyaltyPoints: $loyaltyPoints, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('businessId: $businessId, ')
@@ -1874,6 +1992,9 @@ class LocalCustomer extends DataClass implements Insertable<LocalCustomer> {
     email,
     phone,
     address,
+    totalSpent,
+    lastTransactionDate,
+    loyaltyPoints,
     createdAt,
     updatedAt,
     businessId,
@@ -1889,6 +2010,9 @@ class LocalCustomer extends DataClass implements Insertable<LocalCustomer> {
           other.email == this.email &&
           other.phone == this.phone &&
           other.address == this.address &&
+          other.totalSpent == this.totalSpent &&
+          other.lastTransactionDate == this.lastTransactionDate &&
+          other.loyaltyPoints == this.loyaltyPoints &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.businessId == this.businessId &&
@@ -1902,6 +2026,9 @@ class LocalCustomersCompanion extends UpdateCompanion<LocalCustomer> {
   final Value<String?> email;
   final Value<String?> phone;
   final Value<String?> address;
+  final Value<double> totalSpent;
+  final Value<DateTime?> lastTransactionDate;
+  final Value<int> loyaltyPoints;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<String?> businessId;
@@ -1914,6 +2041,9 @@ class LocalCustomersCompanion extends UpdateCompanion<LocalCustomer> {
     this.email = const Value.absent(),
     this.phone = const Value.absent(),
     this.address = const Value.absent(),
+    this.totalSpent = const Value.absent(),
+    this.lastTransactionDate = const Value.absent(),
+    this.loyaltyPoints = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.businessId = const Value.absent(),
@@ -1927,6 +2057,9 @@ class LocalCustomersCompanion extends UpdateCompanion<LocalCustomer> {
     this.email = const Value.absent(),
     this.phone = const Value.absent(),
     this.address = const Value.absent(),
+    this.totalSpent = const Value.absent(),
+    this.lastTransactionDate = const Value.absent(),
+    this.loyaltyPoints = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.businessId = const Value.absent(),
@@ -1943,6 +2076,9 @@ class LocalCustomersCompanion extends UpdateCompanion<LocalCustomer> {
     Expression<String>? email,
     Expression<String>? phone,
     Expression<String>? address,
+    Expression<double>? totalSpent,
+    Expression<DateTime>? lastTransactionDate,
+    Expression<int>? loyaltyPoints,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<String>? businessId,
@@ -1956,6 +2092,10 @@ class LocalCustomersCompanion extends UpdateCompanion<LocalCustomer> {
       if (email != null) 'email': email,
       if (phone != null) 'phone': phone,
       if (address != null) 'address': address,
+      if (totalSpent != null) 'total_spent': totalSpent,
+      if (lastTransactionDate != null)
+        'last_transaction_date': lastTransactionDate,
+      if (loyaltyPoints != null) 'loyalty_points': loyaltyPoints,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (businessId != null) 'business_id': businessId,
@@ -1971,6 +2111,9 @@ class LocalCustomersCompanion extends UpdateCompanion<LocalCustomer> {
     Value<String?>? email,
     Value<String?>? phone,
     Value<String?>? address,
+    Value<double>? totalSpent,
+    Value<DateTime?>? lastTransactionDate,
+    Value<int>? loyaltyPoints,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<String?>? businessId,
@@ -1984,6 +2127,9 @@ class LocalCustomersCompanion extends UpdateCompanion<LocalCustomer> {
       email: email ?? this.email,
       phone: phone ?? this.phone,
       address: address ?? this.address,
+      totalSpent: totalSpent ?? this.totalSpent,
+      lastTransactionDate: lastTransactionDate ?? this.lastTransactionDate,
+      loyaltyPoints: loyaltyPoints ?? this.loyaltyPoints,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       businessId: businessId ?? this.businessId,
@@ -2010,6 +2156,17 @@ class LocalCustomersCompanion extends UpdateCompanion<LocalCustomer> {
     }
     if (address.present) {
       map['address'] = Variable<String>(address.value);
+    }
+    if (totalSpent.present) {
+      map['total_spent'] = Variable<double>(totalSpent.value);
+    }
+    if (lastTransactionDate.present) {
+      map['last_transaction_date'] = Variable<DateTime>(
+        lastTransactionDate.value,
+      );
+    }
+    if (loyaltyPoints.present) {
+      map['loyalty_points'] = Variable<int>(loyaltyPoints.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -2040,6 +2197,9 @@ class LocalCustomersCompanion extends UpdateCompanion<LocalCustomer> {
           ..write('email: $email, ')
           ..write('phone: $phone, ')
           ..write('address: $address, ')
+          ..write('totalSpent: $totalSpent, ')
+          ..write('lastTransactionDate: $lastTransactionDate, ')
+          ..write('loyaltyPoints: $loyaltyPoints, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('businessId: $businessId, ')
@@ -7100,6 +7260,9 @@ typedef $$LocalCustomersTableCreateCompanionBuilder =
       Value<String?> email,
       Value<String?> phone,
       Value<String?> address,
+      Value<double> totalSpent,
+      Value<DateTime?> lastTransactionDate,
+      Value<int> loyaltyPoints,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<String?> businessId,
@@ -7114,6 +7277,9 @@ typedef $$LocalCustomersTableUpdateCompanionBuilder =
       Value<String?> email,
       Value<String?> phone,
       Value<String?> address,
+      Value<double> totalSpent,
+      Value<DateTime?> lastTransactionDate,
+      Value<int> loyaltyPoints,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<String?> businessId,
@@ -7153,6 +7319,21 @@ class $$LocalCustomersTableFilterComposer
 
   ColumnFilters<String> get address => $composableBuilder(
     column: $table.address,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get totalSpent => $composableBuilder(
+    column: $table.totalSpent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastTransactionDate => $composableBuilder(
+    column: $table.lastTransactionDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get loyaltyPoints => $composableBuilder(
+    column: $table.loyaltyPoints,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7216,6 +7397,21 @@ class $$LocalCustomersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get totalSpent => $composableBuilder(
+    column: $table.totalSpent,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastTransactionDate => $composableBuilder(
+    column: $table.lastTransactionDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get loyaltyPoints => $composableBuilder(
+    column: $table.loyaltyPoints,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -7265,6 +7461,21 @@ class $$LocalCustomersTableAnnotationComposer
 
   GeneratedColumn<String> get address =>
       $composableBuilder(column: $table.address, builder: (column) => column);
+
+  GeneratedColumn<double> get totalSpent => $composableBuilder(
+    column: $table.totalSpent,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastTransactionDate => $composableBuilder(
+    column: $table.lastTransactionDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get loyaltyPoints => $composableBuilder(
+    column: $table.loyaltyPoints,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -7330,6 +7541,9 @@ class $$LocalCustomersTableTableManager
                 Value<String?> email = const Value.absent(),
                 Value<String?> phone = const Value.absent(),
                 Value<String?> address = const Value.absent(),
+                Value<double> totalSpent = const Value.absent(),
+                Value<DateTime?> lastTransactionDate = const Value.absent(),
+                Value<int> loyaltyPoints = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<String?> businessId = const Value.absent(),
@@ -7342,6 +7556,9 @@ class $$LocalCustomersTableTableManager
                 email: email,
                 phone: phone,
                 address: address,
+                totalSpent: totalSpent,
+                lastTransactionDate: lastTransactionDate,
+                loyaltyPoints: loyaltyPoints,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 businessId: businessId,
@@ -7356,6 +7573,9 @@ class $$LocalCustomersTableTableManager
                 Value<String?> email = const Value.absent(),
                 Value<String?> phone = const Value.absent(),
                 Value<String?> address = const Value.absent(),
+                Value<double> totalSpent = const Value.absent(),
+                Value<DateTime?> lastTransactionDate = const Value.absent(),
+                Value<int> loyaltyPoints = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<String?> businessId = const Value.absent(),
@@ -7368,6 +7588,9 @@ class $$LocalCustomersTableTableManager
                 email: email,
                 phone: phone,
                 address: address,
+                totalSpent: totalSpent,
+                lastTransactionDate: lastTransactionDate,
+                loyaltyPoints: loyaltyPoints,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 businessId: businessId,

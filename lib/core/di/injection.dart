@@ -185,6 +185,7 @@ Future<void> initializeDependencies() async {
       getIt(),
       getIt(),
       getIt(),
+      getIt(),
     ),
   );
 

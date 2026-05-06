@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/transaction_entity.dart';
 import '../../../domain/entities/product_entity.dart';
+import '../../../domain/entities/customer_entity.dart';
 import 'package:uuid/uuid.dart';
 
 // Events
@@ -40,20 +41,38 @@ class IncrementQuantity extends CartEvent {
 
 class ClearCart extends CartEvent {}
 
+class SetCartCustomer extends CartEvent {
+  final Customer? customer;
+  SetCartCustomer(this.customer);
+  @override
+  List<Object?> get props => [customer];
+}
+
 // State
 class CartState extends Equatable {
   final List<TransactionItem> items;
   final double totalAmount;
+  final Customer? customer;
 
-  const CartState({this.items = const [], this.totalAmount = 0});
+  const CartState({
+    this.items = const [],
+    this.totalAmount = 0,
+    this.customer,
+  });
 
   @override
-  List<Object?> get props => [items, totalAmount];
+  List<Object?> get props => [items, totalAmount, customer];
 
-  CartState copyWith({List<TransactionItem>? items, double? totalAmount}) {
+  CartState copyWith({
+    List<TransactionItem>? items,
+    double? totalAmount,
+    Customer? customer,
+    bool clearCustomer = false,
+  }) {
     return CartState(
       items: items ?? this.items,
       totalAmount: totalAmount ?? this.totalAmount,
+      customer: clearCustomer ? null : (customer ?? this.customer),
     );
   }
 }
@@ -66,6 +85,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<DecreaseQuantity>(_onDecreaseQuantity);
     on<IncrementQuantity>(_onIncrementQuantity);
     on<ClearCart>(_onClearCart);
+    on<SetCartCustomer>(_onSetCartCustomer);
   }
 
   void _onAddToCart(AddToCart event, Emitter<CartState> emit) {
@@ -163,6 +183,10 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
   void _onClearCart(ClearCart event, Emitter<CartState> emit) {
     emit(const CartState());
+  }
+
+  void _onSetCartCustomer(SetCartCustomer event, Emitter<CartState> emit) {
+    emit(state.copyWith(customer: event.customer, clearCustomer: event.customer == null));
   }
 
   double _calculateTotal(List<TransactionItem> items) {

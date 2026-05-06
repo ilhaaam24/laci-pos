@@ -21,6 +21,15 @@ class LoadTransactionsByDateRange extends TransactionEvent {
   List<Object?> get props => [startDate, endDate];
 }
 
+class LoadTransactionsByCustomerId extends TransactionEvent {
+  final String customerId;
+
+  LoadTransactionsByCustomerId(this.customerId);
+
+  @override
+  List<Object?> get props => [customerId];
+}
+
 class CreateTransaction extends TransactionEvent {
   final TransactionEntity transaction;
 
@@ -75,6 +84,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   TransactionBloc({required this.repository}) : super(TransactionInitial()) {
     on<LoadTransactions>(_onLoadTransactions);
     on<LoadTransactionsByDateRange>(_onLoadTransactionsByDateRange);
+    on<LoadTransactionsByCustomerId>(_onLoadTransactionsByCustomerId);
     on<CreateTransaction>(_onCreateTransaction);
   }
 
@@ -122,6 +132,22 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       (error) => emit(TransactionError(error)),
       (id) =>
           emit(TransactionSuccess('Transaction completed successfully', id)),
+    );
+  }
+
+  Future<void> _onLoadTransactionsByCustomerId(
+    LoadTransactionsByCustomerId event,
+    Emitter<TransactionState> emit,
+  ) async {
+    emit(TransactionLoading());
+    await emit.forEach(
+      repository.getTransactionsByCustomerId(event.customerId),
+      onData: (result) {
+        return result.fold(
+          (error) => TransactionError(error),
+          (transactions) => TransactionLoaded(transactions),
+        );
+      },
     );
   }
 }

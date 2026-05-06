@@ -47,6 +47,23 @@ class TransactionLocalDataSource {
     });
   }
 
+  /// Watch transactions for a specific customer.
+  Stream<List<TransactionModel>> watchTransactionsByCustomer(
+      String businessId, String customerId) {
+    final query = _db.select(_db.localTransactions)
+      ..where((t) =>
+          t.businessId.equals(businessId) & t.customerId.equals(customerId))
+      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
+    return query.watch().asyncMap((rows) async {
+      final List<TransactionModel> transactions = [];
+      for (final row in rows) {
+        final items = await _getItemsForTransaction(row.id);
+        transactions.add(_rowToModel(row, items));
+      }
+      return transactions;
+    });
+  }
+
   /// Get a single transaction by ID.
   Future<TransactionModel?> getTransactionById(String id) async {
     final query = _db.select(_db.localTransactions)

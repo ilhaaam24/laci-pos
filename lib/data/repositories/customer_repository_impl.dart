@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:uuid/uuid.dart';
 import '../../core/services/session_service.dart';
 import '../../domain/entities/customer_entity.dart';
 import '../../domain/repositories/customer_repository.dart';
@@ -25,22 +26,9 @@ class CustomerRepositoryImpl implements CustomerRepository {
   @override
   Stream<Either<String, List<Customer>>> getCustomers() {
     try {
-      return localDataSource.watchCustomers(_businessId).map(
-            (models) => Right<String, List<Customer>>(
-              models
-                  .map(
-                    (model) => Customer(
-                      id: model.id,
-                      name: model.name,
-                      phone: model.phone,
-                      address: model.address,
-                      createdAt: model.createdAt,
-                      updatedAt: model.updatedAt,
-                    ),
-                  )
-                  .toList(),
-            ),
-          );
+      return localDataSource
+          .watchCustomers(_businessId)
+          .map((models) => Right<String, List<Customer>>(models));
     } catch (e) {
       return Stream.value(Left(e.toString()));
     }
@@ -51,16 +39,7 @@ class CustomerRepositoryImpl implements CustomerRepository {
     try {
       final model = await localDataSource.getCustomerById(id);
       if (model != null) {
-        return Right(
-          Customer(
-            id: model.id,
-            name: model.name,
-            phone: model.phone,
-            address: model.address,
-            createdAt: model.createdAt,
-            updatedAt: model.updatedAt,
-          ),
-        );
+        return Right(model);
       }
       return const Left('Customer tidak ditemukan di lokal');
     } catch (e) {
@@ -71,20 +50,21 @@ class CustomerRepositoryImpl implements CustomerRepository {
   @override
   Future<Either<String, String>> createCustomer(Customer customer) async {
     try {
-      final model = CustomerModel.fromEntity(customer).copyWith(
-        businessId: _businessId,
-      );
-      
+      final customerId = customer.id.isEmpty ? const Uuid().v4() : customer.id;
+      final model = CustomerModel.fromEntity(
+        customer,
+      ).copyWith(id: customerId, businessId: _businessId);
+
       // 1. Save to local
       await localDataSource.upsertCustomer(model, syncStatus: 'pendingUpload');
-      
+
       // 2. Add to sync queue
       await localDatabase.addToSyncQueue(
         syncEntityName: 'customers',
         documentId: model.id,
         operation: 'create',
       );
-      
+
       return Right(model.id);
     } catch (e) {
       return Left(e.toString());
@@ -95,17 +75,17 @@ class CustomerRepositoryImpl implements CustomerRepository {
   Future<Either<String, void>> updateCustomer(Customer customer) async {
     try {
       final model = CustomerModel.fromEntity(customer);
-      
+
       // 1. Update local
       await localDataSource.upsertCustomer(model, syncStatus: 'pendingUpload');
-      
+
       // 2. Add to sync queue
       await localDatabase.addToSyncQueue(
         syncEntityName: 'customers',
         documentId: model.id,
         operation: 'update',
       );
-      
+
       return const Right(null);
     } catch (e) {
       return Left(e.toString());
@@ -117,14 +97,14 @@ class CustomerRepositoryImpl implements CustomerRepository {
     try {
       // 1. Mark as deleted locally
       await localDataSource.markAsDeleted(id);
-      
+
       // 2. Add to sync queue
       await localDatabase.addToSyncQueue(
         syncEntityName: 'customers',
         documentId: id,
         operation: 'delete',
       );
-      
+
       return const Right(null);
     } catch (e) {
       return Left(e.toString());

@@ -82,4 +82,21 @@ class TransactionRepositoryImpl implements TransactionRepository {
       return Stream.value(Left(e.toString()));
     }
   }
+
+  @override
+  Stream<Either<String, List<TransactionEntity>>> getTransactionsByCustomerId(
+    String customerId,
+  ) {
+    try {
+      return localDataSource
+          .watchTransactionsByCustomer(_businessId, customerId)
+          .map(
+            (transactions) => Right<String, List<TransactionEntity>>(
+              transactions.map((model) => model.toEntity()).toList(),
+            ),
+          );
+    } catch (e) {
+      return Stream.value(Left(e.toString()));
+    }
+  }
 }

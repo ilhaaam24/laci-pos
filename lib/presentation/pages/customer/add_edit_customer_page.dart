@@ -4,6 +4,7 @@ import '../../blocs/customer/customer_bloc.dart';
 import '../../../domain/entities/customer_entity.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
+import 'package:uuid/uuid.dart';
 
 class AddEditCustomerPage extends StatefulWidget {
   final Customer? customer;
@@ -16,6 +17,7 @@ class AddEditCustomerPage extends StatefulWidget {
 class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
+  late TextEditingController _emailController;
   late TextEditingController _phoneController;
   late TextEditingController _addressController;
 
@@ -25,6 +27,7 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.customer?.name);
+    _emailController = TextEditingController(text: widget.customer?.email);
     _phoneController = TextEditingController(text: widget.customer?.phone);
     _addressController = TextEditingController(text: widget.customer?.address);
   }
@@ -32,6 +35,7 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
     super.dispose();
@@ -79,6 +83,15 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
                       validator: (v) => v == null || v.isEmpty
                           ? 'Nama tidak boleh kosong'
                           : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: const InputDecoration(
+                        hintText: 'Email Pelanggan',
+                        prefixIcon: Icon(Icons.email_outlined),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -158,12 +171,17 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
   void _onSave() {
     if (_formKey.currentState!.validate()) {
       final customer = Customer(
-        id: _isEdit ? widget.customer!.id : '',
+        id: _isEdit ? widget.customer!.id : const Uuid().v4(),
         name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
         phone: _phoneController.text.trim(),
         address: _addressController.text.trim(),
+        totalSpent: _isEdit ? widget.customer!.totalSpent : 0,
+        lastTransactionDate: _isEdit ? widget.customer!.lastTransactionDate : null,
+        loyaltyPoints: _isEdit ? widget.customer!.loyaltyPoints : 0,
         createdAt: _isEdit ? widget.customer!.createdAt : DateTime.now(),
         updatedAt: DateTime.now(),
+        businessId: _isEdit ? widget.customer!.businessId : null,
       );
 
       if (_isEdit) {

@@ -57,8 +57,8 @@ class CustomerFirebaseDataSourceImpl implements CustomerFirebaseDataSource {
     }
     final data = customer.toFirestore();
     data['businessId'] = _businessId;
-    final docRef = await _collection.add(data);
-    return docRef.id;
+    await _collection.doc(customer.id).set(data);
+    return customer.id;
   }
 
   @override

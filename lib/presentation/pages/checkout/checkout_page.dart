@@ -19,6 +19,7 @@ import '../../../domain/entities/promo_entity.dart';
 import 'widgets/payment_dialog.dart';
 import '../../blocs/business/business_bloc.dart';
 import '../../../core/services/printer_service.dart';
+import '../customer/add_edit_customer_page.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -29,8 +30,15 @@ class CheckoutPage extends StatefulWidget {
 
 class _CheckoutPageState extends State<CheckoutPage> {
   final double _taxPercent = 10.0;
-  Customer? _selectedCustomer;
   PromoEntity? _selectedPromo;
+  final TextEditingController _customerSearchController =
+      TextEditingController();
+
+  @override
+  void dispose() {
+    _customerSearchController.dispose();
+    super.dispose();
+  }
 
   double get _discountAmount {
     if (_selectedPromo == null) return 0.0;
@@ -156,8 +164,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
       final transaction = TransactionEntity(
         id: const Uuid().v4(),
         transactionCode: transactionCode,
-        customerId: _selectedCustomer?.id,
-        customerName: _selectedCustomer?.name,
+        customerId: cartState.customer?.id,
+        customerName: cartState.customer?.name,
         subtotal: cartState.totalAmount,
         taxAmount: taxAmount,
         discountAmount: _discountAmount,
@@ -213,127 +221,291 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Widget _buildCustomerSelector() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: Colors.teal.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.person_outline,
-            color: _selectedCustomer == null ? Colors.grey : Colors.teal,
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        final customer = state.customer;
+        return Container(
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(color: Colors.teal.withValues(alpha: 0.3)),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _selectedCustomer?.name ?? 'Pilih Pelanggan',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: _selectedCustomer == null
-                        ? Colors.grey
-                        : AppColors.textPrimary,
+          child: Row(
+            children: [
+              Icon(
+                Icons.person_outline,
+                color: customer == null ? Colors.grey : Colors.teal,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      customer?.name ?? 'Pilih Pelanggan',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: customer == null
+                            ? Colors.grey
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                    if (customer != null)
+                      Text(
+                        customer.phone ?? 'Tanpa nomor telepon',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (customer != null)
+                IconButton(
+                  icon: const Icon(
+                    Icons.close,
+                    size: 18,
+                    color: AppColors.error,
+                  ),
+                  onPressed: () =>
+                      context.read<CartBloc>().add(SetCartCustomer(null)),
+                ),
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 24,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(100),
                   ),
                 ),
-                if (_selectedCustomer != null)
-                  Text(
-                    _selectedCustomer?.phone ?? 'Tanpa nomor telepon',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          if (_selectedCustomer != null)
-            IconButton(
-              icon: const Icon(Icons.close, size: 18, color: AppColors.error),
-              onPressed: () => setState(() => _selectedCustomer = null),
-            ),
-          TextButton(
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(100),
+                onPressed: () => _showCustomerPicker(customer),
+                child: Text(customer == null ? 'PILIH' : 'GANTI'),
               ),
-            ),
-            onPressed: () => _showCustomerPicker(),
-            child: Text(_selectedCustomer == null ? 'PILIH' : 'GANTI'),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  void _showCustomerPicker() {
+  void _showCustomerPicker(Customer? currentCustomer) {
+    context.read<CustomerBloc>().add(LoadCustomers());
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        maxChildSize: 0.9,
+      backgroundColor: Colors.transparent,
+      builder: (contextSheet) => DraggableScrollableSheet(
+        initialChildSize: 0.8,
+        maxChildSize: 0.95,
         minChildSize: 0.5,
         expand: false,
-        builder: (context, scrollController) {
-          return Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.all(8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
+        builder: (contextSheet, scrollController) {
+          return StatefulBuilder(
+            builder: (contextSheet, setStateSheet) {
+              return Container(
+                decoration: const BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                 ),
-              ),
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'Pilih Pelanggan',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-              Expanded(
-                child: BlocBuilder<CustomerBloc, CustomerState>(
-                  builder: (context, state) {
-                    if (state.isLoading && state.customers.isEmpty) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (state.customers.isEmpty) {
-                      return const Center(child: Text('Belum ada pelanggan'));
-                    }
-                    return ListView.builder(
-                      controller: scrollController,
-                      itemCount: state.customers.length,
-                      itemBuilder: (context, index) {
-                        final customer = state.customers[index];
-                        return ListTile(
-                          leading: const CircleAvatar(
-                            child: Icon(Icons.person),
+                child: Column(
+                  children: [
+                    // Handle
+                    Container(
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.divider,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 10, 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Pilih Pelanggan',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
                           ),
-                          title: Text(customer.name),
-                          subtitle: Text(customer.phone ?? ''),
-                          onTap: () {
-                            setState(() => _selectedCustomer = customer);
-                            Navigator.pop(context);
-                          },
-                        );
-                      },
-                    );
-                  },
+                          TextButton.icon(
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              backgroundColor: AppColors.primary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                            ),
+                            onPressed: () async {
+                              await Navigator.push(
+                                contextSheet,
+                                MaterialPageRoute(
+                                  builder: (_) => const AddEditCustomerPage(),
+                                ),
+                              );
+                              // Refresh customers after adding
+                              if (context.mounted) {
+                                context.read<CustomerBloc>().add(
+                                  LoadCustomers(),
+                                );
+                              }
+                            },
+                            icon: const Icon(Icons.person_add_alt_1_outlined),
+                            label: const Text('Tambah Baru'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 8,
+                      ),
+                      child: TextField(
+                        onChanged: (value) => setStateSheet(() {}),
+                        controller: _customerSearchController,
+                        decoration: InputDecoration(
+                          hintText: 'Cari nama atau telepon...',
+                          prefixIcon: const Icon(Icons.search),
+                          fillColor: AppColors.surface,
+                          filled: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 0,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: BlocBuilder<CustomerBloc, CustomerState>(
+                        builder: (context, state) {
+                          if (state.isLoading && state.customers.isEmpty) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+
+                          final query = _customerSearchController.text
+                              .toLowerCase();
+                          final filteredCustomers = state.customers.where((c) {
+                            return c.name.toLowerCase().contains(query) ||
+                                (c.phone?.contains(query) ?? false);
+                          }).toList();
+
+                          if (filteredCustomers.isEmpty) {
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.person_search_outlined,
+                                    size: 64,
+                                    color: AppColors.textDisabled.withValues(
+                                      alpha: 0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'Tidak ada pelanggan ditemukan',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
+                          return ListView.builder(
+                            controller: scrollController,
+                            padding: const EdgeInsets.all(12),
+                            itemCount: filteredCustomers.length,
+                            itemBuilder: (context, index) {
+                              final customer = filteredCustomers[index];
+                              final isSelected =
+                                  currentCustomer?.id == customer.id;
+
+                              return Card(
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: BorderSide(
+                                    color: isSelected
+                                        ? AppColors.primary
+                                        : AppColors.divider,
+                                    width: isSelected ? 2 : 1,
+                                  ),
+                                ),
+                                margin: const EdgeInsets.only(bottom: 8),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 4,
+                                  ),
+                                  leading: CircleAvatar(
+                                    backgroundColor: isSelected
+                                        ? AppColors.primary
+                                        : AppColors.primary.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                    child: Text(
+                                      customer.name
+                                          .substring(0, 1)
+                                          .toUpperCase(),
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : AppColors.primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  title: Text(
+                                    customer.name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    customer.phone ?? 'Tanpa nomor telepon',
+                                  ),
+                                  trailing: isSelected
+                                      ? const Icon(
+                                          Icons.check_circle,
+                                          color: AppColors.primary,
+                                        )
+                                      : null,
+                                  onTap: () {
+                                    context.read<CartBloc>().add(
+                                      SetCartCustomer(customer),
+                                    );
+                                    Navigator.pop(contextSheet);
+                                  },
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              );
+            },
           );
         },
       ),

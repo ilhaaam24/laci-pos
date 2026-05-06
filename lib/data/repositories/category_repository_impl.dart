@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:uuid/uuid.dart';
 import '../../core/services/session_service.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/repositories/category_repository.dart';
@@ -53,9 +54,10 @@ class CategoryRepositoryImpl implements CategoryRepository {
   @override
   Future<Either<String, String>> createCategory(Category category) async {
     try {
+      final categoryId = category.id.isEmpty ? const Uuid().v4() : category.id;
       final model = CategoryModel.fromEntity(
         category,
-      ).copyWith(businessId: _businessId);
+      ).copyWith(id: categoryId, businessId: _businessId);
 
       // 1. Save to local DB
       await localDataSource.upsertCategory(model, syncStatus: 'pendingUpload');

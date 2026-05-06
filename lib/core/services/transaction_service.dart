@@ -2,6 +2,7 @@ import 'package:laci/data/datasources/local/local_database.dart';
 import 'package:laci/data/datasources/local/product_local_datasource.dart';
 import 'package:laci/data/datasources/local/transaction_local_datasource.dart';
 import 'package:laci/data/datasources/local/stock_log_local_datasource.dart';
+import 'package:laci/data/datasources/local/customer_local_datasource.dart';
 import 'package:laci/data/models/transaction_model.dart';
 import 'package:laci/data/models/stock_log_model.dart';
 import 'package:laci/domain/entities/stock_log_entity.dart';
@@ -14,6 +15,7 @@ class TransactionService {
   final ProductLocalDataSource _productLocal;
   final TransactionLocalDataSource _transactionLocal;
   final StockLogLocalDataSource _stockLogLocal;
+  final CustomerLocalDataSource _customerLocal;
   final NotificationService _notificationService;
   final SessionService _sessionService;
 
@@ -22,6 +24,7 @@ class TransactionService {
     this._productLocal,
     this._transactionLocal,
     this._stockLogLocal,
+    this._customerLocal,
     this._notificationService,
     this._sessionService,
   );
@@ -87,7 +90,35 @@ class TransactionService {
         // 2. Save transaction locally
         await _transactionLocal.createTransaction(transactionModel, syncStatus: 'pendingUpload');
 
-        // 3. Add to sync queue
+        // 3. Update Customer Statistics if customerId is present
+        if (transaction.customerId != null &&
+            transaction.customerId!.isNotEmpty) {
+          final customer =
+              await _customerLocal.getCustomerById(transaction.customerId!);
+          if (customer != null) {
+            // Logic: 1 point for every 10,000 IDR
+            final newPoints = (transaction.totalAmount / 10000).floor();
+
+            final updatedCustomer = customer.copyWith(
+              totalSpent: customer.totalSpent + transaction.totalAmount,
+              lastTransactionDate: transaction.createdAt,
+              loyaltyPoints: customer.loyaltyPoints + newPoints,
+              updatedAt: DateTime.now(),
+            );
+
+            await _customerLocal.upsertCustomer(updatedCustomer,
+                syncStatus: 'pendingUpload');
+
+            // Add customer update to sync queue
+            await _localDb.addToSyncQueue(
+              syncEntityName: 'customers',
+              documentId: updatedCustomer.id,
+              operation: 'update',
+            );
+          }
+        }
+
+        // 4. Add to sync queue for transaction
         await _localDb.addToSyncQueue(
           syncEntityName: 'transactions',
           documentId: transaction.id,

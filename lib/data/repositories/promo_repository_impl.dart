@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:uuid/uuid.dart';
 import '../../core/services/session_service.dart';
 import '../../domain/entities/promo_entity.dart';
 import '../../domain/repositories/promo_repository.dart';
@@ -38,7 +39,9 @@ class PromoRepositoryImpl implements PromoRepository {
   @override
   Future<Either<String, String>> createPromo(PromoEntity promo) async {
     try {
+      final promoId = promo.id.isEmpty ? const Uuid().v4() : promo.id;
       final model = PromoModel.fromEntity(promo).copyWith(
+        id: promoId,
         businessId: _businessId,
       );
       

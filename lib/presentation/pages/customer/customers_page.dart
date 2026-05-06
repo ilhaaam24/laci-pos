@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
 import '../../blocs/customer/customer_bloc.dart';
 import '../../../domain/entities/customer_entity.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
 import 'add_edit_customer_page.dart';
+import 'customer_detail_page.dart';
 
 class CustomersPage extends StatefulWidget {
   const CustomersPage({super.key});
@@ -121,7 +123,7 @@ class _CustomersPageState extends State<CustomersPage> {
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => AddEditCustomerPage(customer: customer),
+            builder: (_) => CustomerDetailPage(customer: customer),
           ),
         ),
         borderRadius: BorderRadius.circular(16),
@@ -181,6 +183,19 @@ class _CustomersPageState extends State<CustomersPage> {
                           ],
                         ),
                       ),
+                    const SizedBox(height: 4),
+                    Text(
+                      NumberFormat.currency(
+                        locale: 'id_ID',
+                        symbol: 'Rp',
+                        decimalDigits: 0,
+                      ).format(customer.totalSpent),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
                   ],
                 ),
               ),

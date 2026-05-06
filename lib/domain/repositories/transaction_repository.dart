@@ -11,4 +11,7 @@ abstract class TransactionRepository {
     DateTime startDate,
     DateTime endDate,
   );
+  Stream<Either<String, List<TransactionEntity>>> getTransactionsByCustomerId(
+    String customerId,
+  );
 }

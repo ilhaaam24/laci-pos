@@ -14,6 +14,9 @@ import '../../../domain/entities/product_entity.dart';
 import '../../../domain/entities/category_entity.dart';
 import '../../../core/style/app_colors.dart';
 import '../../widgets/sync_status_indicator.dart';
+import '../../../domain/entities/customer_entity.dart';
+import '../customer/add_edit_customer_page.dart';
+import '../../blocs/customer/customer_bloc.dart';
 
 class KasirPage extends StatefulWidget {
   const KasirPage({super.key});
@@ -67,50 +70,58 @@ class _KasirPageState extends State<KasirPage> {
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
-          const Text(
-            'Laci POS',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const SyncStatusIndicator(),
-              const SizedBox(width: 12),
-              BlocBuilder<AuthBloc, AuthState>(
-                builder: (context, state) {
-                  if (state is Authenticated) {
-                    final user = state.user;
-                    return CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppColors.primary,
-                      backgroundImage: user.photoUrl != null
-                          ? NetworkImage(user.photoUrl!)
-                          : null,
-                      child: user.photoUrl == null
-                          ? Text(
-                              (user.name ?? user.email)
-                                  .substring(0, 1)
-                                  .toUpperCase(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
-                            )
-                          : null,
-                    );
-                  }
-                  return const CircleAvatar(
-                    radius: 18,
-                    backgroundColor: AppColors.primary,
-                    child: Icon(Icons.person, color: Colors.white, size: 18),
-                  );
-                },
+              const Text(
+                'Laci POS',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              Row(
+                children: [
+                  const SyncStatusIndicator(),
+                  const SizedBox(width: 12),
+                  BlocBuilder<AuthBloc, AuthState>(
+                    builder: (context, state) {
+                      if (state is Authenticated) {
+                        final user = state.user;
+                        return CircleAvatar(
+                          radius: 18,
+                          backgroundColor: AppColors.primary,
+                          backgroundImage: user.photoUrl != null
+                              ? NetworkImage(user.photoUrl!)
+                              : null,
+                          child: user.photoUrl == null
+                              ? Text(
+                                  (user.name ?? user.email)
+                                      .substring(0, 1)
+                                      .toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
+                                )
+                              : null,
+                        );
+                      }
+                      return const CircleAvatar(
+                        radius: 18,
+                        backgroundColor: AppColors.primary,
+                        child: Icon(
+                          Icons.person,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),

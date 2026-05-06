@@ -45,8 +45,8 @@ class PromoFirebaseDataSourceImpl implements PromoFirebaseDataSource {
     try {
       final data = promo.toFirestore();
       data['businessId'] = _businessId;
-      final docRef = await _collection.add(data);
-      return docRef.id;
+      await _collection.doc(promo.id).set(data);
+      return promo.id;
     } catch (e) {
       throw Exception('Failed to create promo: $e');
     }
