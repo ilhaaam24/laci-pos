@@ -49,6 +49,41 @@ class PromoModel extends PromoEntity {
     };
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'type': type.name,
+      'value': value,
+      'minPurchase': minPurchase,
+      'isActive': isActive,
+      'startDate': startDate?.toIso8601String(),
+      'endDate': endDate?.toIso8601String(),
+      'businessId': businessId,
+    };
+  }
+
+  factory PromoModel.fromJson(Map<String, dynamic> json) {
+    return PromoModel(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      type: PromoType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => PromoType.fixed,
+      ),
+      value: (json['value'] ?? 0).toDouble(),
+      minPurchase: (json['minPurchase'] ?? 0).toDouble(),
+      isActive: json['isActive'] ?? true,
+      startDate: json['startDate'] != null
+          ? DateTime.parse(json['startDate'])
+          : null,
+      endDate: json['endDate'] != null
+          ? DateTime.parse(json['endDate'])
+          : null,
+      businessId: json['businessId'],
+    );
+  }
+
   factory PromoModel.fromEntity(PromoEntity entity) {
     return PromoModel(
       id: entity.id,

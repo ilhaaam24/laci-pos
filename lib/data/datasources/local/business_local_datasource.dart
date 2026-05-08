@@ -36,7 +36,17 @@ class BusinessLocalDataSource {
         qrisUrl: Value(business.qrisUrl),
         createdAt: business.createdAt,
         updatedAt: business.updatedAt,
+        syncStatus: const Value('synced'),
+        lastSyncAt: Value(DateTime.now()),
       ),
     );
+  }
+
+  Future<void> markAsSynced(String id) async {
+    await (db.update(db.localBusinessInfo)..where((t) => t.id.equals(id)))
+        .write(LocalBusinessInfoCompanion(
+      syncStatus: const Value('synced'),
+      lastSyncAt: Value(DateTime.now()),
+    ));
   }
 }

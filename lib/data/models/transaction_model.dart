@@ -55,6 +55,34 @@ class TransactionItemModel extends TransactionItem {
     };
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'productId': productId,
+      'productName': productName,
+      'quantity': quantity,
+      'price': price,
+      'costPrice': costPrice,
+      'discount': discount,
+      'subtotal': subtotal,
+      'businessId': businessId,
+    };
+  }
+
+  factory TransactionItemModel.fromJson(Map<String, dynamic> json) {
+    return TransactionItemModel(
+      id: json['id'] ?? '',
+      productId: json['productId'] ?? '',
+      productName: json['productName'] ?? '',
+      quantity: json['quantity'] ?? 0,
+      price: (json['price'] ?? 0).toDouble(),
+      costPrice: (json['costPrice'] ?? 0).toDouble(),
+      discount: (json['discount'] ?? 0).toDouble(),
+      subtotal: (json['subtotal'] ?? 0).toDouble(),
+      businessId: json['businessId'],
+    );
+  }
+
   TransactionItemModel copyWith({
     String? id,
     String? productId,
@@ -201,6 +229,69 @@ class TransactionModel extends TransactionEntity {
       'createdBy': createdBy,
       'businessId': businessId,
     };
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'transactionCode': transactionCode,
+      'customerId': customerId,
+      'customerName': customerName,
+      'subtotal': subtotal,
+      'taxAmount': taxAmount,
+      'discountAmount': discountAmount,
+      'totalAmount': totalAmount,
+      'paymentMethod': paymentMethod,
+      'paymentStatus': paymentStatus.name,
+      'status': status.name,
+      'amountPaid': amountPaid,
+      'changeAmount': changeAmount,
+      'notes': notes,
+      'createdAt': createdAt.toIso8601String(),
+      'completedAt': completedAt?.toIso8601String(),
+      'items': items
+          .map((e) => TransactionItemModel.fromEntity(e).toJson())
+          .toList(),
+      'createdBy': createdBy,
+      'businessId': businessId,
+    };
+  }
+
+  factory TransactionModel.fromJson(Map<String, dynamic> json) {
+    return TransactionModel(
+      id: json['id'] ?? '',
+      transactionCode: json['transactionCode'] ?? '',
+      customerId: json['customerId'],
+      customerName: json['customerName'],
+      subtotal: (json['subtotal'] ?? 0).toDouble(),
+      taxAmount: (json['taxAmount'] ?? 0).toDouble(),
+      discountAmount: (json['discountAmount'] ?? 0).toDouble(),
+      totalAmount: (json['totalAmount'] ?? 0).toDouble(),
+      paymentMethod: json['paymentMethod'] ?? '',
+      paymentStatus: PaymentStatus.values.firstWhere(
+        (e) => e.name == (json['paymentStatus'] ?? 'unpaid'),
+        orElse: () => PaymentStatus.unpaid,
+      ),
+      status: TransactionStatus.values.firstWhere(
+        (e) => e.name == (json['status'] ?? 'pending'),
+        orElse: () => TransactionStatus.pending,
+      ),
+      amountPaid: (json['amountPaid'] ?? 0).toDouble(),
+      changeAmount: (json['changeAmount'] ?? 0).toDouble(),
+      notes: json['notes'],
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'])
+          : null,
+      items: (json['items'] as List?)
+              ?.map((e) => TransactionItemModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      createdBy: json['createdBy'] ?? '',
+      businessId: json['businessId'],
+    );
   }
 
   TransactionModel copyWith({

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:laci/data/datasources/local/local_database.dart';
 import 'package:laci/data/datasources/local/product_local_datasource.dart';
 import 'package:laci/data/datasources/local/stock_log_local_datasource.dart';
@@ -58,15 +59,19 @@ class StockService {
 
       // 3. Add to sync queue
       await localDatabase.addToSyncQueue(
+        businessId: _businessId,
         syncEntityName: 'stock_logs',
         documentId: log.id,
         operation: 'create',
+        data: jsonEncode(log.toJson()),
       );
-      
+
       await localDatabase.addToSyncQueue(
+        businessId: _businessId,
         syncEntityName: 'products',
         documentId: productId,
         operation: 'update',
+        data: jsonEncode(product.copyWith(stock: newStock).toJson()),
       );
     });
 

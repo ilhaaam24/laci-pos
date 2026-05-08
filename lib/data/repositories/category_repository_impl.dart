@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dartz/dartz.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/services/session_service.dart';
@@ -67,6 +68,8 @@ class CategoryRepositoryImpl implements CategoryRepository {
         syncEntityName: 'categories',
         documentId: model.id,
         operation: 'create',
+        businessId: _businessId,
+        data: jsonEncode(model.toJson()),
       );
 
       return Right(model.id);
@@ -88,6 +91,8 @@ class CategoryRepositoryImpl implements CategoryRepository {
         syncEntityName: 'categories',
         documentId: model.id,
         operation: 'update',
+        businessId: _businessId,
+        data: jsonEncode(model.toJson()),
       );
 
       return const Right(null);
@@ -107,6 +112,7 @@ class CategoryRepositoryImpl implements CategoryRepository {
         syncEntityName: 'categories',
         documentId: id,
         operation: 'delete',
+        businessId: _businessId,
       );
 
       return const Right(null);

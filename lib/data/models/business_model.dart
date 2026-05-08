@@ -55,4 +55,36 @@ class BusinessInfoModel extends BusinessInfo {
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'businessName': businessName,
+      'address': address,
+      'phone': phone,
+      'email': email,
+      'logoUrl': logoUrl,
+      'qrisUrl': qrisUrl,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
+  }
+
+  factory BusinessInfoModel.fromJson(Map<String, dynamic> json) {
+    return BusinessInfoModel(
+      id: json['id'] ?? '',
+      businessName: json['businessName'] ?? '',
+      address: json['address'],
+      phone: json['phone'],
+      email: json['email'],
+      logoUrl: json['logoUrl'],
+      qrisUrl: json['qrisUrl'],
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : DateTime.now(),
+    );
+  }
 }

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:laci/data/datasources/local/local_database.dart';
 import 'package:laci/data/datasources/local/product_local_datasource.dart';
 import 'package:laci/data/datasources/local/transaction_local_datasource.dart';
@@ -85,6 +86,24 @@ class TransactionService {
               currentStock: newStock,
             );
           }
+
+          // Add to sync queue for product update (Stock changed!)
+          await _localDb.addToSyncQueue(
+            syncEntityName: 'products',
+            documentId: item.productId,
+            operation: 'update',
+            businessId: _businessId,
+            data: jsonEncode(product.copyWith(stock: newStock).toJson()),
+          );
+
+          // Add to sync queue for stock log
+          await _localDb.addToSyncQueue(
+            syncEntityName: 'stock_logs',
+            documentId: logModel.id,
+            operation: 'create',
+            businessId: _businessId,
+            data: jsonEncode(logModel.toJson()),
+          );
         }
 
         // 2. Save transaction locally
@@ -114,6 +133,8 @@ class TransactionService {
               syncEntityName: 'customers',
               documentId: updatedCustomer.id,
               operation: 'update',
+              businessId: _businessId,
+              data: jsonEncode(updatedCustomer.toJson()),
             );
           }
         }
@@ -123,6 +144,8 @@ class TransactionService {
           syncEntityName: 'transactions',
           documentId: transaction.id,
           operation: 'create',
+          businessId: _businessId,
+          data: jsonEncode(transactionModel.toJson()),
         );
       });
 
@@ -170,11 +193,13 @@ class TransactionService {
         );
         await _stockLogLocal.insertStockLog(logModel, syncStatus: 'pendingUpload');
 
-        // 3. Add to sync queue (we could create a dedicated stock_logs sync queue entry)
+        // 3. Add to sync queue
         await _localDb.addToSyncQueue(
           syncEntityName: 'stock_logs',
           documentId: logModel.id,
           operation: 'create',
+          businessId: _businessId,
+          data: jsonEncode(logModel.toJson()),
         );
         
         // Note: Since we updated product stock, we also need to sync the product update
@@ -182,6 +207,8 @@ class TransactionService {
           syncEntityName: 'products',
           documentId: productId,
           operation: 'update',
+          businessId: _businessId,
+          data: jsonEncode(product.copyWith(stock: newStock).toJson()),
         );
       });
     } catch (e) {

@@ -28,6 +28,12 @@ class StockLogLocalDataSource {
         (rows) => rows.map((row) => _rowToModel(row)).toList());
   }
 
+  Future<StockLogModel?> getStockLogById(String id) async {
+    final query = _db.select(_db.localStockLogs)..where((t) => t.id.equals(id));
+    final row = await query.getSingleOrNull();
+    return row != null ? _rowToModel(row) : null;
+  }
+
   Future<void> insertStockLog(StockLogModel log,
       {String syncStatus = 'pendingUpload'}) async {
     await _db.into(_db.localStockLogs).insert(

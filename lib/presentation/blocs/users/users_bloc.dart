@@ -13,10 +13,11 @@ class LoadUsers extends UsersEvent {}
 
 class InviteUser extends UsersEvent {
   final String email;
+  final String password;
   final UserRole role;
-  InviteUser(this.email, this.role);
+  InviteUser(this.email, this.password, this.role);
   @override
-  List<Object?> get props => [email, role];
+  List<Object?> get props => [email, password, role];
 }
 
 class UpdateUserRole extends UsersEvent {
@@ -96,7 +97,8 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
 
   Future<void> _onInviteUser(InviteUser event, Emitter<UsersState> emit) async {
     emit(state.copyWith(isLoading: true));
-    final result = await repository.addUser(event.email, event.role);
+    final result =
+        await repository.addUser(event.email, event.password, event.role);
     result.fold(
       (error) => emit(state.copyWith(message: error, isLoading: false)),
       (_) {

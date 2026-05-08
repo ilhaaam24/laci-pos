@@ -5,6 +5,9 @@ import '../datasources/firebase/user_firebase_datasource.dart';
 
 import '../../../core/services/session_service.dart';
 
+import 'package:firebase_auth/firebase_auth.dart' as auth;
+import 'package:firebase_core/firebase_core.dart';
+import '../../../firebase_options.dart';
 import '../models/user_model.dart';
 
 class UserRepositoryImpl implements UserRepository {
@@ -47,24 +50,57 @@ class UserRepositoryImpl implements UserRepository {
   }
 
   @override
-  Future<Either<String, void>> addUser(String email, UserRole role) async {
+  Future<Either<String, void>> addUser(
+    String email,
+    String password,
+    UserRole role,
+  ) async {
     try {
       final businessId = sessionService.businessId;
       if (businessId == null) return const Left('Business ID tidak ditemukan');
 
-      // Create a placeholder user with email as ID initially
-      // Or just a random ID. Let's use a random ID.
-      final newUser = UserModel(
-        id: 'invited_${DateTime.now().millisecondsSinceEpoch}',
-        email: email,
-        name: null,
-        photoUrl: null,
-        role: role,
-        businessId: businessId,
+      // 1. Create User in Firebase Auth using a secondary app
+      // This is to avoid logging out the current admin user
+      final appName = 'staff_creator_${DateTime.now().millisecondsSinceEpoch}';
+      final secondaryApp = await Firebase.initializeApp(
+        name: appName,
+        options: DefaultFirebaseOptions.currentPlatform,
       );
 
-      await dataSource.createUserProfile(newUser);
-      return const Right(null);
+      try {
+        final authInstance = auth.FirebaseAuth.instanceFor(app: secondaryApp);
+        final userCredential =
+            await authInstance.createUserWithEmailAndPassword(
+              email: email,
+              password: password,
+            );
+
+        final uid = userCredential.user?.uid;
+        if (uid == null) {
+          throw Exception('Gagal mendapatkan UID untuk user baru');
+        }
+
+        // 2. Create User Profile in Firestore
+        final newUser = UserModel(
+          id: uid,
+          email: email,
+          name: null,
+          photoUrl: null,
+          role: role,
+          businessId: businessId,
+        );
+
+        await dataSource.createUserProfile(newUser);
+
+        // 3. Clean up secondary app
+        await secondaryApp.delete();
+
+        return const Right(null);
+      } catch (e) {
+        // Ensure app is deleted even on error
+        await secondaryApp.delete();
+        rethrow;
+      }
     } catch (e) {
       return Left(e.toString());
     }

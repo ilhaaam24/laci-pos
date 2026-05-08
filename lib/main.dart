@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -6,6 +8,7 @@ import 'package:laci/core/services/connectivity_service.dart';
 import 'package:laci/core/services/sync_service.dart';
 import 'package:laci/core/themes/theme.dart';
 import 'package:laci/core/services/notification_service.dart';
+import 'package:laci/core/services/background_service.dart';
 import 'package:laci/presentation/blocs/users/users_bloc.dart';
 
 import 'core/di/injection.dart';
@@ -30,7 +33,8 @@ void main() async {
 
   // Initialize Google Sign In
   await GoogleSignIn.instance.initialize(
-    serverClientId: '747380789752-gpu0fjfv3k45a5o1aktjqs4b244j3mm4.apps.googleusercontent.com',
+    serverClientId:
+        '747380789752-gpu0fjfv3k45a5o1aktjqs4b244j3mm4.apps.googleusercontent.com',
   );
 
   // Initialize Dependencies
@@ -39,11 +43,11 @@ void main() async {
   // Initialize Connectivity Service
   await getIt<ConnectivityService>().init();
 
-  // Trigger initial Sync
-  getIt<SyncService>().fullSync();
-
   // Initialize Notification Service
   await getIt<NotificationService>().init();
+
+  // Initialize Background Service (Workmanager)
+  await BackgroundService.init();
 
   runApp(const MyApp());
 }

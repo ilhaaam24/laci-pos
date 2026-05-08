@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dartz/dartz.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/services/session_service.dart';
@@ -63,6 +64,8 @@ class CustomerRepositoryImpl implements CustomerRepository {
         syncEntityName: 'customers',
         documentId: model.id,
         operation: 'create',
+        businessId: _businessId,
+        data: jsonEncode(model.toJson()),
       );
 
       return Right(model.id);
@@ -84,6 +87,8 @@ class CustomerRepositoryImpl implements CustomerRepository {
         syncEntityName: 'customers',
         documentId: model.id,
         operation: 'update',
+        businessId: _businessId,
+        data: jsonEncode(model.toJson()),
       );
 
       return const Right(null);
@@ -103,6 +108,7 @@ class CustomerRepositoryImpl implements CustomerRepository {
         syncEntityName: 'customers',
         documentId: id,
         operation: 'delete',
+        businessId: _businessId,
       );
 
       return const Right(null);

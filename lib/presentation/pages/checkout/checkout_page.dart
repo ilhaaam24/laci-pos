@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:laci/core/services/session_service.dart';
+import 'package:laci/core/services/sync_service.dart';
 import 'package:laci/presentation/blocs/customer/customer_bloc.dart';
 import 'package:laci/presentation/pages/promo/promo_page.dart';
 import '../../../domain/entities/customer_entity.dart';
@@ -185,6 +186,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
       // Process transaction with stock update
       final transactionService = getIt<TransactionService>();
       await transactionService.processTransaction(transaction);
+
+      // Trigger background sync to push changes to Firebase immediately
+      getIt<SyncService>().fullSync();
 
       // Close loading
       if (!mounted) return;

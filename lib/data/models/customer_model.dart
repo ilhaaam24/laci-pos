@@ -56,6 +56,44 @@ class CustomerModel extends Customer {
     };
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'phone': phone,
+      'address': address,
+      'totalSpent': totalSpent,
+      'lastTransactionDate': lastTransactionDate?.toIso8601String(),
+      'loyaltyPoints': loyaltyPoints,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'businessId': businessId,
+    };
+  }
+
+  factory CustomerModel.fromJson(Map<String, dynamic> json) {
+    return CustomerModel(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      email: json['email'],
+      phone: json['phone'],
+      address: json['address'],
+      totalSpent: (json['totalSpent'] ?? 0).toDouble(),
+      lastTransactionDate: json['lastTransactionDate'] != null
+          ? DateTime.parse(json['lastTransactionDate'])
+          : null,
+      loyaltyPoints: json['loyaltyPoints'] ?? 0,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : DateTime.now(),
+      businessId: json['businessId'],
+    );
+  }
+
   factory CustomerModel.fromEntity(Customer entity) {
     return CustomerModel(
       id: entity.id,

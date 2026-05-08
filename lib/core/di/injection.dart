@@ -262,6 +262,7 @@ Future<void> initializeDependencies() async {
       remoteDataSource: getIt(),
       localDataSource: getIt(),
       localDatabase: getIt(),
+      sessionService: getIt(),
     ),
   );
 
@@ -294,7 +295,11 @@ Future<void> initializeDependencies() async {
   getIt.registerFactory(() => BusinessBloc(repository: getIt()));
 
   getIt.registerFactory(
-    () => AuthBloc(repository: getIt(), sessionService: getIt()),
+    () => AuthBloc(
+      repository: getIt(),
+      sessionService: getIt(),
+      localDatabase: getIt(),
+    ),
   );
 
   getIt.registerFactory(

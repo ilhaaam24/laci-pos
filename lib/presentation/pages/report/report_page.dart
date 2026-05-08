@@ -11,6 +11,8 @@ import '../../../core/style/app_colors.dart';
 import '../../../core/services/export_service.dart';
 import '../../blocs/report/report_bloc.dart';
 import '../../blocs/business/business_bloc.dart';
+import '../../blocs/transaction/transaction_bloc.dart';
+import '../../../domain/entities/transaction_entity.dart';
 
 class ReportPage extends StatefulWidget {
   const ReportPage({super.key});
@@ -42,6 +44,8 @@ class _ReportPageState extends State<ReportPage> {
         LoadCustomRangeReport(_selectedDate, _endDate!),
       );
     }
+    // Also load recent transactions
+    context.read<TransactionBloc>().add(LoadTransactions());
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -192,21 +196,18 @@ class _ReportPageState extends State<ReportPage> {
       decimalDigits: 0,
     );
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            _loadReport();
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 10),
-                Row(
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _buildSectionTitle('Business Overview', 'Analytics'),
@@ -234,20 +235,258 @@ class _ReportPageState extends State<ReportPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                _buildPeriodSelector(),
-                const SizedBox(height: 24),
-                _buildProfitCard(currencyFormatter),
-                const SizedBox(height: 24),
-                _buildWeeklySalesCard(),
-                const SizedBox(height: 24),
-                _buildStatsGrid(currencyFormatter),
-                const SizedBox(height: 24),
-                _buildTopSellingSection(currencyFormatter),
-                const SizedBox(height: 100), // Bottom padding for navigation
-              ],
-            ),
+              ),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.divider),
+                  ),
+                  child: TabBar(
+                    indicator: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    labelColor: AppColors.primary,
+                    unselectedLabelColor: AppColors.textDisabled,
+                    labelStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    tabs: const [
+                      Tab(text: 'Transaksi'),
+                      Tab(text: 'Laporan'),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    _buildTransactionTab(currencyFormatter),
+                    _buildReportTab(currencyFormatter),
+                  ],
+                ),
+              ),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransactionTab(NumberFormat currencyFormatter) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        context.read<TransactionBloc>().add(LoadTransactions());
+      },
+      child: BlocBuilder<TransactionBloc, TransactionState>(
+        builder: (context, state) {
+          if (state is TransactionLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (state is TransactionLoaded) {
+            if (state.transactions.isEmpty) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                  const Center(
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.receipt_long_outlined,
+                          size: 64,
+                          color: AppColors.textDisabled,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'Belum ada transaksi',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: state.transactions.length,
+              itemBuilder: (context, index) {
+                final txn = state.transactions[index];
+                return _buildTransactionCard(
+                  txn,
+                  currencyFormatter,
+                ).animate().fadeIn(delay: (index * 50).ms).slideY(begin: 0.1);
+              },
+            );
+          }
+
+          if (state is TransactionError) {
+            return Center(child: Text(state.message));
+          }
+
+          return const SizedBox();
+        },
+      ),
+    );
+  }
+
+  Widget _buildTransactionCard(
+    TransactionEntity txn,
+    NumberFormat currencyFormatter,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.divider),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child:
+                    const Icon(Icons.receipt_outlined, color: AppColors.primary),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      txn.transactionCode,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      DateFormat('dd MMM yyyy, HH:mm').format(txn.createdAt),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    currencyFormatter.format(txn.totalAmount),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      txn.paymentStatus.name.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          if (txn.items.isNotEmpty) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Divider(height: 1, color: AppColors.divider),
+            ),
+            ...txn.items.map((item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.productName,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${item.quantity} x ${currencyFormatter.format(item.price)}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportTab(NumberFormat currencyFormatter) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        _loadReport();
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildPeriodSelector(),
+            const SizedBox(height: 24),
+            _buildProfitCard(currencyFormatter),
+            const SizedBox(height: 24),
+            _buildWeeklySalesCard(),
+            const SizedBox(height: 24),
+            _buildStatsGrid(currencyFormatter),
+            const SizedBox(height: 24),
+            _buildTopSellingSection(currencyFormatter),
+            const SizedBox(height: 100), // Bottom padding for navigation
+          ],
         ),
       ),
     );

@@ -59,48 +59,74 @@ class UsersManagementPage extends StatelessWidget {
 
   void _showAddUserDialog(BuildContext context) {
     final emailController = TextEditingController();
+    final passwordController = TextEditingController();
     UserRole selectedRole = UserRole.kasir;
+    bool obscurePassword = true;
 
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('Tambah Staff Baru'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email Staff',
-                  hintText: 'contoh: staff@gmail.com',
-                  border: OutlineInputBorder(),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email Staff',
+                    hintText: 'contoh: staff@gmail.com',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
                 ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 16),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Pilih Role:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-              ...UserRole.values
-                  .where((r) => r != UserRole.admin && r != UserRole.owner)
-                  .map(
-                    (role) => RadioListTile<UserRole>(
-                      title: Text(role.name.toUpperCase()),
-                      value: role,
-                      groupValue: selectedRole,
-                      onChanged: (value) {
-                        if (value != null) {
-                          setDialogState(() => selectedRole = value);
-                        }
+                const SizedBox(height: 16),
+                TextField(
+                  controller: passwordController,
+                  obscureText: obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: 'Password Staff',
+                    hintText: 'Minimal 6 karakter',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                      ),
+                      onPressed: () {
+                        setDialogState(
+                          () => obscurePassword = !obscurePassword,
+                        );
                       },
                     ),
                   ),
-            ],
+                ),
+                const SizedBox(height: 16),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Pilih Role:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                ...UserRole.values
+                    .where((r) => r != UserRole.admin && r != UserRole.owner)
+                    .map(
+                      (role) => RadioListTile<UserRole>(
+                        title: Text(role.name.toUpperCase()),
+                        value: role,
+                        groupValue: selectedRole,
+                        onChanged: (value) {
+                          if (value != null) {
+                            setDialogState(() => selectedRole = value);
+                          }
+                        },
+                      ),
+                    ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -116,11 +142,18 @@ class UsersManagementPage extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 final email = emailController.text.trim();
-                if (email.isNotEmpty && email.contains('@')) {
+                final password = passwordController.text;
+                if (email.isNotEmpty &&
+                    email.contains('@') &&
+                    password.length >= 6) {
                   context.read<UsersBloc>().add(
-                    InviteUser(email, selectedRole),
+                    InviteUser(email, password, selectedRole),
                   );
                   Navigator.pop(dialogContext);
+                } else if (password.length < 6) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Password minimal 6 karakter')),
+                  );
                 }
               },
               child: const Text('Tambah'),

@@ -48,6 +48,41 @@ class StockLogModel extends StockLog {
     };
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'productId': productId,
+      'productName': productName,
+      'type': type.name,
+      'quantity': quantity,
+      'previousStock': previousStock,
+      'newStock': newStock,
+      'reason': reason,
+      'createdAt': createdAt.toIso8601String(),
+      'businessId': businessId,
+    };
+  }
+
+  factory StockLogModel.fromJson(Map<String, dynamic> json) {
+    return StockLogModel(
+      id: json['id'] ?? '',
+      productId: json['productId'] ?? '',
+      productName: json['productName'] ?? '',
+      type: StockLogType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => StockLogType.adjustment,
+      ),
+      quantity: json['quantity'] ?? 0,
+      previousStock: json['previousStock'] ?? 0,
+      newStock: json['newStock'] ?? 0,
+      reason: json['reason'],
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      businessId: json['businessId'],
+    );
+  }
+
   factory StockLogModel.fromEntity(StockLog entity) {
     return StockLogModel(
       id: entity.id,

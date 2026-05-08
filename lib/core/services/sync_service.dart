@@ -19,6 +19,13 @@ import 'package:laci/data/datasources/local/product_local_datasource.dart';
 import 'package:laci/data/datasources/local/promo_local_datasource.dart';
 import 'package:laci/data/datasources/local/stock_log_local_datasource.dart';
 import 'package:laci/data/datasources/local/transaction_local_datasource.dart';
+import 'package:laci/data/models/business_model.dart';
+import 'package:laci/data/models/category_model.dart';
+import 'package:laci/data/models/customer_model.dart';
+import 'package:laci/data/models/product_model.dart';
+import 'package:laci/data/models/promo_model.dart';
+import 'package:laci/data/models/stock_log_model.dart';
+import 'package:laci/data/models/transaction_model.dart';
 
 class SyncService {
   final LocalDatabase localDatabase;
@@ -43,11 +50,13 @@ class SyncService {
 
   final StreamController<AppSyncState> _syncStateController =
       StreamController<AppSyncState>.broadcast();
-  
+
   Stream<AppSyncState> get syncState => _syncStateController.stream;
-  
+
   AppSyncState _currentState = AppSyncState.idle;
   AppSyncState get currentState => _currentState;
+
+  DateTime? _lastSyncAttempt;
 
   SyncService({
     required this.localDatabase,
@@ -70,6 +79,7 @@ class SyncService {
   }) {
     // Automatically trigger sync when connection is restored
     connectivityService.onlineStream.listen((isOnline) {
+      log('SyncService: Connectivity changed to $isOnline');
       if (isOnline) {
         log('Connection restored, triggering sync...');
         fullSync();
@@ -93,16 +103,31 @@ class SyncService {
 
     if (_currentState == AppSyncState.syncing) return;
 
+    // Prevent spamming sync if it failed recently
+    if (_currentState == AppSyncState.error && _lastSyncAttempt != null) {
+      final cooldown = DateTime.now().difference(_lastSyncAttempt!);
+      if (cooldown < const Duration(seconds: 10)) {
+        log('Sync cooldown in effect (${cooldown.inSeconds}s), skipping...');
+        return;
+      }
+    }
+
+    if (sessionService.businessId == null) {
+      log('SyncService: No businessId found, skipping sync.');
+      return;
+    }
+
+    _lastSyncAttempt = DateTime.now();
     _updateState(AppSyncState.syncing);
     try {
-      log('Starting full sync...');
-      
+      log('Starting full sync... from: ${StackTrace.current}');
+
       // 1. First push pending changes to remote
       await pushToRemote();
-      
+
       // 2. Then pull latest data from remote
       await pullFromRemote();
-      
+
       _updateState(AppSyncState.idle);
       log('Full sync completed successfully.');
     } catch (e) {
@@ -113,25 +138,42 @@ class SyncService {
 
   /// Push pending operations from the local sync queue to Firebase
   Future<void> pushToRemote() async {
+    final currentBusinessId = sessionService.businessId;
+    if (currentBusinessId == null) return;
+
     final pendingEntries = await localDatabase.getPendingSyncEntries();
     if (pendingEntries.isEmpty) return;
 
-    log('Pushing ${pendingEntries.length} pending operations to remote...');
+    // Filter entries for the current business
+    final myEntries =
+        pendingEntries.where((e) => e.businessId == currentBusinessId).toList();
+    if (myEntries.isEmpty) return;
 
-    for (final entry in pendingEntries) {
+    log('Pushing ${myEntries.length} pending operations for business $currentBusinessId to remote...');
+
+    for (final entry in myEntries) {
       try {
         await _processSyncEntry(entry);
         await localDatabase.completeSyncEntry(entry.id);
       } catch (e) {
         log('Failed to process sync entry ${entry.id}: $e');
+
+        // If the database is locked, we should stop the sync process entirely
+        // and not try to call failSyncEntry (which would also likely fail)
+        if (e.toString().contains('database is locked')) {
+          rethrow;
+        }
+
         await localDatabase.failSyncEntry(entry.id);
       }
     }
   }
 
   Future<void> _processSyncEntry(SyncQueueEntry entry) async {
-    final data = entry.data != null ? jsonDecode(entry.data!) as Map<String, dynamic> : null;
-    
+    final data = entry.data != null
+        ? jsonDecode(entry.data!) as Map<String, dynamic>
+        : null;
+
     switch (entry.syncEntityName) {
       case 'products':
         await _syncProduct(entry.operation, entry.documentId, data);
@@ -159,12 +201,22 @@ class SyncService {
 
   // --- Entity Specific Sync Logic ---
 
-  Future<void> _syncProduct(String op, String id, Map<String, dynamic>? data) async {
+  Future<void> _syncProduct(
+    String op,
+    String id,
+    Map<String, dynamic>? data,
+  ) async {
     if (op == 'delete') {
       await productRemote.deleteProduct(id);
       await productLocal.hardDelete(id);
     } else {
-      final model = await productLocal.getProductById(id);
+      ProductModel? model;
+      if (data != null) {
+        model = ProductModel.fromJson(data);
+      } else {
+        model = await productLocal.getProductById(id);
+      }
+
       if (model != null) {
         if (op == 'create') {
           await productRemote.createProduct(model);
@@ -176,12 +228,22 @@ class SyncService {
     }
   }
 
-  Future<void> _syncCategory(String op, String id, Map<String, dynamic>? data) async {
+  Future<void> _syncCategory(
+    String op,
+    String id,
+    Map<String, dynamic>? data,
+  ) async {
     if (op == 'delete') {
       await categoryRemote.deleteCategory(id);
       await categoryLocal.hardDelete(id);
     } else {
-      final model = await categoryLocal.getCategoryById(id);
+      CategoryModel? model;
+      if (data != null) {
+        model = CategoryModel.fromJson(data);
+      } else {
+        model = await categoryLocal.getCategoryById(id);
+      }
+
       if (model != null) {
         if (op == 'create') {
           await categoryRemote.createCategory(model);
@@ -193,12 +255,22 @@ class SyncService {
     }
   }
 
-  Future<void> _syncCustomer(String op, String id, Map<String, dynamic>? data) async {
+  Future<void> _syncCustomer(
+    String op,
+    String id,
+    Map<String, dynamic>? data,
+  ) async {
     if (op == 'delete') {
       await customerRemote.deleteCustomer(id);
       await customerLocal.hardDelete(id);
     } else {
-      final model = await customerLocal.getCustomerById(id);
+      CustomerModel? model;
+      if (data != null) {
+        model = CustomerModel.fromJson(data);
+      } else {
+        model = await customerLocal.getCustomerById(id);
+      }
+
       if (model != null) {
         if (op == 'create') {
           await customerRemote.createCustomer(model);
@@ -210,9 +282,19 @@ class SyncService {
     }
   }
 
-  Future<void> _syncTransaction(String op, String id, Map<String, dynamic>? data) async {
+  Future<void> _syncTransaction(
+    String op,
+    String id,
+    Map<String, dynamic>? data,
+  ) async {
     if (op == 'create') {
-      final model = await transactionLocal.getTransactionById(id);
+      TransactionModel? model;
+      if (data != null) {
+        model = TransactionModel.fromJson(data);
+      } else {
+        model = await transactionLocal.getTransactionById(id);
+      }
+
       if (model != null) {
         await transactionRemote.createTransaction(model);
         await transactionLocal.markAsSynced(id);
@@ -220,58 +302,105 @@ class SyncService {
     }
   }
 
-  Future<void> _syncPromo(String op, String id, Map<String, dynamic>? data) async {
+  Future<void> _syncPromo(
+    String op,
+    String id,
+    Map<String, dynamic>? data,
+  ) async {
     if (op == 'delete') {
       await promoRemote.deletePromo(id);
       await promoLocal.hardDelete(id);
     } else {
-      // Need to implement getPromoById in promoLocal if needed, or use a general approach
-      // For now, assume we pull all and sync back
+      PromoModel? model;
+      if (data != null) {
+        model = PromoModel.fromJson(data);
+      } else {
+        // Fallback or implementation of getPromoById needed
+      }
+
+      if (model != null) {
+        if (op == 'create') {
+          await promoRemote.createPromo(model);
+        } else {
+          await promoRemote.updatePromo(model);
+        }
+        await promoLocal.markAsSynced(id);
+      }
     }
   }
 
-  Future<void> _syncBusiness(String op, String id, Map<String, dynamic>? data) async {
-    final model = await businessLocal.getBusinessInfo();
-    if (model != null && model.id == id) {
-      await businessRemote.updateBusinessInfo(model);
+  Future<void> _syncBusiness(
+    String op,
+    String id,
+    Map<String, dynamic>? data,
+  ) async {
+    if (op == 'update') {
+      BusinessInfoModel? model;
+      if (data != null) {
+        model = BusinessInfoModel.fromJson(data);
+      } else {
+        model = await businessLocal.getBusinessInfo();
+      }
+
+      if (model != null && model.id == id) {
+        await businessRemote.updateBusinessInfo(model);
+        await businessLocal.markAsSynced(id);
+      }
     }
   }
 
-  Future<void> _syncStockLog(String op, String id, Map<String, dynamic>? data) async {
+  Future<void> _syncStockLog(
+    String op,
+    String id,
+    Map<String, dynamic>? data,
+  ) async {
     if (op == 'create') {
-      // Assuming stock logs are created alongside transactions or manual adjustments
-      // and we just need to ensure they reach the server.
+      StockLogModel? model;
+      if (data != null) {
+        model = StockLogModel.fromJson(data);
+      } else {
+        model = await stockLogLocal.getStockLogById(id);
+      }
+
+      if (model != null) {
+        await stockLogRemote.createStockLog(model);
+        await stockLogLocal.markAsSynced(id);
+      }
     }
   }
 
   /// Pull all data from Firebase to populate local database
   Future<void> pullFromRemote() async {
     log('Pulling data from remote...');
-    
+
     // 1. Pull Products
     final products = await productRemote.getProducts().first;
     await productLocal.upsertFromRemote(products);
-    
+
     // 2. Pull Categories
     final categories = await categoryRemote.getCategories().first;
     await categoryLocal.upsertFromRemote(categories);
-    
+
     // 3. Pull Customers
     final customers = await customerRemote.getCustomers().first;
     await customerLocal.upsertFromRemote(customers);
-    
+
     // 4. Pull Transactions (Maybe limit this to last 30 days?)
     final transactions = await transactionRemote.getTransactions().first;
     await transactionLocal.upsertFromRemote(transactions);
-    
+
     // 5. Pull Promos
     final promos = await promoRemote.getPromos().first;
     await promoLocal.upsertFromRemote(promos);
 
     // 6. Pull Business Info
     final business = await businessRemote.getBusinessInfo();
+    log(
+      'SyncService: Pulled business info: ${business.id} (${business.businessName})',
+    );
     await businessLocal.upsertBusinessInfo(business);
-    
+    log('SyncService: Upserted business info to local');
+
     log('Pull completed.');
   }
 

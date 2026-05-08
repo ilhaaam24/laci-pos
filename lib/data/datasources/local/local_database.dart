@@ -193,6 +193,9 @@ class SyncQueueEntries extends Table {
   /// 'pending', 'processing', 'failed'
   TextColumn get status =>
       text().withDefault(const Constant('pending'))();
+  
+  /// The business this operation belongs to
+  TextColumn get businessId => text().nullable()();
 }
 
 // ============================================================
@@ -217,7 +220,7 @@ class LocalDatabase extends _$LocalDatabase {
   LocalDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -232,6 +235,10 @@ class LocalDatabase extends _$LocalDatabase {
           await m.addColumn(localCustomers, localCustomers.lastTransactionDate);
           await m.addColumn(localCustomers, localCustomers.loyaltyPoints);
         }
+        if (from < 3) {
+          // Add businessId to SyncQueueEntries
+          await m.addColumn(syncQueueEntries, syncQueueEntries.businessId);
+        }
       },
     );
   }
@@ -245,6 +252,7 @@ class LocalDatabase extends _$LocalDatabase {
     required String syncEntityName,
     required String documentId,
     required String operation,
+    required String businessId,
     String? data,
   }) async {
     await into(syncQueueEntries).insert(
@@ -252,6 +260,7 @@ class LocalDatabase extends _$LocalDatabase {
         syncEntityName: syncEntityName,
         documentId: documentId,
         operation: operation,
+        businessId: Value(businessId),
         data: Value(data),
         createdAt: DateTime.now(),
       ),
@@ -316,7 +325,8 @@ class LocalDatabase extends _$LocalDatabase {
       await delete(localPromos).go();
       await delete(localStockLogs).go();
       await delete(localBusinessInfo).go();
-      await delete(syncQueueEntries).go();
+      // NOTE: We do NOT clear syncQueueEntries here to prevent losing offline changes
+      // that haven't been synced yet.
     });
   }
 }
@@ -329,6 +339,12 @@ LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
     final file = File(p.join(dbFolder.path, 'laci_pos.sqlite'));
-    return NativeDatabase.createInBackground(file);
+    return NativeDatabase.createInBackground(
+      file,
+      setup: (db) {
+        db.execute('PRAGMA journal_mode = WAL;');
+        db.execute('PRAGMA busy_timeout = 5000;');
+      },
+    );
   });
 }

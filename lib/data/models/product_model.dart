@@ -58,6 +58,46 @@ class ProductModel extends Product {
     };
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'categoryId': categoryId,
+      'name': name,
+      'description': description,
+      'price': price,
+      'costPrice': costPrice,
+      'stock': stock,
+      'stockThreshold': stockThreshold,
+      'imageUrl': imageUrl,
+      'sku': sku,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'businessId': businessId,
+    };
+  }
+
+  factory ProductModel.fromJson(Map<String, dynamic> json) {
+    return ProductModel(
+      id: json['id'] ?? '',
+      categoryId: json['categoryId'] ?? '',
+      name: json['name'] ?? '',
+      description: json['description'],
+      price: (json['price'] ?? 0).toDouble(),
+      costPrice: (json['costPrice'] ?? 0).toDouble(),
+      stock: json['stock'] ?? 0,
+      stockThreshold: json['stockThreshold'] ?? 5,
+      imageUrl: json['imageUrl'],
+      sku: json['sku'],
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : DateTime.now(),
+      businessId: json['businessId'],
+    );
+  }
+
   Product toEntity() {
     return Product(
       id: id,

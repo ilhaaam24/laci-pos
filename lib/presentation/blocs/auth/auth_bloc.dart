@@ -5,6 +5,7 @@ import '../../../domain/entities/user_entity.dart';
 import '../../../domain/repositories/auth_repository.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/background_service.dart';
+import '../../../data/datasources/local/local_database.dart';
 
 // Events
 abstract class AuthEvent extends Equatable {
@@ -67,11 +68,13 @@ class AuthError extends AuthState {
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository repository;
   final SessionService sessionService;
+  final LocalDatabase localDatabase;
   StreamSubscription<UserEntity?>? _authStateSubscription;
 
   AuthBloc({
     required this.repository,
     required this.sessionService,
+    required this.localDatabase,
   }) : super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
     on<SignInRequested>(_onSignInRequested);
@@ -161,6 +164,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     await repository.signOut();
+    // Clear local database on sign out to prevent data leakage
+    await localDatabase.clearAllData();
     // Status will be updated by stream
   }
 

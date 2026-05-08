@@ -6109,6 +6109,17 @@ class $SyncQueueEntriesTable extends SyncQueueEntries
     requiredDuringInsert: false,
     defaultValue: const Constant('pending'),
   );
+  static const VerificationMeta _businessIdMeta = const VerificationMeta(
+    'businessId',
+  );
+  @override
+  late final GeneratedColumn<String> businessId = GeneratedColumn<String>(
+    'business_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -6119,6 +6130,7 @@ class $SyncQueueEntriesTable extends SyncQueueEntries
     createdAt,
     retryCount,
     status,
+    businessId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6188,6 +6200,12 @@ class $SyncQueueEntriesTable extends SyncQueueEntries
         status.isAcceptableOrUnknown(data['status']!, _statusMeta),
       );
     }
+    if (data.containsKey('business_id')) {
+      context.handle(
+        _businessIdMeta,
+        businessId.isAcceptableOrUnknown(data['business_id']!, _businessIdMeta),
+      );
+    }
     return context;
   }
 
@@ -6229,6 +6247,10 @@ class $SyncQueueEntriesTable extends SyncQueueEntries
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       )!,
+      businessId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}business_id'],
+      ),
     );
   }
 
@@ -6253,6 +6275,9 @@ class SyncQueueEntry extends DataClass implements Insertable<SyncQueueEntry> {
 
   /// 'pending', 'processing', 'failed'
   final String status;
+
+  /// The business this operation belongs to
+  final String? businessId;
   const SyncQueueEntry({
     required this.id,
     required this.syncEntityName,
@@ -6262,6 +6287,7 @@ class SyncQueueEntry extends DataClass implements Insertable<SyncQueueEntry> {
     required this.createdAt,
     required this.retryCount,
     required this.status,
+    this.businessId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -6276,6 +6302,9 @@ class SyncQueueEntry extends DataClass implements Insertable<SyncQueueEntry> {
     map['created_at'] = Variable<DateTime>(createdAt);
     map['retry_count'] = Variable<int>(retryCount);
     map['status'] = Variable<String>(status);
+    if (!nullToAbsent || businessId != null) {
+      map['business_id'] = Variable<String>(businessId);
+    }
     return map;
   }
 
@@ -6289,6 +6318,9 @@ class SyncQueueEntry extends DataClass implements Insertable<SyncQueueEntry> {
       createdAt: Value(createdAt),
       retryCount: Value(retryCount),
       status: Value(status),
+      businessId: businessId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(businessId),
     );
   }
 
@@ -6306,6 +6338,7 @@ class SyncQueueEntry extends DataClass implements Insertable<SyncQueueEntry> {
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       retryCount: serializer.fromJson<int>(json['retryCount']),
       status: serializer.fromJson<String>(json['status']),
+      businessId: serializer.fromJson<String?>(json['businessId']),
     );
   }
   @override
@@ -6320,6 +6353,7 @@ class SyncQueueEntry extends DataClass implements Insertable<SyncQueueEntry> {
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'retryCount': serializer.toJson<int>(retryCount),
       'status': serializer.toJson<String>(status),
+      'businessId': serializer.toJson<String?>(businessId),
     };
   }
 
@@ -6332,6 +6366,7 @@ class SyncQueueEntry extends DataClass implements Insertable<SyncQueueEntry> {
     DateTime? createdAt,
     int? retryCount,
     String? status,
+    Value<String?> businessId = const Value.absent(),
   }) => SyncQueueEntry(
     id: id ?? this.id,
     syncEntityName: syncEntityName ?? this.syncEntityName,
@@ -6341,6 +6376,7 @@ class SyncQueueEntry extends DataClass implements Insertable<SyncQueueEntry> {
     createdAt: createdAt ?? this.createdAt,
     retryCount: retryCount ?? this.retryCount,
     status: status ?? this.status,
+    businessId: businessId.present ? businessId.value : this.businessId,
   );
   SyncQueueEntry copyWithCompanion(SyncQueueEntriesCompanion data) {
     return SyncQueueEntry(
@@ -6358,6 +6394,9 @@ class SyncQueueEntry extends DataClass implements Insertable<SyncQueueEntry> {
           ? data.retryCount.value
           : this.retryCount,
       status: data.status.present ? data.status.value : this.status,
+      businessId: data.businessId.present
+          ? data.businessId.value
+          : this.businessId,
     );
   }
 
@@ -6371,7 +6410,8 @@ class SyncQueueEntry extends DataClass implements Insertable<SyncQueueEntry> {
           ..write('data: $data, ')
           ..write('createdAt: $createdAt, ')
           ..write('retryCount: $retryCount, ')
-          ..write('status: $status')
+          ..write('status: $status, ')
+          ..write('businessId: $businessId')
           ..write(')'))
         .toString();
   }
@@ -6386,6 +6426,7 @@ class SyncQueueEntry extends DataClass implements Insertable<SyncQueueEntry> {
     createdAt,
     retryCount,
     status,
+    businessId,
   );
   @override
   bool operator ==(Object other) =>
@@ -6398,7 +6439,8 @@ class SyncQueueEntry extends DataClass implements Insertable<SyncQueueEntry> {
           other.data == this.data &&
           other.createdAt == this.createdAt &&
           other.retryCount == this.retryCount &&
-          other.status == this.status);
+          other.status == this.status &&
+          other.businessId == this.businessId);
 }
 
 class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntry> {
@@ -6410,6 +6452,7 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntry> {
   final Value<DateTime> createdAt;
   final Value<int> retryCount;
   final Value<String> status;
+  final Value<String?> businessId;
   const SyncQueueEntriesCompanion({
     this.id = const Value.absent(),
     this.syncEntityName = const Value.absent(),
@@ -6419,6 +6462,7 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntry> {
     this.createdAt = const Value.absent(),
     this.retryCount = const Value.absent(),
     this.status = const Value.absent(),
+    this.businessId = const Value.absent(),
   });
   SyncQueueEntriesCompanion.insert({
     this.id = const Value.absent(),
@@ -6429,6 +6473,7 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntry> {
     required DateTime createdAt,
     this.retryCount = const Value.absent(),
     this.status = const Value.absent(),
+    this.businessId = const Value.absent(),
   }) : syncEntityName = Value(syncEntityName),
        documentId = Value(documentId),
        operation = Value(operation),
@@ -6442,6 +6487,7 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntry> {
     Expression<DateTime>? createdAt,
     Expression<int>? retryCount,
     Expression<String>? status,
+    Expression<String>? businessId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -6452,6 +6498,7 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntry> {
       if (createdAt != null) 'created_at': createdAt,
       if (retryCount != null) 'retry_count': retryCount,
       if (status != null) 'status': status,
+      if (businessId != null) 'business_id': businessId,
     });
   }
 
@@ -6464,6 +6511,7 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntry> {
     Value<DateTime>? createdAt,
     Value<int>? retryCount,
     Value<String>? status,
+    Value<String?>? businessId,
   }) {
     return SyncQueueEntriesCompanion(
       id: id ?? this.id,
@@ -6474,6 +6522,7 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntry> {
       createdAt: createdAt ?? this.createdAt,
       retryCount: retryCount ?? this.retryCount,
       status: status ?? this.status,
+      businessId: businessId ?? this.businessId,
     );
   }
 
@@ -6504,6 +6553,9 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntry> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (businessId.present) {
+      map['business_id'] = Variable<String>(businessId.value);
+    }
     return map;
   }
 
@@ -6517,7 +6569,8 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntry> {
           ..write('data: $data, ')
           ..write('createdAt: $createdAt, ')
           ..write('retryCount: $retryCount, ')
-          ..write('status: $status')
+          ..write('status: $status, ')
+          ..write('businessId: $businessId')
           ..write(')'))
         .toString();
   }
@@ -9481,6 +9534,7 @@ typedef $$SyncQueueEntriesTableCreateCompanionBuilder =
       required DateTime createdAt,
       Value<int> retryCount,
       Value<String> status,
+      Value<String?> businessId,
     });
 typedef $$SyncQueueEntriesTableUpdateCompanionBuilder =
     SyncQueueEntriesCompanion Function({
@@ -9492,6 +9546,7 @@ typedef $$SyncQueueEntriesTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<int> retryCount,
       Value<String> status,
+      Value<String?> businessId,
     });
 
 class $$SyncQueueEntriesTableFilterComposer
@@ -9540,6 +9595,11 @@ class $$SyncQueueEntriesTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
     column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get businessId => $composableBuilder(
+    column: $table.businessId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -9592,6 +9652,11 @@ class $$SyncQueueEntriesTableOrderingComposer
     column: $table.status,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get businessId => $composableBuilder(
+    column: $table.businessId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SyncQueueEntriesTableAnnotationComposer
@@ -9632,6 +9697,11 @@ class $$SyncQueueEntriesTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get businessId => $composableBuilder(
+    column: $table.businessId,
+    builder: (column) => column,
+  );
 }
 
 class $$SyncQueueEntriesTableTableManager
@@ -9679,6 +9749,7 @@ class $$SyncQueueEntriesTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> retryCount = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<String?> businessId = const Value.absent(),
               }) => SyncQueueEntriesCompanion(
                 id: id,
                 syncEntityName: syncEntityName,
@@ -9688,6 +9759,7 @@ class $$SyncQueueEntriesTableTableManager
                 createdAt: createdAt,
                 retryCount: retryCount,
                 status: status,
+                businessId: businessId,
               ),
           createCompanionCallback:
               ({
@@ -9699,6 +9771,7 @@ class $$SyncQueueEntriesTableTableManager
                 required DateTime createdAt,
                 Value<int> retryCount = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<String?> businessId = const Value.absent(),
               }) => SyncQueueEntriesCompanion.insert(
                 id: id,
                 syncEntityName: syncEntityName,
@@ -9708,6 +9781,7 @@ class $$SyncQueueEntriesTableTableManager
                 createdAt: createdAt,
                 retryCount: retryCount,
                 status: status,
+                businessId: businessId,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

@@ -210,13 +210,13 @@ Tidak ada validasi input di domain layer. Semua validasi di UI saja yang rentan 
 ### Phase 2: Fitur Wajib Pasar (3-4 Minggu)
 > Fokus: Fitur yang membuat user UMKM mau pakai
 
-- [ ] **Offline Mode** — Implementasi local database (Hive/Isar) + sync queue
+- [✅] **Offline Mode** — Implementasi local database (Hive/Isar) + sync queue
 - [ ] **Shift/Kasir Session** — Buka/tutup kasir, initial cash, end-of-day reconciliation
 - [ ] **Hutang/Piutang** — `PaymentStatus.partial` sudah ada, tinggal build fitur debt tracking
 - [ ] **Product Variants** — Size/color/flavor support dengan stock per-variant
-- [ ] **Enhanced Customer** — Tambah purchase history, total spend, last visit
+- [✅] **Enhanced Customer** — Tambah purchase history, total spend, last visit
 - [ ] **WhatsApp Share Receipt** — Kirim struk via WhatsApp (url_launcher)
-- [ ] **Sync Status Indicator** — UI indicator: 🟢 Online | 🟡 Syncing | 🔴 Offline
+- [✅] **Sync Status Indicator** — UI indicator: 🟢 Online | 🟡 Syncing | 🔴 Offline
 
 ### Phase 3: Differentiator (3-4 Minggu)
 > Fokus: Fitur yang membedakan dari kompetitor
