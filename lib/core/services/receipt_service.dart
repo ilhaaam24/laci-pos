@@ -231,20 +231,29 @@ class ReceiptService {
                 ],
               ),
 
-              pw.SizedBox(height: 4),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text(
-                    'Metode Pembayaran:',
-                    style: const pw.TextStyle(fontSize: 10),
-                  ),
-                  pw.Text(
-                    transaction.paymentMethod,
-                    style: const pw.TextStyle(fontSize: 10),
-                  ),
-                ],
+              ...transaction.payments.map(
+                (p) => pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(p.typeName, style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text(
+                      currencyFormatter.format(p.amount),
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
+                  ],
+                ),
               ),
+              if (transaction.changeAmount > 0)
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Kembali:', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text(
+                      currencyFormatter.format(transaction.changeAmount),
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
+                  ],
+                ),
 
               pw.Divider(thickness: 1),
 

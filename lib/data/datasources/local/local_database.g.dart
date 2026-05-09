@@ -3960,6 +3960,425 @@ class LocalTransactionItemsCompanion
   }
 }
 
+class $LocalTransactionPaymentsTable extends LocalTransactionPayments
+    with TableInfo<$LocalTransactionPaymentsTable, LocalTransactionPayment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalTransactionPaymentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _transactionIdMeta = const VerificationMeta(
+    'transactionId',
+  );
+  @override
+  late final GeneratedColumn<String> transactionId = GeneratedColumn<String>(
+    'transaction_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
+    'amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _referenceMeta = const VerificationMeta(
+    'reference',
+  );
+  @override
+  late final GeneratedColumn<String> reference = GeneratedColumn<String>(
+    'reference',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _timestampMeta = const VerificationMeta(
+    'timestamp',
+  );
+  @override
+  late final GeneratedColumn<DateTime> timestamp = GeneratedColumn<DateTime>(
+    'timestamp',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    transactionId,
+    type,
+    amount,
+    reference,
+    timestamp,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_transaction_payments';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalTransactionPayment> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('transaction_id')) {
+      context.handle(
+        _transactionIdMeta,
+        transactionId.isAcceptableOrUnknown(
+          data['transaction_id']!,
+          _transactionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_transactionIdMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_amountMeta);
+    }
+    if (data.containsKey('reference')) {
+      context.handle(
+        _referenceMeta,
+        reference.isAcceptableOrUnknown(data['reference']!, _referenceMeta),
+      );
+    }
+    if (data.containsKey('timestamp')) {
+      context.handle(
+        _timestampMeta,
+        timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timestampMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalTransactionPayment map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalTransactionPayment(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      transactionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}transaction_id'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}amount'],
+      )!,
+      reference: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reference'],
+      ),
+      timestamp: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}timestamp'],
+      )!,
+    );
+  }
+
+  @override
+  $LocalTransactionPaymentsTable createAlias(String alias) {
+    return $LocalTransactionPaymentsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalTransactionPayment extends DataClass
+    implements Insertable<LocalTransactionPayment> {
+  final String id;
+  final String transactionId;
+  final String type;
+  final double amount;
+  final String? reference;
+  final DateTime timestamp;
+  const LocalTransactionPayment({
+    required this.id,
+    required this.transactionId,
+    required this.type,
+    required this.amount,
+    this.reference,
+    required this.timestamp,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['transaction_id'] = Variable<String>(transactionId);
+    map['type'] = Variable<String>(type);
+    map['amount'] = Variable<double>(amount);
+    if (!nullToAbsent || reference != null) {
+      map['reference'] = Variable<String>(reference);
+    }
+    map['timestamp'] = Variable<DateTime>(timestamp);
+    return map;
+  }
+
+  LocalTransactionPaymentsCompanion toCompanion(bool nullToAbsent) {
+    return LocalTransactionPaymentsCompanion(
+      id: Value(id),
+      transactionId: Value(transactionId),
+      type: Value(type),
+      amount: Value(amount),
+      reference: reference == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reference),
+      timestamp: Value(timestamp),
+    );
+  }
+
+  factory LocalTransactionPayment.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalTransactionPayment(
+      id: serializer.fromJson<String>(json['id']),
+      transactionId: serializer.fromJson<String>(json['transactionId']),
+      type: serializer.fromJson<String>(json['type']),
+      amount: serializer.fromJson<double>(json['amount']),
+      reference: serializer.fromJson<String?>(json['reference']),
+      timestamp: serializer.fromJson<DateTime>(json['timestamp']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'transactionId': serializer.toJson<String>(transactionId),
+      'type': serializer.toJson<String>(type),
+      'amount': serializer.toJson<double>(amount),
+      'reference': serializer.toJson<String?>(reference),
+      'timestamp': serializer.toJson<DateTime>(timestamp),
+    };
+  }
+
+  LocalTransactionPayment copyWith({
+    String? id,
+    String? transactionId,
+    String? type,
+    double? amount,
+    Value<String?> reference = const Value.absent(),
+    DateTime? timestamp,
+  }) => LocalTransactionPayment(
+    id: id ?? this.id,
+    transactionId: transactionId ?? this.transactionId,
+    type: type ?? this.type,
+    amount: amount ?? this.amount,
+    reference: reference.present ? reference.value : this.reference,
+    timestamp: timestamp ?? this.timestamp,
+  );
+  LocalTransactionPayment copyWithCompanion(
+    LocalTransactionPaymentsCompanion data,
+  ) {
+    return LocalTransactionPayment(
+      id: data.id.present ? data.id.value : this.id,
+      transactionId: data.transactionId.present
+          ? data.transactionId.value
+          : this.transactionId,
+      type: data.type.present ? data.type.value : this.type,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      reference: data.reference.present ? data.reference.value : this.reference,
+      timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalTransactionPayment(')
+          ..write('id: $id, ')
+          ..write('transactionId: $transactionId, ')
+          ..write('type: $type, ')
+          ..write('amount: $amount, ')
+          ..write('reference: $reference, ')
+          ..write('timestamp: $timestamp')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, transactionId, type, amount, reference, timestamp);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalTransactionPayment &&
+          other.id == this.id &&
+          other.transactionId == this.transactionId &&
+          other.type == this.type &&
+          other.amount == this.amount &&
+          other.reference == this.reference &&
+          other.timestamp == this.timestamp);
+}
+
+class LocalTransactionPaymentsCompanion
+    extends UpdateCompanion<LocalTransactionPayment> {
+  final Value<String> id;
+  final Value<String> transactionId;
+  final Value<String> type;
+  final Value<double> amount;
+  final Value<String?> reference;
+  final Value<DateTime> timestamp;
+  final Value<int> rowid;
+  const LocalTransactionPaymentsCompanion({
+    this.id = const Value.absent(),
+    this.transactionId = const Value.absent(),
+    this.type = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.reference = const Value.absent(),
+    this.timestamp = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalTransactionPaymentsCompanion.insert({
+    required String id,
+    required String transactionId,
+    required String type,
+    required double amount,
+    this.reference = const Value.absent(),
+    required DateTime timestamp,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       transactionId = Value(transactionId),
+       type = Value(type),
+       amount = Value(amount),
+       timestamp = Value(timestamp);
+  static Insertable<LocalTransactionPayment> custom({
+    Expression<String>? id,
+    Expression<String>? transactionId,
+    Expression<String>? type,
+    Expression<double>? amount,
+    Expression<String>? reference,
+    Expression<DateTime>? timestamp,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (transactionId != null) 'transaction_id': transactionId,
+      if (type != null) 'type': type,
+      if (amount != null) 'amount': amount,
+      if (reference != null) 'reference': reference,
+      if (timestamp != null) 'timestamp': timestamp,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalTransactionPaymentsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? transactionId,
+    Value<String>? type,
+    Value<double>? amount,
+    Value<String?>? reference,
+    Value<DateTime>? timestamp,
+    Value<int>? rowid,
+  }) {
+    return LocalTransactionPaymentsCompanion(
+      id: id ?? this.id,
+      transactionId: transactionId ?? this.transactionId,
+      type: type ?? this.type,
+      amount: amount ?? this.amount,
+      reference: reference ?? this.reference,
+      timestamp: timestamp ?? this.timestamp,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (transactionId.present) {
+      map['transaction_id'] = Variable<String>(transactionId.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<double>(amount.value);
+    }
+    if (reference.present) {
+      map['reference'] = Variable<String>(reference.value);
+    }
+    if (timestamp.present) {
+      map['timestamp'] = Variable<DateTime>(timestamp.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalTransactionPaymentsCompanion(')
+          ..write('id: $id, ')
+          ..write('transactionId: $transactionId, ')
+          ..write('type: $type, ')
+          ..write('amount: $amount, ')
+          ..write('reference: $reference, ')
+          ..write('timestamp: $timestamp, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $LocalPromosTable extends LocalPromos
     with TableInfo<$LocalPromosTable, LocalPromo> {
   @override
@@ -6588,6 +7007,8 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
       $LocalTransactionsTable(this);
   late final $LocalTransactionItemsTable localTransactionItems =
       $LocalTransactionItemsTable(this);
+  late final $LocalTransactionPaymentsTable localTransactionPayments =
+      $LocalTransactionPaymentsTable(this);
   late final $LocalPromosTable localPromos = $LocalPromosTable(this);
   late final $LocalStockLogsTable localStockLogs = $LocalStockLogsTable(this);
   late final $LocalBusinessInfoTable localBusinessInfo =
@@ -6605,6 +7026,7 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
     localCustomers,
     localTransactions,
     localTransactionItems,
+    localTransactionPayments,
     localPromos,
     localStockLogs,
     localBusinessInfo,
@@ -8520,6 +8942,246 @@ typedef $$LocalTransactionItemsTableProcessedTableManager =
       LocalTransactionItem,
       PrefetchHooks Function()
     >;
+typedef $$LocalTransactionPaymentsTableCreateCompanionBuilder =
+    LocalTransactionPaymentsCompanion Function({
+      required String id,
+      required String transactionId,
+      required String type,
+      required double amount,
+      Value<String?> reference,
+      required DateTime timestamp,
+      Value<int> rowid,
+    });
+typedef $$LocalTransactionPaymentsTableUpdateCompanionBuilder =
+    LocalTransactionPaymentsCompanion Function({
+      Value<String> id,
+      Value<String> transactionId,
+      Value<String> type,
+      Value<double> amount,
+      Value<String?> reference,
+      Value<DateTime> timestamp,
+      Value<int> rowid,
+    });
+
+class $$LocalTransactionPaymentsTableFilterComposer
+    extends Composer<_$LocalDatabase, $LocalTransactionPaymentsTable> {
+  $$LocalTransactionPaymentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get transactionId => $composableBuilder(
+    column: $table.transactionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reference => $composableBuilder(
+    column: $table.reference,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalTransactionPaymentsTableOrderingComposer
+    extends Composer<_$LocalDatabase, $LocalTransactionPaymentsTable> {
+  $$LocalTransactionPaymentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get transactionId => $composableBuilder(
+    column: $table.transactionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reference => $composableBuilder(
+    column: $table.reference,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalTransactionPaymentsTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $LocalTransactionPaymentsTable> {
+  $$LocalTransactionPaymentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get transactionId => $composableBuilder(
+    column: $table.transactionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<double> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<String> get reference =>
+      $composableBuilder(column: $table.reference, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get timestamp =>
+      $composableBuilder(column: $table.timestamp, builder: (column) => column);
+}
+
+class $$LocalTransactionPaymentsTableTableManager
+    extends
+        RootTableManager<
+          _$LocalDatabase,
+          $LocalTransactionPaymentsTable,
+          LocalTransactionPayment,
+          $$LocalTransactionPaymentsTableFilterComposer,
+          $$LocalTransactionPaymentsTableOrderingComposer,
+          $$LocalTransactionPaymentsTableAnnotationComposer,
+          $$LocalTransactionPaymentsTableCreateCompanionBuilder,
+          $$LocalTransactionPaymentsTableUpdateCompanionBuilder,
+          (
+            LocalTransactionPayment,
+            BaseReferences<
+              _$LocalDatabase,
+              $LocalTransactionPaymentsTable,
+              LocalTransactionPayment
+            >,
+          ),
+          LocalTransactionPayment,
+          PrefetchHooks Function()
+        > {
+  $$LocalTransactionPaymentsTableTableManager(
+    _$LocalDatabase db,
+    $LocalTransactionPaymentsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalTransactionPaymentsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$LocalTransactionPaymentsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$LocalTransactionPaymentsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> transactionId = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<double> amount = const Value.absent(),
+                Value<String?> reference = const Value.absent(),
+                Value<DateTime> timestamp = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalTransactionPaymentsCompanion(
+                id: id,
+                transactionId: transactionId,
+                type: type,
+                amount: amount,
+                reference: reference,
+                timestamp: timestamp,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String transactionId,
+                required String type,
+                required double amount,
+                Value<String?> reference = const Value.absent(),
+                required DateTime timestamp,
+                Value<int> rowid = const Value.absent(),
+              }) => LocalTransactionPaymentsCompanion.insert(
+                id: id,
+                transactionId: transactionId,
+                type: type,
+                amount: amount,
+                reference: reference,
+                timestamp: timestamp,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalTransactionPaymentsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$LocalDatabase,
+      $LocalTransactionPaymentsTable,
+      LocalTransactionPayment,
+      $$LocalTransactionPaymentsTableFilterComposer,
+      $$LocalTransactionPaymentsTableOrderingComposer,
+      $$LocalTransactionPaymentsTableAnnotationComposer,
+      $$LocalTransactionPaymentsTableCreateCompanionBuilder,
+      $$LocalTransactionPaymentsTableUpdateCompanionBuilder,
+      (
+        LocalTransactionPayment,
+        BaseReferences<
+          _$LocalDatabase,
+          $LocalTransactionPaymentsTable,
+          LocalTransactionPayment
+        >,
+      ),
+      LocalTransactionPayment,
+      PrefetchHooks Function()
+    >;
 typedef $$LocalPromosTableCreateCompanionBuilder =
     LocalPromosCompanion Function({
       required String id,
@@ -9822,6 +10484,11 @@ class $LocalDatabaseManager {
       $$LocalTransactionsTableTableManager(_db, _db.localTransactions);
   $$LocalTransactionItemsTableTableManager get localTransactionItems =>
       $$LocalTransactionItemsTableTableManager(_db, _db.localTransactionItems);
+  $$LocalTransactionPaymentsTableTableManager get localTransactionPayments =>
+      $$LocalTransactionPaymentsTableTableManager(
+        _db,
+        _db.localTransactionPayments,
+      );
   $$LocalPromosTableTableManager get localPromos =>
       $$LocalPromosTableTableManager(_db, _db.localPromos);
   $$LocalStockLogsTableTableManager get localStockLogs =>

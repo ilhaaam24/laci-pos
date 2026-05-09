@@ -117,8 +117,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
           subtotal: cartState.totalAmount,
           taxPercent: _taxPercent,
           discountAmount: _discountAmount,
-          onConfirm: (paymentMethod, amountPaid, changeAmount) {
-            _processPayment(cartState, paymentMethod, amountPaid, changeAmount);
+          onConfirm: (payments, changeAmount) {
+            _processPayment(cartState, payments, changeAmount);
           },
         ),
       ),
@@ -127,8 +127,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Future<void> _processPayment(
     CartState cartState,
-    String paymentMethod,
-    double amountPaid,
+    List<PaymentDetail> payments,
     double changeAmount,
   ) async {
     try {
@@ -172,10 +171,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
         taxAmount: taxAmount,
         discountAmount: _discountAmount,
         totalAmount: grandTotal,
-        paymentMethod: paymentMethod,
+        payments: payments,
         paymentStatus: PaymentStatus.paid,
         status: TransactionStatus.completed,
-        amountPaid: amountPaid,
+        amountPaid: payments.fold(0, (sum, p) => sum + p.amount),
         changeAmount: changeAmount,
         createdAt: now,
         completedAt: now,

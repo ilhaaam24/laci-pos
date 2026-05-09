@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:laci/domain/entities/transaction_entity.dart';
 import 'payment_event.dart';
 import 'payment_state.dart';
 
@@ -7,6 +8,8 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     on<CalculatePayment>(_onCalculatePayment);
     on<SetAmountPaid>(_onSetAmountPaid);
     on<SetPaymentMethod>(_onSetPaymentMethod);
+    on<AddPayment>(_onAddPayment);
+    on<RemovePayment>(_onRemovePayment);
     on<ApplyDiscount>(_onApplyDiscount);
     on<ResetPayment>(_onResetPayment);
   }
@@ -27,32 +30,43 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   }
 
   void _onSetAmountPaid(SetAmountPaid event, Emitter<PaymentState> emit) {
-    final changeAmount = event.amount - state.totalAmount;
-    final isValid = event.amount >= state.totalAmount;
+    emit(state.copyWith(amountPaid: event.amount));
+    _validate(emit);
+  }
 
-    emit(
-      state.copyWith(
-        amountPaid: event.amount,
-        changeAmount: changeAmount,
-        isValid: isValid,
-        errorMessage: isValid ? null : 'Jumlah pembayaran kurang',
-      ),
-    );
+  void _onAddPayment(AddPayment event, Emitter<PaymentState> emit) {
+    final updatedPayments = List<PaymentDetail>.from(state.payments)..add(event.payment);
+    emit(state.copyWith(payments: updatedPayments, amountPaid: 0));
+    _validate(emit);
+  }
+
+  void _onRemovePayment(RemovePayment event, Emitter<PaymentState> emit) {
+    final updatedPayments = List<PaymentDetail>.from(state.payments)..removeAt(event.index);
+    emit(state.copyWith(payments: updatedPayments));
+    _validate(emit);
   }
 
   void _onSetPaymentMethod(SetPaymentMethod event, Emitter<PaymentState> emit) {
-    emit(state.copyWith(paymentMethod: event.method));
+    // This could set the currently selected method in UI state if we had a field for it
+    // For now, we'll just use it to maybe pre-fill the amount
+  }
 
-    // Auto-validate for non-cash payments
-    if (event.method != 'Cash') {
-      emit(
-        state.copyWith(
-          amountPaid: state.totalAmount,
-          changeAmount: 0,
-          isValid: true,
-        ),
-      );
-    }
+  void _validate(Emitter<PaymentState> emit) {
+    final totalPaid = state.totalPaid;
+    final totalAmount = state.totalAmount;
+    final changeAmount = totalPaid > totalAmount ? totalPaid - totalAmount : 0.0;
+    
+    // It's valid if totalPaid is enough to cover totalAmount
+    // OR if there's only one payment and it's Cash (where they might pay more)
+    final isValid = totalPaid >= totalAmount;
+
+    emit(
+      state.copyWith(
+        changeAmount: changeAmount,
+        isValid: isValid,
+        errorMessage: isValid ? null : 'Pembayaran belum mencukupi',
+      ),
+    );
   }
 
   void _onApplyDiscount(ApplyDiscount event, Emitter<PaymentState> emit) {

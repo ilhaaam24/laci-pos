@@ -19,7 +19,8 @@ class TransactionLocalDataSource {
       final List<TransactionModel> transactions = [];
       for (final row in rows) {
         final items = await _getItemsForTransaction(row.id);
-        transactions.add(_rowToModel(row, items));
+        final payments = await _getPaymentsForTransaction(row.id);
+        transactions.add(_rowToModel(row, items, payments));
       }
       return transactions;
     });
@@ -43,7 +44,8 @@ class TransactionLocalDataSource {
       final List<TransactionModel> transactions = [];
       for (final row in rows) {
         final items = await _getItemsForTransaction(row.id);
-        transactions.add(_rowToModel(row, items));
+        final payments = await _getPaymentsForTransaction(row.id);
+        transactions.add(_rowToModel(row, items, payments));
       }
       return transactions;
     });
@@ -64,7 +66,8 @@ class TransactionLocalDataSource {
       final List<TransactionModel> transactions = [];
       for (final row in rows) {
         final items = await _getItemsForTransaction(row.id);
-        transactions.add(_rowToModel(row, items));
+        final payments = await _getPaymentsForTransaction(row.id);
+        transactions.add(_rowToModel(row, items, payments));
       }
       return transactions;
     });
@@ -77,7 +80,8 @@ class TransactionLocalDataSource {
     final row = await query.getSingleOrNull();
     if (row == null) return null;
     final items = await _getItemsForTransaction(id);
-    return _rowToModel(row, items);
+    final payments = await _getPaymentsForTransaction(id);
+    return _rowToModel(row, items, payments);
   }
 
   /// Create a transaction locally with all items (atomic).
@@ -100,7 +104,7 @@ class TransactionLocalDataSource {
               taxAmount: Value(transaction.taxAmount),
               discountAmount: Value(transaction.discountAmount),
               totalAmount: transaction.totalAmount,
-              paymentMethod: transaction.paymentMethod,
+              paymentMethod: transaction.paymentMethodDisplay,
               paymentStatus: Value(transaction.paymentStatus.name),
               status: Value(transaction.status.name),
               amountPaid: Value(transaction.amountPaid),
@@ -134,6 +138,20 @@ class TransactionLocalDataSource {
               ),
             );
       }
+
+      // 3. Insert payment details
+      for (final payment in transaction.payments) {
+        await _db.into(_db.localTransactionPayments).insert(
+              LocalTransactionPaymentsCompanion.insert(
+                id: '${transaction.id}_${payment.type.name}_${payment.timestamp.millisecondsSinceEpoch}',
+                transactionId: transaction.id,
+                type: payment.type.name,
+                amount: payment.amount,
+                reference: Value(payment.reference),
+                timestamp: payment.timestamp,
+              ),
+            );
+      }
     });
     return transaction.id;
   }
@@ -146,7 +164,8 @@ class TransactionLocalDataSource {
     final List<TransactionModel> result = [];
     for (final row in rows) {
       final items = await _getItemsForTransaction(row.id);
-      result.add(_rowToModel(row, items));
+      final payments = await _getPaymentsForTransaction(row.id);
+      result.add(_rowToModel(row, items, payments));
     }
     return result;
   }
@@ -180,7 +199,7 @@ class TransactionLocalDataSource {
                 taxAmount: Value(txn.taxAmount),
                 discountAmount: Value(txn.discountAmount),
                 totalAmount: txn.totalAmount,
-                paymentMethod: txn.paymentMethod,
+                paymentMethod: txn.paymentMethodDisplay,
                 paymentStatus: Value(txn.paymentStatus.name),
                 status: Value(txn.status.name),
                 amountPaid: Value(txn.amountPaid),
@@ -218,6 +237,24 @@ class TransactionLocalDataSource {
                 ),
               );
         }
+
+        // Delete old payments and re-insert
+        await (_db.delete(_db.localTransactionPayments)
+              ..where((t) => t.transactionId.equals(txn.id)))
+            .go();
+
+        for (final payment in txn.payments) {
+          await _db.into(_db.localTransactionPayments).insert(
+                LocalTransactionPaymentsCompanion.insert(
+                  id: '${txn.id}_${payment.type.name}_${payment.timestamp.millisecondsSinceEpoch}',
+                  transactionId: txn.id,
+                  type: payment.type.name,
+                  amount: payment.amount,
+                  reference: Value(payment.reference),
+                  timestamp: payment.timestamp,
+                ),
+              );
+        }
       });
     }
   }
@@ -236,6 +273,7 @@ class TransactionLocalDataSource {
   TransactionModel _rowToModel(
     LocalTransaction row,
     List<TransactionItemModel> items,
+    List<PaymentDetailModel> payments,
   ) {
     return TransactionModel(
       id: row.id,
@@ -246,7 +284,7 @@ class TransactionLocalDataSource {
       taxAmount: row.taxAmount,
       discountAmount: row.discountAmount,
       totalAmount: row.totalAmount,
-      paymentMethod: row.paymentMethod,
+      payments: payments,
       paymentStatus: PaymentStatus.values.firstWhere(
         (e) => e.name == row.paymentStatus,
         orElse: () => PaymentStatus.unpaid,
@@ -277,6 +315,27 @@ class TransactionLocalDataSource {
       discount: row.discount,
       subtotal: row.subtotal,
       businessId: row.businessId,
+    );
+  }
+
+  Future<List<PaymentDetailModel>> _getPaymentsForTransaction(
+    String transactionId,
+  ) async {
+    final query = _db.select(_db.localTransactionPayments)
+      ..where((t) => t.transactionId.equals(transactionId));
+    final rows = await query.get();
+    return rows.map((row) => _paymentRowToModel(row)).toList();
+  }
+
+  PaymentDetailModel _paymentRowToModel(LocalTransactionPayment row) {
+    return PaymentDetailModel(
+      type: PaymentType.values.firstWhere(
+        (e) => e.name == row.type,
+        orElse: () => PaymentType.cash,
+      ),
+      amount: row.amount,
+      reference: row.reference,
+      timestamp: row.timestamp,
     );
   }
 }

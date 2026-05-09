@@ -152,22 +152,27 @@ class PrinterService {
     ]);
 
     bytes += generator.hr();
-    bytes += generator.row([
-      PosColumn(text: 'Bayar', width: 8),
-      PosColumn(
-        text: transaction.amountPaid.toInt().toString(),
-        width: 4,
-        styles: const PosStyles(align: PosAlign.right),
-      ),
-    ]);
-    bytes += generator.row([
-      PosColumn(text: 'Kembali', width: 8),
-      PosColumn(
-        text: transaction.changeAmount.toInt().toString(),
-        width: 4,
-        styles: const PosStyles(align: PosAlign.right),
-      ),
-    ]);
+    for (var payment in transaction.payments) {
+      bytes += generator.row([
+        PosColumn(text: payment.typeName, width: 8),
+        PosColumn(
+          text: payment.amount.toInt().toString(),
+          width: 4,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
+      ]);
+    }
+
+    if (transaction.changeAmount > 0) {
+      bytes += generator.row([
+        PosColumn(text: 'Kembali', width: 8),
+        PosColumn(
+          text: transaction.changeAmount.toInt().toString(),
+          width: 4,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
+      ]);
+    }
 
     bytes += generator.hr();
     bytes += generator.feed(1);

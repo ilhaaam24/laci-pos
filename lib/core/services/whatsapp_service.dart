@@ -51,10 +51,14 @@ class WhatsappService {
     message +=
         '*Total: ${currencyFormatter.format(transaction.totalAmount)}*\n';
     message += '------------------------------------------\n';
-    message += 'Metode Bayar: ${transaction.paymentMethod}\n';
-    message += 'Bayar: ${currencyFormatter.format(transaction.amountPaid)}\n';
-    message +=
-        'Kembali: ${currencyFormatter.format(transaction.changeAmount)}\n';
+    for (var payment in transaction.payments) {
+      message +=
+          '${payment.typeName}: ${currencyFormatter.format(payment.amount)}\n';
+    }
+    if (transaction.changeAmount > 0) {
+      message +=
+          'Kembali: ${currencyFormatter.format(transaction.changeAmount)}\n';
+    }
     message += '------------------------------------------\n';
     message += 'Terima kasih telah berbelanja!';
 
@@ -66,7 +70,7 @@ class WhatsappService {
 
     // Ensure it starts with country code if not empty
     if (cleanPhone.isNotEmpty && cleanPhone.startsWith('0')) {
-      cleanPhone = '62${cleanPhone.substring(1)}';
+      cleanPhone = '62${cleanPhone.substring(1)}';  
     }
 
     final uri = Uri.parse('https://wa.me/$cleanPhone?text=$encodedMessage');

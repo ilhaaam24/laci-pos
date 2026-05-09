@@ -113,6 +113,19 @@ class LocalTransactionItems extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// Local mirror of payment details for a transaction.
+class LocalTransactionPayments extends Table {
+  TextColumn get id => text()();
+  TextColumn get transactionId => text()();
+  TextColumn get type => text()();
+  RealColumn get amount => real()();
+  TextColumn get reference => text().nullable()();
+  DateTimeColumn get timestamp => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// Local mirror of Firebase 'promos' collection.
 class LocalPromos extends Table {
   TextColumn get id => text()();
@@ -200,6 +213,7 @@ class SyncQueueEntries extends Table {
     LocalCustomers,
     LocalTransactions,
     LocalTransactionItems,
+    LocalTransactionPayments,
     LocalPromos,
     LocalStockLogs,
     LocalBusinessInfo,
@@ -213,7 +227,7 @@ class LocalDatabase extends _$LocalDatabase {
   LocalDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -231,6 +245,10 @@ class LocalDatabase extends _$LocalDatabase {
         if (from < 3) {
           // Add businessId to SyncQueueEntries
           await m.addColumn(syncQueueEntries, syncQueueEntries.businessId);
+        }
+        if (from < 4) {
+          // Create LocalTransactionPayments table
+          await m.createTable(localTransactionPayments);
         }
       },
     );
@@ -316,6 +334,7 @@ class LocalDatabase extends _$LocalDatabase {
       await delete(localCustomers).go();
       await delete(localTransactions).go();
       await delete(localTransactionItems).go();
+      await delete(localTransactionPayments).go();
       await delete(localPromos).go();
       await delete(localStockLogs).go();
       await delete(localBusinessInfo).go();

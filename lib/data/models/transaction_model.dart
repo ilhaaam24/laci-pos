@@ -122,6 +122,70 @@ class TransactionItemModel extends TransactionItem {
   }
 }
 
+class PaymentDetailModel extends PaymentDetail {
+  const PaymentDetailModel({
+    required super.type,
+    required super.amount,
+    super.reference,
+    required super.timestamp,
+  });
+
+  factory PaymentDetailModel.fromMap(Map<String, dynamic> map) {
+    return PaymentDetailModel(
+      type: PaymentType.values.firstWhere(
+        (e) => e.name == (map['type'] ?? 'cash'),
+        orElse: () => PaymentType.cash,
+      ),
+      amount: (map['amount'] ?? 0).toDouble(),
+      reference: map['reference'],
+      timestamp: map['timestamp'] != null
+          ? (map['timestamp'] as f_store.Timestamp).toDate()
+          : DateTime.now(),
+    );
+  }
+
+  factory PaymentDetailModel.fromEntity(PaymentDetail entity) {
+    return PaymentDetailModel(
+      type: entity.type,
+      amount: entity.amount,
+      reference: entity.reference,
+      timestamp: entity.timestamp,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'type': type.name,
+      'amount': amount,
+      'reference': reference,
+      'timestamp': f_store.Timestamp.fromDate(timestamp),
+    };
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'type': type.name,
+      'amount': amount,
+      'reference': reference,
+      'timestamp': timestamp.toIso8601String(),
+    };
+  }
+
+  factory PaymentDetailModel.fromJson(Map<String, dynamic> json) {
+    return PaymentDetailModel(
+      type: PaymentType.values.firstWhere(
+        (e) => e.name == (json['type'] ?? 'cash'),
+        orElse: () => PaymentType.cash,
+      ),
+      amount: (json['amount'] ?? 0).toDouble(),
+      reference: json['reference'],
+      timestamp: json['timestamp'] != null
+          ? DateTime.parse(json['timestamp'])
+          : DateTime.now(),
+    );
+  }
+}
+
 class TransactionModel extends TransactionEntity {
   const TransactionModel({
     required super.id,
@@ -132,7 +196,7 @@ class TransactionModel extends TransactionEntity {
     super.taxAmount = 0,
     super.discountAmount = 0,
     required super.totalAmount,
-    required super.paymentMethod,
+    required super.payments,
     super.paymentStatus = PaymentStatus.unpaid,
     super.status = TransactionStatus.pending,
     super.amountPaid = 0,
@@ -159,7 +223,24 @@ class TransactionModel extends TransactionEntity {
       taxAmount: (data['taxAmount'] ?? 0).toDouble(),
       discountAmount: (data['discountAmount'] ?? 0).toDouble(),
       totalAmount: (data['totalAmount'] ?? 0).toDouble(),
-      paymentMethod: data['paymentMethod'] ?? '',
+      payments: data['payments'] != null
+          ? (data['payments'] as List)
+              .map((e) => PaymentDetailModel.fromMap(e as Map<String, dynamic>))
+              .toList()
+          : [
+              PaymentDetailModel(
+                type: PaymentType.values.firstWhere(
+                  (e) =>
+                      e.name.toLowerCase() ==
+                      (data['paymentMethod'] as String? ?? 'cash').toLowerCase(),
+                  orElse: () => PaymentType.cash,
+                ),
+                amount: (data['amountPaid'] ?? 0).toDouble(),
+                timestamp: data['createdAt'] != null
+                    ? (data['createdAt'] as f_store.Timestamp).toDate()
+                    : DateTime.now(),
+              )
+            ],
       paymentStatus: PaymentStatus.values.firstWhere(
         (e) => e.name == (data['paymentStatus'] ?? 'unpaid'),
         orElse: () => PaymentStatus.unpaid,
@@ -193,7 +274,7 @@ class TransactionModel extends TransactionEntity {
       taxAmount: entity.taxAmount,
       discountAmount: entity.discountAmount,
       totalAmount: entity.totalAmount,
-      paymentMethod: entity.paymentMethod,
+      payments: entity.payments,
       paymentStatus: entity.paymentStatus,
       status: entity.status,
       amountPaid: entity.amountPaid,
@@ -216,7 +297,10 @@ class TransactionModel extends TransactionEntity {
       'taxAmount': taxAmount,
       'discountAmount': discountAmount,
       'totalAmount': totalAmount,
-      'paymentMethod': paymentMethod,
+      'payments': payments
+          .map((e) => PaymentDetailModel.fromEntity(e).toMap())
+          .toList(),
+      'paymentMethod': paymentMethodDisplay,
       'paymentStatus': paymentStatus.name,
       'status': status.name,
       'amountPaid': amountPaid,
@@ -241,7 +325,10 @@ class TransactionModel extends TransactionEntity {
       'taxAmount': taxAmount,
       'discountAmount': discountAmount,
       'totalAmount': totalAmount,
-      'paymentMethod': paymentMethod,
+      'payments': payments
+          .map((e) => PaymentDetailModel.fromEntity(e).toJson())
+          .toList(),
+      'paymentMethod': paymentMethodDisplay,
       'paymentStatus': paymentStatus.name,
       'status': status.name,
       'amountPaid': amountPaid,
@@ -267,7 +354,24 @@ class TransactionModel extends TransactionEntity {
       taxAmount: (json['taxAmount'] ?? 0).toDouble(),
       discountAmount: (json['discountAmount'] ?? 0).toDouble(),
       totalAmount: (json['totalAmount'] ?? 0).toDouble(),
-      paymentMethod: json['paymentMethod'] ?? '',
+      payments: json['payments'] != null
+          ? (json['payments'] as List)
+              .map((e) => PaymentDetailModel.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : [
+              PaymentDetailModel(
+                type: PaymentType.values.firstWhere(
+                  (e) =>
+                      e.name.toLowerCase() ==
+                      (json['paymentMethod'] as String? ?? 'cash').toLowerCase(),
+                  orElse: () => PaymentType.cash,
+                ),
+                amount: (json['amountPaid'] ?? 0).toDouble(),
+                timestamp: json['createdAt'] != null
+                    ? DateTime.parse(json['createdAt'])
+                    : DateTime.now(),
+              )
+            ],
       paymentStatus: PaymentStatus.values.firstWhere(
         (e) => e.name == (json['paymentStatus'] ?? 'unpaid'),
         orElse: () => PaymentStatus.unpaid,
@@ -306,7 +410,7 @@ class TransactionModel extends TransactionEntity {
     double? taxAmount,
     double? discountAmount,
     double? totalAmount,
-    String? paymentMethod,
+    List<PaymentDetail>? payments,
     PaymentStatus? paymentStatus,
     TransactionStatus? status,
     double? amountPaid,
@@ -327,7 +431,7 @@ class TransactionModel extends TransactionEntity {
       taxAmount: taxAmount ?? this.taxAmount,
       discountAmount: discountAmount ?? this.discountAmount,
       totalAmount: totalAmount ?? this.totalAmount,
-      paymentMethod: paymentMethod ?? this.paymentMethod,
+      payments: payments ?? this.payments,
       paymentStatus: paymentStatus ?? this.paymentStatus,
       status: status ?? this.status,
       amountPaid: amountPaid ?? this.amountPaid,
@@ -351,7 +455,7 @@ class TransactionModel extends TransactionEntity {
       taxAmount: taxAmount,
       discountAmount: discountAmount,
       totalAmount: totalAmount,
-      paymentMethod: paymentMethod,
+      payments: payments,
       paymentStatus: paymentStatus,
       status: status,
       amountPaid: amountPaid,

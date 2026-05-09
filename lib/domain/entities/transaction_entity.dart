@@ -4,6 +4,38 @@ enum TransactionStatus { pending, completed, cancelled, refunded }
 
 enum PaymentStatus { unpaid, paid, partial }
 
+enum PaymentType { cash, qris, debit, transfer }
+
+class PaymentDetail extends Equatable {
+  final PaymentType type;
+  final double amount;
+  final String? reference;
+  final DateTime timestamp;
+
+  const PaymentDetail({
+    required this.type,
+    required this.amount,
+    this.reference,
+    required this.timestamp,
+  });
+
+  @override
+  List<Object?> get props => [type, amount, reference, timestamp];
+
+  String get typeName {
+    switch (type) {
+      case PaymentType.cash:
+        return 'Cash';
+      case PaymentType.qris:
+        return 'QRIS';
+      case PaymentType.debit:
+        return 'Debit Card';
+      case PaymentType.transfer:
+        return 'Transfer Bank';
+    }
+  }
+}
+
 class TransactionEntity extends Equatable {
   final String id;
   final String transactionCode;
@@ -13,7 +45,7 @@ class TransactionEntity extends Equatable {
   final double taxAmount;
   final double discountAmount;
   final double totalAmount;
-  final String paymentMethod;
+  final List<PaymentDetail> payments;
   final PaymentStatus paymentStatus;
   final TransactionStatus status;
   final double amountPaid;
@@ -34,7 +66,7 @@ class TransactionEntity extends Equatable {
     this.taxAmount = 0,
     this.discountAmount = 0,
     required this.totalAmount,
-    required this.paymentMethod,
+    required this.payments,
     this.paymentStatus = PaymentStatus.unpaid,
     this.status = TransactionStatus.pending,
     this.amountPaid = 0,
@@ -49,6 +81,12 @@ class TransactionEntity extends Equatable {
 
   double get grandTotal => subtotal + taxAmount - discountAmount;
 
+  String get paymentMethodDisplay {
+    if (payments.isEmpty) return 'No Payment';
+    if (payments.length == 1) return payments.first.typeName;
+    return 'Multiple (${payments.length})';
+  }
+
   @override
   List<Object?> get props => [
     id,
@@ -59,7 +97,7 @@ class TransactionEntity extends Equatable {
     taxAmount,
     discountAmount,
     totalAmount,
-    paymentMethod,
+    payments,
     paymentStatus,
     status,
     amountPaid,

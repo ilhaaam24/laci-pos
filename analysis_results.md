@@ -215,7 +215,7 @@ Tidak ada validasi input di domain layer. Semua validasi di UI saja yang rentan 
 - [ ] **Hutang/Piutang** — `PaymentStatus.partial` sudah ada, tinggal build fitur debt tracking
 - [ ] **Product Variants** — Size/color/flavor support dengan stock per-variant
 - [✅] **Enhanced Customer** — Tambah purchase history, total spend, last visit
-- [ ] **WhatsApp Share Receipt** — Kirim struk via WhatsApp (url_launcher)
+- [✅] **WhatsApp Share Receipt** — Kirim struk via WhatsApp (url_launcher)
 - [✅] **Sync Status Indicator** — UI indicator: 🟢 Online | 🟡 Syncing | 🔴 Offline
 
 ### Phase 3: Differentiator (3-4 Minggu)

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../domain/entities/transaction_entity.dart';
 
 abstract class PaymentEvent extends Equatable {
   @override
@@ -30,12 +31,30 @@ class SetAmountPaid extends PaymentEvent {
 }
 
 class SetPaymentMethod extends PaymentEvent {
-  final String method;
+  final PaymentType method;
 
   SetPaymentMethod(this.method);
 
   @override
   List<Object?> get props => [method];
+}
+
+class AddPayment extends PaymentEvent {
+  final PaymentDetail payment;
+
+  AddPayment(this.payment);
+
+  @override
+  List<Object?> get props => [payment];
+}
+
+class RemovePayment extends PaymentEvent {
+  final int index;
+
+  RemovePayment(this.index);
+
+  @override
+  List<Object?> get props => [index];
 }
 
 class ApplyDiscount extends PaymentEvent {
