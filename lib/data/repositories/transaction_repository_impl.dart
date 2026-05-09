@@ -24,13 +24,16 @@ class TransactionRepositoryImpl implements TransactionRepository {
     TransactionEntity transaction,
   ) async {
     try {
-      final model = TransactionModel.fromEntity(transaction).copyWith(
-        businessId: _businessId,
-      );
+      final model = TransactionModel.fromEntity(
+        transaction,
+      ).copyWith(businessId: _businessId);
       // Transactions are typically created via TransactionService which handles
-      // stock and sync queue. This repository method can be a fallback or 
+      // stock and sync queue. This repository method can be a fallback or
       // used for direct local creation.
-      final id = await localDataSource.createTransaction(model, syncStatus: 'pendingUpload');
+      final id = await localDataSource.createTransaction(
+        model,
+        syncStatus: 'pendingUpload',
+      );
       return Right(id);
     } catch (e) {
       return Left(e.toString());
@@ -40,7 +43,9 @@ class TransactionRepositoryImpl implements TransactionRepository {
   @override
   Stream<Either<String, List<TransactionEntity>>> getTransactions() {
     try {
-      return localDataSource.watchTransactions(_businessId).map(
+      return localDataSource
+          .watchTransactions(_businessId)
+          .map(
             (transactions) => Right<String, List<TransactionEntity>>(
               transactions.map((model) => model.toEntity()).toList(),
             ),

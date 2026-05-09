@@ -145,11 +145,14 @@ class SyncService {
     if (pendingEntries.isEmpty) return;
 
     // Filter entries for the current business
-    final myEntries =
-        pendingEntries.where((e) => e.businessId == currentBusinessId).toList();
+    final myEntries = pendingEntries
+        .where((e) => e.businessId == currentBusinessId)
+        .toList();
     if (myEntries.isEmpty) return;
 
-    log('Pushing ${myEntries.length} pending operations for business $currentBusinessId to remote...');
+    log(
+      'Pushing ${myEntries.length} pending operations for business $currentBusinessId to remote...',
+    );
 
     for (final entry in myEntries) {
       try {

@@ -10,12 +10,15 @@ class CategoryLocalDataSource {
 
   Stream<List<CategoryModel>> watchCategories(String businessId) {
     final query = _db.select(_db.localCategories)
-      ..where((t) =>
-          t.businessId.equals(businessId) &
-          t.syncStatus.equals('pendingDelete').not())
+      ..where(
+        (t) =>
+            t.businessId.equals(businessId) &
+            t.syncStatus.equals('pendingDelete').not(),
+      )
       ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
     return query.watch().map(
-        (rows) => rows.map((row) => _rowToModel(row)).toList());
+      (rows) => rows.map((row) => _rowToModel(row)).toList(),
+    );
   }
 
   Future<CategoryModel?> getCategoryById(String id) async {
@@ -25,9 +28,13 @@ class CategoryLocalDataSource {
     return row != null ? _rowToModel(row) : null;
   }
 
-  Future<void> upsertCategory(CategoryModel category,
-      {String syncStatus = 'pendingUpload'}) async {
-    await _db.into(_db.localCategories).insertOnConflictUpdate(
+  Future<void> upsertCategory(
+    CategoryModel category, {
+    String syncStatus = 'pendingUpload',
+  }) async {
+    await _db
+        .into(_db.localCategories)
+        .insertOnConflictUpdate(
           LocalCategoriesCompanion.insert(
             id: category.id,
             name: category.name,
@@ -43,10 +50,11 @@ class CategoryLocalDataSource {
   }
 
   Future<void> markAsDeleted(String id) async {
-    await (_db.update(_db.localCategories)..where((t) => t.id.equals(id)))
-        .write(const LocalCategoriesCompanion(
-      syncStatus: Value('pendingDelete'),
-    ));
+    await (_db.update(
+      _db.localCategories,
+    )..where((t) => t.id.equals(id))).write(
+      const LocalCategoriesCompanion(syncStatus: Value('pendingDelete')),
+    );
   }
 
   Future<void> hardDelete(String id) async {
@@ -83,11 +91,14 @@ class CategoryLocalDataSource {
   }
 
   Future<void> markAsSynced(String id) async {
-    await (_db.update(_db.localCategories)..where((t) => t.id.equals(id)))
-        .write(LocalCategoriesCompanion(
-      syncStatus: const Value('synced'),
-      lastSyncAt: Value(DateTime.now()),
-    ));
+    await (_db.update(
+      _db.localCategories,
+    )..where((t) => t.id.equals(id))).write(
+      LocalCategoriesCompanion(
+        syncStatus: const Value('synced'),
+        lastSyncAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   CategoryModel _rowToModel(LocalCategory row) {

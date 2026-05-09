@@ -54,11 +54,7 @@ class CartState extends Equatable {
   final double totalAmount;
   final Customer? customer;
 
-  const CartState({
-    this.items = const [],
-    this.totalAmount = 0,
-    this.customer,
-  });
+  const CartState({this.items = const [], this.totalAmount = 0, this.customer});
 
   @override
   List<Object?> get props => [items, totalAmount, customer];
@@ -186,7 +182,12 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   }
 
   void _onSetCartCustomer(SetCartCustomer event, Emitter<CartState> emit) {
-    emit(state.copyWith(customer: event.customer, clearCustomer: event.customer == null));
+    emit(
+      state.copyWith(
+        customer: event.customer,
+        clearCustomer: event.customer == null,
+      ),
+    );
   }
 
   double _calculateTotal(List<TransactionItem> items) {

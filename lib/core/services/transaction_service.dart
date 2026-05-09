@@ -37,11 +37,11 @@ class TransactionService {
     if (_businessId.isEmpty) {
       throw Exception('Business ID is missing. Please re-login.');
     }
-    
+
     try {
-      final transactionModel = TransactionModel.fromEntity(transaction).copyWith(
-        businessId: _businessId,
-      );
+      final transactionModel = TransactionModel.fromEntity(
+        transaction,
+      ).copyWith(businessId: _businessId);
 
       // We use a local DB transaction to ensure atomicity
       await _localDb.transaction(() async {
@@ -66,7 +66,9 @@ class TransactionService {
 
           // Create local stock log
           final logModel = StockLogModel(
-            id: DateTime.now().millisecondsSinceEpoch.toString() + item.productId,
+            id:
+                DateTime.now().millisecondsSinceEpoch.toString() +
+                item.productId,
             productId: item.productId,
             productName: item.productName,
             type: StockLogType.sale,
@@ -77,7 +79,10 @@ class TransactionService {
             createdAt: DateTime.now(),
             businessId: _businessId,
           );
-          await _stockLogLocal.insertStockLog(logModel, syncStatus: 'pendingUpload');
+          await _stockLogLocal.insertStockLog(
+            logModel,
+            syncStatus: 'pendingUpload',
+          );
 
           // Check for low stock alert
           if (newStock <= product.stockThreshold) {
@@ -107,13 +112,17 @@ class TransactionService {
         }
 
         // 2. Save transaction locally
-        await _transactionLocal.createTransaction(transactionModel, syncStatus: 'pendingUpload');
+        await _transactionLocal.createTransaction(
+          transactionModel,
+          syncStatus: 'pendingUpload',
+        );
 
         // 3. Update Customer Statistics if customerId is present
         if (transaction.customerId != null &&
             transaction.customerId!.isNotEmpty) {
-          final customer =
-              await _customerLocal.getCustomerById(transaction.customerId!);
+          final customer = await _customerLocal.getCustomerById(
+            transaction.customerId!,
+          );
           if (customer != null) {
             // Logic: 1 point for every 10,000 IDR
             final newPoints = (transaction.totalAmount / 10000).floor();
@@ -125,8 +134,10 @@ class TransactionService {
               updatedAt: DateTime.now(),
             );
 
-            await _customerLocal.upsertCustomer(updatedCustomer,
-                syncStatus: 'pendingUpload');
+            await _customerLocal.upsertCustomer(
+              updatedCustomer,
+              syncStatus: 'pendingUpload',
+            );
 
             // Add customer update to sync queue
             await _localDb.addToSyncQueue(
@@ -191,7 +202,10 @@ class TransactionService {
           createdAt: DateTime.now(),
           businessId: _businessId,
         );
-        await _stockLogLocal.insertStockLog(logModel, syncStatus: 'pendingUpload');
+        await _stockLogLocal.insertStockLog(
+          logModel,
+          syncStatus: 'pendingUpload',
+        );
 
         // 3. Add to sync queue
         await _localDb.addToSyncQueue(
@@ -201,7 +215,7 @@ class TransactionService {
           businessId: _businessId,
           data: jsonEncode(logModel.toJson()),
         );
-        
+
         // Note: Since we updated product stock, we also need to sync the product update
         await _localDb.addToSyncQueue(
           syncEntityName: 'products',

@@ -10,24 +10,30 @@ class CustomerLocalDataSource {
 
   Stream<List<CustomerModel>> watchCustomers(String businessId) {
     final query = _db.select(_db.localCustomers)
-      ..where((t) =>
-          t.businessId.equals(businessId) &
-          t.syncStatus.equals('pendingDelete').not())
+      ..where(
+        (t) =>
+            t.businessId.equals(businessId) &
+            t.syncStatus.equals('pendingDelete').not(),
+      )
       ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
     return query.watch().map(
-        (rows) => rows.map((row) => _rowToModel(row)).toList());
+      (rows) => rows.map((row) => _rowToModel(row)).toList(),
+    );
   }
 
   Future<CustomerModel?> getCustomerById(String id) async {
-    final query = _db.select(_db.localCustomers)
-      ..where((t) => t.id.equals(id));
+    final query = _db.select(_db.localCustomers)..where((t) => t.id.equals(id));
     final row = await query.getSingleOrNull();
     return row != null ? _rowToModel(row) : null;
   }
 
-  Future<void> upsertCustomer(CustomerModel customer,
-      {String syncStatus = 'pendingUpload'}) async {
-    await _db.into(_db.localCustomers).insertOnConflictUpdate(
+  Future<void> upsertCustomer(
+    CustomerModel customer, {
+    String syncStatus = 'pendingUpload',
+  }) async {
+    await _db
+        .into(_db.localCustomers)
+        .insertOnConflictUpdate(
           LocalCustomersCompanion.insert(
             id: customer.id,
             name: customer.name,
@@ -47,10 +53,9 @@ class CustomerLocalDataSource {
   }
 
   Future<void> markAsDeleted(String id) async {
-    await (_db.update(_db.localCustomers)..where((t) => t.id.equals(id)))
-        .write(const LocalCustomersCompanion(
-      syncStatus: Value('pendingDelete'),
-    ));
+    await (_db.update(_db.localCustomers)..where((t) => t.id.equals(id))).write(
+      const LocalCustomersCompanion(syncStatus: Value('pendingDelete')),
+    );
   }
 
   Future<void> hardDelete(String id) async {
@@ -91,11 +96,12 @@ class CustomerLocalDataSource {
   }
 
   Future<void> markAsSynced(String id) async {
-    await (_db.update(_db.localCustomers)..where((t) => t.id.equals(id)))
-        .write(LocalCustomersCompanion(
-      syncStatus: const Value('synced'),
-      lastSyncAt: Value(DateTime.now()),
-    ));
+    await (_db.update(_db.localCustomers)..where((t) => t.id.equals(id))).write(
+      LocalCustomersCompanion(
+        syncStatus: const Value('synced'),
+        lastSyncAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   CustomerModel _rowToModel(LocalCustomer row) {

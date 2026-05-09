@@ -26,7 +26,9 @@ class BusinessFirebaseDataSourceImpl implements BusinessFirebaseDataSource {
 
   @override
   Future<BusinessInfoModel> getBusinessInfo() async {
-    log('BusinessFirebaseDataSource: Fetching business info for ID: "$_businessId"');
+    log(
+      'BusinessFirebaseDataSource: Fetching business info for ID: "$_businessId"',
+    );
     if (_businessId.isEmpty) {
       log('BusinessFirebaseDataSource: businessId is empty, returning default');
       // If no businessId yet, return default and potentially wait for setup
@@ -43,7 +45,9 @@ class BusinessFirebaseDataSourceImpl implements BusinessFirebaseDataSource {
       );
     }
 
-    log('BusinessFirebaseDataSource: Querying Firestore collection "${FirebaseCollections.businessInfo}" for document "$_businessId"');
+    log(
+      'BusinessFirebaseDataSource: Querying Firestore collection "${FirebaseCollections.businessInfo}" for document "$_businessId"',
+    );
     final doc = await _collection.doc(_businessId).get();
     if (!doc.exists) {
       final defaultInfo = BusinessInfoModel(

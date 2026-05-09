@@ -67,10 +67,8 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
   final ReportService reportService;
   final SessionService sessionService;
 
-  ReportBloc({
-    required this.reportService,
-    required this.sessionService,
-  }) : super(ReportInitial()) {
+  ReportBloc({required this.reportService, required this.sessionService})
+    : super(ReportInitial()) {
     on<LoadDailyReport>(_onLoadDailyReport);
     on<LoadWeeklyReport>(_onLoadWeeklyReport);
     on<LoadMonthlyReport>(_onLoadMonthlyReport);

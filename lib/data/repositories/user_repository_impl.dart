@@ -14,10 +14,7 @@ class UserRepositoryImpl implements UserRepository {
   final UserFirebaseDataSource dataSource;
   final SessionService sessionService;
 
-  UserRepositoryImpl({
-    required this.dataSource,
-    required this.sessionService,
-  });
+  UserRepositoryImpl({required this.dataSource, required this.sessionService});
 
   @override
   Future<Either<String, List<UserEntity>>> getUsers() async {
@@ -69,11 +66,8 @@ class UserRepositoryImpl implements UserRepository {
 
       try {
         final authInstance = auth.FirebaseAuth.instanceFor(app: secondaryApp);
-        final userCredential =
-            await authInstance.createUserWithEmailAndPassword(
-              email: email,
-              password: password,
-            );
+        final userCredential = await authInstance
+            .createUserWithEmailAndPassword(email: email, password: password);
 
         final uid = userCredential.user?.uid;
         if (uid == null) {

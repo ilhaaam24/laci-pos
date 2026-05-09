@@ -25,28 +25,33 @@ class BusinessLocalDataSource {
   }
 
   Future<void> upsertBusinessInfo(BusinessInfoModel business) async {
-    await db.into(db.localBusinessInfo).insertOnConflictUpdate(
-      LocalBusinessInfoCompanion.insert(
-        id: business.id,
-        businessName: business.businessName,
-        address: Value(business.address),
-        phone: Value(business.phone),
-        email: Value(business.email),
-        logoUrl: Value(business.logoUrl),
-        qrisUrl: Value(business.qrisUrl),
-        createdAt: business.createdAt,
-        updatedAt: business.updatedAt,
+    await db
+        .into(db.localBusinessInfo)
+        .insertOnConflictUpdate(
+          LocalBusinessInfoCompanion.insert(
+            id: business.id,
+            businessName: business.businessName,
+            address: Value(business.address),
+            phone: Value(business.phone),
+            email: Value(business.email),
+            logoUrl: Value(business.logoUrl),
+            qrisUrl: Value(business.qrisUrl),
+            createdAt: business.createdAt,
+            updatedAt: business.updatedAt,
+            syncStatus: const Value('synced'),
+            lastSyncAt: Value(DateTime.now()),
+          ),
+        );
+  }
+
+  Future<void> markAsSynced(String id) async {
+    await (db.update(
+      db.localBusinessInfo,
+    )..where((t) => t.id.equals(id))).write(
+      LocalBusinessInfoCompanion(
         syncStatus: const Value('synced'),
         lastSyncAt: Value(DateTime.now()),
       ),
     );
-  }
-
-  Future<void> markAsSynced(String id) async {
-    await (db.update(db.localBusinessInfo)..where((t) => t.id.equals(id)))
-        .write(LocalBusinessInfoCompanion(
-      syncStatus: const Value('synced'),
-      lastSyncAt: Value(DateTime.now()),
-    ));
   }
 }

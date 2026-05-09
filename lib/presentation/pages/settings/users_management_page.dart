@@ -152,7 +152,9 @@ class UsersManagementPage extends StatelessWidget {
                   Navigator.pop(dialogContext);
                 } else if (password.length < 6) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Password minimal 6 karakter')),
+                    const SnackBar(
+                      content: Text('Password minimal 6 karakter'),
+                    ),
                   );
                 }
               },

@@ -14,9 +14,6 @@ import '../../../domain/entities/product_entity.dart';
 import '../../../domain/entities/category_entity.dart';
 import '../../../core/style/app_colors.dart';
 import '../../widgets/sync_status_indicator.dart';
-import '../../../domain/entities/customer_entity.dart';
-import '../customer/add_edit_customer_page.dart';
-import '../../blocs/customer/customer_bloc.dart';
 
 class KasirPage extends StatefulWidget {
   const KasirPage({super.key});

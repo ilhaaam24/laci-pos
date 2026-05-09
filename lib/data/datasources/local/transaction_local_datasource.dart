@@ -32,10 +32,12 @@ class TransactionLocalDataSource {
     DateTime endDate,
   ) {
     final query = _db.select(_db.localTransactions)
-      ..where((t) =>
-          t.businessId.equals(businessId) &
-          t.createdAt.isBiggerOrEqualValue(startDate) &
-          t.createdAt.isSmallerThanValue(endDate))
+      ..where(
+        (t) =>
+            t.businessId.equals(businessId) &
+            t.createdAt.isBiggerOrEqualValue(startDate) &
+            t.createdAt.isSmallerThanValue(endDate),
+      )
       ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
     return query.watch().asyncMap((rows) async {
       final List<TransactionModel> transactions = [];
@@ -49,10 +51,14 @@ class TransactionLocalDataSource {
 
   /// Watch transactions for a specific customer.
   Stream<List<TransactionModel>> watchTransactionsByCustomer(
-      String businessId, String customerId) {
+    String businessId,
+    String customerId,
+  ) {
     final query = _db.select(_db.localTransactions)
-      ..where((t) =>
-          t.businessId.equals(businessId) & t.customerId.equals(customerId))
+      ..where(
+        (t) =>
+            t.businessId.equals(businessId) & t.customerId.equals(customerId),
+      )
       ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
     return query.watch().asyncMap((rows) async {
       final List<TransactionModel> transactions = [];
@@ -76,11 +82,15 @@ class TransactionLocalDataSource {
 
   /// Create a transaction locally with all items (atomic).
   /// This is the core offline transaction capability.
-  Future<String> createTransaction(TransactionModel transaction,
-      {String syncStatus = 'pendingUpload'}) async {
+  Future<String> createTransaction(
+    TransactionModel transaction, {
+    String syncStatus = 'pendingUpload',
+  }) async {
     await _db.transaction(() async {
       // 1. Insert transaction
-      await _db.into(_db.localTransactions).insert(
+      await _db
+          .into(_db.localTransactions)
+          .insert(
             LocalTransactionsCompanion.insert(
               id: transaction.id,
               transactionCode: transaction.transactionCode,
@@ -101,14 +111,15 @@ class TransactionLocalDataSource {
               createdBy: transaction.createdBy,
               businessId: Value(transaction.businessId),
               syncStatus: Value(syncStatus),
-              lastSyncAt:
-                  Value(syncStatus == 'synced' ? DateTime.now() : null),
+              lastSyncAt: Value(syncStatus == 'synced' ? DateTime.now() : null),
             ),
           );
 
       // 2. Insert transaction items
       for (final item in transaction.items) {
-        await _db.into(_db.localTransactionItems).insert(
+        await _db
+            .into(_db.localTransactionItems)
+            .insert(
               LocalTransactionItemsCompanion.insert(
                 id: item.id,
                 transactionId: transaction.id,
@@ -142,11 +153,14 @@ class TransactionLocalDataSource {
 
   /// Mark a transaction as synced.
   Future<void> markAsSynced(String id) async {
-    await (_db.update(_db.localTransactions)..where((t) => t.id.equals(id)))
-        .write(LocalTransactionsCompanion(
-      syncStatus: const Value('synced'),
-      lastSyncAt: Value(DateTime.now()),
-    ));
+    await (_db.update(
+      _db.localTransactions,
+    )..where((t) => t.id.equals(id))).write(
+      LocalTransactionsCompanion(
+        syncStatus: const Value('synced'),
+        lastSyncAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   /// Bulk upsert transactions from Firebase (during sync pull).
@@ -154,7 +168,9 @@ class TransactionLocalDataSource {
     for (final txn in transactions) {
       await _db.transaction(() async {
         // Upsert the transaction itself
-        await _db.into(_db.localTransactions).insertOnConflictUpdate(
+        await _db
+            .into(_db.localTransactions)
+            .insertOnConflictUpdate(
               LocalTransactionsCompanion.insert(
                 id: txn.id,
                 transactionCode: txn.transactionCode,
@@ -180,12 +196,14 @@ class TransactionLocalDataSource {
             );
 
         // Delete old items and re-insert
-        await (_db.delete(_db.localTransactionItems)
-              ..where((t) => t.transactionId.equals(txn.id)))
-            .go();
+        await (_db.delete(
+          _db.localTransactionItems,
+        )..where((t) => t.transactionId.equals(txn.id))).go();
 
         for (final item in txn.items) {
-          await _db.into(_db.localTransactionItems).insert(
+          await _db
+              .into(_db.localTransactionItems)
+              .insert(
                 LocalTransactionItemsCompanion.insert(
                   id: item.id,
                   transactionId: txn.id,
@@ -207,7 +225,8 @@ class TransactionLocalDataSource {
   // --- Private Helpers ---
 
   Future<List<TransactionItemModel>> _getItemsForTransaction(
-      String transactionId) async {
+    String transactionId,
+  ) async {
     final query = _db.select(_db.localTransactionItems)
       ..where((t) => t.transactionId.equals(transactionId));
     final rows = await query.get();
@@ -215,7 +234,9 @@ class TransactionLocalDataSource {
   }
 
   TransactionModel _rowToModel(
-      LocalTransaction row, List<TransactionItemModel> items) {
+    LocalTransaction row,
+    List<TransactionItemModel> items,
+  ) {
     return TransactionModel(
       id: row.id,
       transactionCode: row.transactionCode,

@@ -5,10 +5,10 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 /// Used by repositories and sync engine to determine online/offline status.
 class ConnectivityService {
   final Connectivity _connectivity = Connectivity();
-  
+
   final StreamController<bool> _onlineController =
       StreamController<bool>.broadcast();
-  
+
   StreamSubscription<List<ConnectivityResult>>? _subscription;
   bool _isOnline = true;
 
@@ -31,7 +31,7 @@ class ConnectivityService {
   void _updateStatus(List<ConnectivityResult> results) {
     final wasOnline = _isOnline;
     _isOnline = results.any((r) => r != ConnectivityResult.none);
-    
+
     if (wasOnline != _isOnline) {
       _onlineController.add(_isOnline);
     }

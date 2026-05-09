@@ -57,7 +57,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
                           const SizedBox(height: 24),
                           ElevatedButton.icon(
                             onPressed: () {
-                              context.read<BusinessBloc>().add(LoadBusinessInfo());
+                              context.read<BusinessBloc>().add(
+                                LoadBusinessInfo(),
+                              );
                               getIt<SyncService>().fullSync();
                             },
                             icon: const Icon(Icons.refresh),
@@ -81,14 +83,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
               final currentUserId = authState.user.id;
 
               // Force reload if business ID doesn't match OR user has changed (account switch)
-              final needsReload = loadedBusinessId != currentBusinessId || 
-                                 _lastUserId != currentUserId;
+              final needsReload =
+                  loadedBusinessId != currentBusinessId ||
+                  _lastUserId != currentUserId;
 
               if (needsReload && !businessState.isLoading) {
                 log(
                   'AuthWrapper: Session change detected! User: $currentUserId, Business: $currentBusinessId. Reloading...',
                 );
-                
+
                 // Update tracker
                 _lastUserId = currentUserId;
 

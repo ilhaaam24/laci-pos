@@ -13,6 +13,7 @@ import '../../blocs/report/report_bloc.dart';
 import '../../blocs/business/business_bloc.dart';
 import '../../blocs/transaction/transaction_bloc.dart';
 import '../../../domain/entities/transaction_entity.dart';
+import '../../../core/services/whatsapp_service.dart';
 
 class ReportPage extends StatefulWidget {
   const ReportPage({super.key});
@@ -372,8 +373,10 @@ class _ReportPageState extends State<ReportPage> {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child:
-                    const Icon(Icons.receipt_outlined, color: AppColors.primary),
+                child: const Icon(
+                  Icons.receipt_outlined,
+                  color: AppColors.primary,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -412,8 +415,10 @@ class _ReportPageState extends State<ReportPage> {
                   ),
                   Container(
                     margin: const EdgeInsets.only(top: 4),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.success.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
@@ -436,30 +441,56 @@ class _ReportPageState extends State<ReportPage> {
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Divider(height: 1, color: AppColors.divider),
             ),
-            ...txn.items.map((item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item.productName,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        '${item.quantity} x ${currencyFormatter.format(item.price)}',
+            ...txn.items.map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.productName,
                         style: const TextStyle(
                           fontSize: 13,
-                          color: AppColors.textSecondary,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                    ],
-                  ),
-                )),
+                    ),
+                    Text(
+                      '${item.quantity} x ${currencyFormatter.format(item.price)}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
+          const Divider(height: 24, color: AppColors.divider),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                onPressed: () {
+                  final businessState = context.read<BusinessBloc>().state;
+                  WhatsappService.shareReceipt(
+                    transaction: txn,
+                    businessInfo: businessState.businessInfo,
+                  );
+                },
+                icon: const Icon(Icons.share_outlined, size: 18),
+                label: const Text(
+                  'Kirim via WhatsApp',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF25D366),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

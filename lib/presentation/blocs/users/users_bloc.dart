@@ -75,9 +75,8 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
     final result = await repository.getUsers();
     result.fold(
       (error) => emit(state.copyWith(message: error, isLoading: false)),
-      (users) => emit(
-        state.copyWith(users: users, isLoading: false, isSuccess: true),
-      ),
+      (users) =>
+          emit(state.copyWith(users: users, isLoading: false, isSuccess: true)),
     );
   }
 
@@ -97,8 +96,11 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
 
   Future<void> _onInviteUser(InviteUser event, Emitter<UsersState> emit) async {
     emit(state.copyWith(isLoading: true));
-    final result =
-        await repository.addUser(event.email, event.password, event.role);
+    final result = await repository.addUser(
+      event.email,
+      event.password,
+      event.role,
+    );
     result.fold(
       (error) => emit(state.copyWith(message: error, isLoading: false)),
       (_) {

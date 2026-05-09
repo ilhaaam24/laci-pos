@@ -177,7 +177,9 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
         phone: _phoneController.text.trim(),
         address: _addressController.text.trim(),
         totalSpent: _isEdit ? widget.customer!.totalSpent : 0,
-        lastTransactionDate: _isEdit ? widget.customer!.lastTransactionDate : null,
+        lastTransactionDate: _isEdit
+            ? widget.customer!.lastTransactionDate
+            : null,
         loyaltyPoints: _isEdit ? widget.customer!.loyaltyPoints : 0,
         createdAt: _isEdit ? widget.customer!.createdAt : DateTime.now(),
         updatedAt: DateTime.now(),

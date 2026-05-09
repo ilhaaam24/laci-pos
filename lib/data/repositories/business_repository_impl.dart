@@ -26,11 +26,15 @@ class BusinessRepositoryImpl implements BusinessRepository {
   Future<Either<String, BusinessInfo>> getBusinessInfo() async {
     try {
       final currentBusinessId = sessionService.businessId;
-      log('BusinessRepository: currentBusinessId from session: $currentBusinessId');
+      log(
+        'BusinessRepository: currentBusinessId from session: $currentBusinessId',
+      );
 
       // Always try local first, but ONLY if it matches the current session businessId
       final localModel = await localDataSource.getBusinessInfo();
-      log('BusinessRepository: localModel: ${localModel?.id} (${localModel?.businessName})');
+      log(
+        'BusinessRepository: localModel: ${localModel?.id} (${localModel?.businessName})',
+      );
 
       if (localModel != null &&
           (currentBusinessId == null || localModel.id == currentBusinessId)) {
@@ -41,7 +45,9 @@ class BusinessRepositoryImpl implements BusinessRepository {
       // If not in local or mismatch, try remote and cache it
       log('BusinessRepository: Fetching from remote...');
       final remoteModel = await remoteDataSource.getBusinessInfo();
-      log('BusinessRepository: remoteModel: ${remoteModel.id} (${remoteModel.businessName})');
+      log(
+        'BusinessRepository: remoteModel: ${remoteModel.id} (${remoteModel.businessName})',
+      );
 
       await localDataSource.upsertBusinessInfo(remoteModel);
       log('BusinessRepository: Cached remote model to local');

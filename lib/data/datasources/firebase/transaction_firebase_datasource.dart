@@ -58,9 +58,9 @@ class TransactionFirebaseDataSourceImpl
             .doc();
 
         // Convert TransactionItem to TransactionItemModel to get toMap()
-        final itemModel = TransactionItemModel.fromEntity(item).copyWith(
-          businessId: _businessId,
-        );
+        final itemModel = TransactionItemModel.fromEntity(
+          item,
+        ).copyWith(businessId: _businessId);
         batch.set(itemRef, itemModel.toMap());
 
         // Update product stock with logging
@@ -87,7 +87,7 @@ class TransactionFirebaseDataSourceImpl
         final logRef = firestore
             .collection(FirebaseCollections.stockLogs)
             .doc();
-        
+
         final logData = StockLogModel(
           id: logRef.id,
           productId: item.productId,
@@ -100,7 +100,7 @@ class TransactionFirebaseDataSourceImpl
           createdAt: DateTime.now(),
           businessId: _businessId,
         ).toFirestore();
-        
+
         batch.set(logRef, logData);
 
         // Check for low stock alert

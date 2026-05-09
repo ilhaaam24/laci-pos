@@ -32,11 +32,7 @@ class SyncStatusIndicator extends StatelessWidget {
   Widget _buildIcon(AppSyncState state) {
     switch (state) {
       case AppSyncState.idle:
-        return const Icon(
-          Icons.cloud_done,
-          color: Colors.green,
-          size: 20,
-        );
+        return const Icon(Icons.cloud_done, color: Colors.green, size: 20);
       case AppSyncState.syncing:
         return const SizedBox(
           width: 16,
@@ -47,23 +43,11 @@ class SyncStatusIndicator extends StatelessWidget {
           ),
         );
       case AppSyncState.offline:
-        return const Icon(
-          Icons.cloud_off,
-          color: Colors.grey,
-          size: 20,
-        );
+        return const Icon(Icons.cloud_off, color: Colors.grey, size: 20);
       case AppSyncState.pending:
-        return const Icon(
-          Icons.cloud_upload,
-          color: Colors.orange,
-          size: 20,
-        );
+        return const Icon(Icons.cloud_upload, color: Colors.orange, size: 20);
       case AppSyncState.error:
-        return const Icon(
-          Icons.sync_problem,
-          color: AppColors.error,
-          size: 20,
-        );
+        return const Icon(Icons.sync_problem, color: AppColors.error, size: 20);
     }
   }
 
@@ -90,7 +74,9 @@ class SyncStatusIndicator extends StatelessWidget {
     if (state == AppSyncState.offline) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Anda sedang offline. Sinkronisasi akan berlanjut saat internet tersedia.'),
+          content: Text(
+            'Anda sedang offline. Sinkronisasi akan berlanjut saat internet tersedia.',
+          ),
         ),
       );
     } else if (state == AppSyncState.idle || state == AppSyncState.error) {

@@ -26,7 +26,7 @@ class _MainPageState extends State<MainPage> {
           label: 'Kasir',
           visible: role.canAccessPOS,
         ),
-        const KasirPage()
+        const KasirPage(),
       ),
       (
         _PageItem(
@@ -35,7 +35,7 @@ class _MainPageState extends State<MainPage> {
           label: 'Orders',
           visible: role.canAccessPOS, // Orders usually part of POS flow
         ),
-        const CheckoutPage()
+        const CheckoutPage(),
       ),
       (
         _PageItem(
@@ -43,7 +43,7 @@ class _MainPageState extends State<MainPage> {
           label: 'Insights',
           visible: role.canAccessReports,
         ),
-        const ReportPage()
+        const ReportPage(),
       ),
       (
         _PageItem(
@@ -51,7 +51,7 @@ class _MainPageState extends State<MainPage> {
           label: 'Menu',
           visible: role.canAccessSettings,
         ),
-        const SettingsPage()
+        const SettingsPage(),
       ),
     ];
 
@@ -112,15 +112,14 @@ class _MainPageState extends State<MainPage> {
                 fontWeight: FontWeight.w500,
                 fontSize: 10,
               ),
-              items:
-                  filteredPages.map((e) {
-                    final item = e.$1;
-                    return BottomNavigationBarItem(
-                      icon: Icon(item.icon),
-                      activeIcon: Icon(item.activeIcon ?? item.icon),
-                      label: item.label,
-                    );
-                  }).toList(),
+              items: filteredPages.map((e) {
+                final item = e.$1;
+                return BottomNavigationBarItem(
+                  icon: Icon(item.icon),
+                  activeIcon: Icon(item.activeIcon ?? item.icon),
+                  label: item.label,
+                );
+              }).toList(),
             ),
           ),
         );

@@ -9,6 +9,6 @@ class SessionService {
 
   UserEntity? get currentUser => _currentUser;
   String? get businessId => _currentUser?.businessId;
-  
+
   bool get isAuthenticated => _currentUser != null;
 }

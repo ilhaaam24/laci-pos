@@ -11,16 +11,23 @@ class PromoLocalDataSource {
 
   Stream<List<PromoModel>> watchPromos(String businessId) {
     final query = _db.select(_db.localPromos)
-      ..where((t) =>
-          t.businessId.equals(businessId) &
-          t.syncStatus.equals('pendingDelete').not());
+      ..where(
+        (t) =>
+            t.businessId.equals(businessId) &
+            t.syncStatus.equals('pendingDelete').not(),
+      );
     return query.watch().map(
-        (rows) => rows.map((row) => _rowToModel(row)).toList());
+      (rows) => rows.map((row) => _rowToModel(row)).toList(),
+    );
   }
 
-  Future<void> upsertPromo(PromoModel promo,
-      {String syncStatus = 'pendingUpload'}) async {
-    await _db.into(_db.localPromos).insertOnConflictUpdate(
+  Future<void> upsertPromo(
+    PromoModel promo, {
+    String syncStatus = 'pendingUpload',
+  }) async {
+    await _db
+        .into(_db.localPromos)
+        .insertOnConflictUpdate(
           LocalPromosCompanion.insert(
             id: promo.id,
             name: promo.name,
@@ -38,10 +45,9 @@ class PromoLocalDataSource {
   }
 
   Future<void> markAsDeleted(String id) async {
-    await (_db.update(_db.localPromos)..where((t) => t.id.equals(id)))
-        .write(const LocalPromosCompanion(
-      syncStatus: Value('pendingDelete'),
-    ));
+    await (_db.update(_db.localPromos)..where((t) => t.id.equals(id))).write(
+      const LocalPromosCompanion(syncStatus: Value('pendingDelete')),
+    );
   }
 
   Future<void> hardDelete(String id) async {
@@ -80,11 +86,12 @@ class PromoLocalDataSource {
   }
 
   Future<void> markAsSynced(String id) async {
-    await (_db.update(_db.localPromos)..where((t) => t.id.equals(id)))
-        .write(LocalPromosCompanion(
-      syncStatus: const Value('synced'),
-      lastSyncAt: Value(DateTime.now()),
-    ));
+    await (_db.update(_db.localPromos)..where((t) => t.id.equals(id))).write(
+      LocalPromosCompanion(
+        syncStatus: const Value('synced'),
+        lastSyncAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   PromoModel _rowToModel(LocalPromo row) {

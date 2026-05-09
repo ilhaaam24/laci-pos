@@ -9,23 +9,30 @@ class StockLogLocalDataSource {
 
   StockLogLocalDataSource(this._db);
 
-  Stream<List<StockLogModel>> watchStockLogs(String businessId,
-      {String? productId}) {
+  Stream<List<StockLogModel>> watchStockLogs(
+    String businessId, {
+    String? productId,
+  }) {
     var query = _db.select(_db.localStockLogs)
-      ..where((t) =>
-          t.businessId.equals(businessId) &
-          t.syncStatus.equals('pendingDelete').not())
+      ..where(
+        (t) =>
+            t.businessId.equals(businessId) &
+            t.syncStatus.equals('pendingDelete').not(),
+      )
       ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
     if (productId != null) {
       query = _db.select(_db.localStockLogs)
-        ..where((t) =>
-            t.businessId.equals(businessId) &
-            t.productId.equals(productId) &
-            t.syncStatus.equals('pendingDelete').not())
+        ..where(
+          (t) =>
+              t.businessId.equals(businessId) &
+              t.productId.equals(productId) &
+              t.syncStatus.equals('pendingDelete').not(),
+        )
         ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
     }
     return query.watch().map(
-        (rows) => rows.map((row) => _rowToModel(row)).toList());
+      (rows) => rows.map((row) => _rowToModel(row)).toList(),
+    );
   }
 
   Future<StockLogModel?> getStockLogById(String id) async {
@@ -34,9 +41,13 @@ class StockLogLocalDataSource {
     return row != null ? _rowToModel(row) : null;
   }
 
-  Future<void> insertStockLog(StockLogModel log,
-      {String syncStatus = 'pendingUpload'}) async {
-    await _db.into(_db.localStockLogs).insert(
+  Future<void> insertStockLog(
+    StockLogModel log, {
+    String syncStatus = 'pendingUpload',
+  }) async {
+    await _db
+        .into(_db.localStockLogs)
+        .insert(
           LocalStockLogsCompanion.insert(
             id: log.id,
             productId: log.productId,
@@ -87,11 +98,12 @@ class StockLogLocalDataSource {
   }
 
   Future<void> markAsSynced(String id) async {
-    await (_db.update(_db.localStockLogs)..where((t) => t.id.equals(id)))
-        .write(LocalStockLogsCompanion(
-      syncStatus: const Value('synced'),
-      lastSyncAt: Value(DateTime.now()),
-    ));
+    await (_db.update(_db.localStockLogs)..where((t) => t.id.equals(id))).write(
+      LocalStockLogsCompanion(
+        syncStatus: const Value('synced'),
+        lastSyncAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   StockLogModel _rowToModel(LocalStockLog row) {

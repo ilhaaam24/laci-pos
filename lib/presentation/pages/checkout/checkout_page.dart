@@ -20,6 +20,7 @@ import '../../../domain/entities/promo_entity.dart';
 import 'widgets/payment_dialog.dart';
 import '../../blocs/business/business_bloc.dart';
 import '../../../core/services/printer_service.dart';
+import '../../../core/services/whatsapp_service.dart';
 import '../customer/add_edit_customer_page.dart';
 
 class CheckoutPage extends StatefulWidget {
@@ -212,7 +213,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
       // Clear cart
       context.read<CartBloc>().add(ClearCart());
 
+      // Show success dialog with Share options
+      if (!mounted) return;
+      await _showSuccessDialog(context, transaction);
+
       // Navigate back to Kasir
+      if (!mounted) return;
       Navigator.pop(context);
     } catch (e) {
       // Close loading
@@ -222,6 +228,108 @@ class _CheckoutPageState extends State<CheckoutPage> {
       // Show error with AppToast
       AppToast.showError(context, 'Gagal memproses transaksi: $e');
     }
+  }
+
+  Future<void> _showSuccessDialog(
+    BuildContext context,
+    TransactionEntity transaction,
+  ) async {
+    final businessState = context.read<BusinessBloc>().state;
+    final businessInfo = businessState.businessInfo;
+    final cartState = context.read<CartBloc>().state;
+    final customerPhone = cartState.customer?.phone;
+
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Column(
+          children: [
+            Icon(
+              Icons.check_circle_outline,
+              color: AppColors.success,
+              size: 64,
+            ),
+            SizedBox(height: 16),
+            Text('Transaksi Berhasil!', textAlign: TextAlign.center),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Invoice: ${transaction.transactionCode}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Total: ${NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(transaction.totalAmount)}',
+            ),
+          ],
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      final printerService = PrinterService();
+                      await printerService.printReceipt(
+                        transaction: transaction,
+                        businessInfo: businessInfo,
+                      );
+                    },
+                    icon: const Icon(Icons.print_outlined),
+                    label: const Text('Cetak Struk'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      await WhatsappService.shareReceipt(
+                        transaction: transaction,
+                        businessInfo: businessInfo,
+                        phoneNumber: customerPhone,
+                      );
+                    },
+                    icon: const Icon(Icons.share_outlined),
+                    label: const Text('Kirim via WhatsApp'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF25D366),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Selesai'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildCustomerSelector() {

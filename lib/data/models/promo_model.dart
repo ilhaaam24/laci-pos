@@ -77,9 +77,7 @@ class PromoModel extends PromoEntity {
       startDate: json['startDate'] != null
           ? DateTime.parse(json['startDate'])
           : null,
-      endDate: json['endDate'] != null
-          ? DateTime.parse(json['endDate'])
-          : null,
+      endDate: json['endDate'] != null ? DateTime.parse(json['endDate']) : null,
       businessId: json['businessId'],
     );
   }

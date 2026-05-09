@@ -80,7 +80,7 @@ Future<void> initializeDependencies() async {
   // Services
   getIt.registerLazySingleton<SessionService>(() => SessionService());
   getIt.registerLazySingleton<ConnectivityService>(() => ConnectivityService());
-  
+
   getIt.registerLazySingleton<ImageUploadService>(
     () => ImageUploadService(getIt()),
   );
@@ -190,13 +190,7 @@ Future<void> initializeDependencies() async {
   );
 
   getIt.registerLazySingleton<StockService>(
-    () => StockService(
-      getIt(),
-      getIt(),
-      getIt(),
-      getIt(),
-      getIt(),
-    ),
+    () => StockService(getIt(), getIt(), getIt(), getIt(), getIt()),
   );
 
   getIt.registerLazySingleton<SyncService>(

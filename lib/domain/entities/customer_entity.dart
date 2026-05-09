@@ -29,16 +29,16 @@ class Customer extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        email,
-        phone,
-        address,
-        totalSpent,
-        lastTransactionDate,
-        loyaltyPoints,
-        createdAt,
-        updatedAt,
-        businessId,
-      ];
+    id,
+    name,
+    email,
+    phone,
+    address,
+    totalSpent,
+    lastTransactionDate,
+    loyaltyPoints,
+    createdAt,
+    updatedAt,
+    businessId,
+  ];
 }

@@ -25,8 +25,7 @@ class LocalProducts extends Table {
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   TextColumn get businessId => text().nullable()();
-  TextColumn get syncStatus =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
   DateTimeColumn get lastSyncAt => dateTime().nullable()();
 
   @override
@@ -42,8 +41,7 @@ class LocalCategories extends Table {
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   TextColumn get businessId => text().nullable()();
-  TextColumn get syncStatus =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
   DateTimeColumn get lastSyncAt => dateTime().nullable()();
 
   @override
@@ -63,8 +61,7 @@ class LocalCustomers extends Table {
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   TextColumn get businessId => text().nullable()();
-  TextColumn get syncStatus =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
   DateTimeColumn get lastSyncAt => dateTime().nullable()();
 
   @override
@@ -84,8 +81,7 @@ class LocalTransactions extends Table {
   TextColumn get paymentMethod => text()();
   TextColumn get paymentStatus =>
       text().withDefault(const Constant('unpaid'))();
-  TextColumn get status =>
-      text().withDefault(const Constant('pending'))();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
   RealColumn get amountPaid => real().withDefault(const Constant(0))();
   RealColumn get changeAmount => real().withDefault(const Constant(0))();
   TextColumn get notes => text().nullable()();
@@ -93,8 +89,7 @@ class LocalTransactions extends Table {
   DateTimeColumn get completedAt => dateTime().nullable()();
   TextColumn get createdBy => text()();
   TextColumn get businessId => text().nullable()();
-  TextColumn get syncStatus =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
   DateTimeColumn get lastSyncAt => dateTime().nullable()();
 
   @override
@@ -129,8 +124,7 @@ class LocalPromos extends Table {
   DateTimeColumn get startDate => dateTime().nullable()();
   DateTimeColumn get endDate => dateTime().nullable()();
   TextColumn get businessId => text().nullable()();
-  TextColumn get syncStatus =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
   DateTimeColumn get lastSyncAt => dateTime().nullable()();
 
   @override
@@ -149,8 +143,7 @@ class LocalStockLogs extends Table {
   TextColumn get reason => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   TextColumn get businessId => text().nullable()();
-  TextColumn get syncStatus =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
   DateTimeColumn get lastSyncAt => dateTime().nullable()();
 
   @override
@@ -168,8 +161,7 @@ class LocalBusinessInfo extends Table {
   TextColumn get qrisUrl => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncStatus =>
-      text().withDefault(const Constant('synced'))();
+  TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
   DateTimeColumn get lastSyncAt => dateTime().nullable()();
 
   @override
@@ -191,9 +183,8 @@ class SyncQueueEntries extends Table {
   IntColumn get retryCount => integer().withDefault(const Constant(0))();
 
   /// 'pending', 'processing', 'failed'
-  TextColumn get status =>
-      text().withDefault(const Constant('pending'))();
-  
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+
   /// The business this operation belongs to
   TextColumn get businessId => text().nullable()();
 }
@@ -202,17 +193,19 @@ class SyncQueueEntries extends Table {
 // DATABASE CLASS
 // ============================================================
 
-@DriftDatabase(tables: [
-  LocalProducts,
-  LocalCategories,
-  LocalCustomers,
-  LocalTransactions,
-  LocalTransactionItems,
-  LocalPromos,
-  LocalStockLogs,
-  LocalBusinessInfo,
-  SyncQueueEntries,
-])
+@DriftDatabase(
+  tables: [
+    LocalProducts,
+    LocalCategories,
+    LocalCustomers,
+    LocalTransactions,
+    LocalTransactionItems,
+    LocalPromos,
+    LocalStockLogs,
+    LocalBusinessInfo,
+    SyncQueueEntries,
+  ],
+)
 class LocalDatabase extends _$LocalDatabase {
   LocalDatabase() : super(_openConnection());
 
@@ -282,26 +275,27 @@ class LocalDatabase extends _$LocalDatabase {
 
   /// Mark a sync queue entry as failed and increment retry count.
   Future<void> failSyncEntry(int entryId) async {
-    final entry = await (select(syncQueueEntries)
-          ..where((t) => t.id.equals(entryId)))
-        .getSingleOrNull();
+    final entry = await (select(
+      syncQueueEntries,
+    )..where((t) => t.id.equals(entryId))).getSingleOrNull();
     if (entry != null) {
-      await (update(syncQueueEntries)..where((t) => t.id.equals(entryId)))
-          .write(SyncQueueEntriesCompanion(
-        status: const Value('failed'),
-        retryCount: Value(entry.retryCount + 1),
-      ));
+      await (update(
+        syncQueueEntries,
+      )..where((t) => t.id.equals(entryId))).write(
+        SyncQueueEntriesCompanion(
+          status: const Value('failed'),
+          retryCount: Value(entry.retryCount + 1),
+        ),
+      );
     }
   }
 
   /// Reset failed entries back to pending for retry.
   Future<void> retryFailedEntries() async {
-    await (update(syncQueueEntries)
-          ..where((t) =>
-              t.status.equals('failed') & t.retryCount.isSmallerThanValue(5)))
-        .write(const SyncQueueEntriesCompanion(
-      status: Value('pending'),
-    ));
+    await (update(syncQueueEntries)..where(
+          (t) => t.status.equals('failed') & t.retryCount.isSmallerThanValue(5),
+        ))
+        .write(const SyncQueueEntriesCompanion(status: Value('pending')));
   }
 
   /// Count pending sync operations.

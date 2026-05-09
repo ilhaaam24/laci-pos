@@ -285,8 +285,11 @@ class TransactionModel extends TransactionEntity {
       completedAt: json['completedAt'] != null
           ? DateTime.parse(json['completedAt'])
           : null,
-      items: (json['items'] as List?)
-              ?.map((e) => TransactionItemModel.fromJson(e as Map<String, dynamic>))
+      items:
+          (json['items'] as List?)
+              ?.map(
+                (e) => TransactionItemModel.fromJson(e as Map<String, dynamic>),
+              )
               .toList() ??
           [],
       createdBy: json['createdBy'] ?? '',

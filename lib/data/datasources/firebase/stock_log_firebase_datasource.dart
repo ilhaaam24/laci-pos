@@ -25,15 +25,14 @@ class StockLogFirebaseDataSourceImpl implements StockLogFirebaseDataSource {
   @override
   Stream<List<StockLogModel>> getStockLogs({String? productId}) {
     var query = _collection.where('businessId', isEqualTo: _businessId);
-    
+
     if (productId != null) {
       query = query.where('productId', isEqualTo: productId);
     }
 
-    return query
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) {
+    return query.orderBy('createdAt', descending: true).snapshots().map((
+      snapshot,
+    ) {
       return snapshot.docs
           .map((doc) => StockLogModel.fromFirestore(doc))
           .toList();

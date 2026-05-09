@@ -11,20 +11,25 @@ class ProductLocalDataSource {
   /// Watch all products for the given business.
   Stream<List<ProductModel>> watchProducts(String businessId) {
     final query = _db.select(_db.localProducts)
-      ..where((t) =>
-          t.businessId.equals(businessId) &
-          t.syncStatus.equals('pendingDelete').not())
+      ..where(
+        (t) =>
+            t.businessId.equals(businessId) &
+            t.syncStatus.equals('pendingDelete').not(),
+      )
       ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
     return query.watch().map(
-        (rows) => rows.map((row) => _rowToModel(row)).toList());
+      (rows) => rows.map((row) => _rowToModel(row)).toList(),
+    );
   }
 
   /// Get all products for the given business (one-shot).
   Future<List<ProductModel>> getProducts(String businessId) async {
     final query = _db.select(_db.localProducts)
-      ..where((t) =>
-          t.businessId.equals(businessId) &
-          t.syncStatus.equals('pendingDelete').not())
+      ..where(
+        (t) =>
+            t.businessId.equals(businessId) &
+            t.syncStatus.equals('pendingDelete').not(),
+      )
       ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
     final rows = await query.get();
     return rows.map((row) => _rowToModel(row)).toList();
@@ -32,16 +37,19 @@ class ProductLocalDataSource {
 
   /// Get a single product by ID.
   Future<ProductModel?> getProductById(String id) async {
-    final query = _db.select(_db.localProducts)
-      ..where((t) => t.id.equals(id));
+    final query = _db.select(_db.localProducts)..where((t) => t.id.equals(id));
     final row = await query.getSingleOrNull();
     return row != null ? _rowToModel(row) : null;
   }
 
   /// Insert or update a product locally (for offline create/update).
-  Future<void> upsertProduct(ProductModel product,
-      {String syncStatus = 'pendingUpload'}) async {
-    await _db.into(_db.localProducts).insertOnConflictUpdate(
+  Future<void> upsertProduct(
+    ProductModel product, {
+    String syncStatus = 'pendingUpload',
+  }) async {
+    await _db
+        .into(_db.localProducts)
+        .insertOnConflictUpdate(
           LocalProductsCompanion.insert(
             id: product.id,
             categoryId: product.categoryId,
@@ -57,19 +65,16 @@ class ProductLocalDataSource {
             updatedAt: product.updatedAt,
             businessId: Value(product.businessId),
             syncStatus: Value(syncStatus),
-            lastSyncAt: Value(
-                syncStatus == 'synced' ? DateTime.now() : null),
+            lastSyncAt: Value(syncStatus == 'synced' ? DateTime.now() : null),
           ),
         );
   }
 
   /// Mark a product as pending delete.
   Future<void> markAsDeleted(String id) async {
-    await (_db.update(_db.localProducts)
-          ..where((t) => t.id.equals(id)))
-        .write(const LocalProductsCompanion(
-      syncStatus: Value('pendingDelete'),
-    ));
+    await (_db.update(_db.localProducts)..where((t) => t.id.equals(id))).write(
+      const LocalProductsCompanion(syncStatus: Value('pendingDelete')),
+    );
   }
 
   /// Physically remove a product from local DB.
@@ -116,22 +121,25 @@ class ProductLocalDataSource {
 
   /// Mark a product as synced.
   Future<void> markAsSynced(String id) async {
-    await (_db.update(_db.localProducts)..where((t) => t.id.equals(id)))
-        .write(LocalProductsCompanion(
-      syncStatus: const Value('synced'),
-      lastSyncAt: Value(DateTime.now()),
-    ));
+    await (_db.update(_db.localProducts)..where((t) => t.id.equals(id))).write(
+      LocalProductsCompanion(
+        syncStatus: const Value('synced'),
+        lastSyncAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   /// Update stock locally (for offline transactions).
   Future<void> updateStock(String productId, int newStock) async {
-    await (_db.update(_db.localProducts)
-          ..where((t) => t.id.equals(productId)))
-        .write(LocalProductsCompanion(
-      stock: Value(newStock),
-      updatedAt: Value(DateTime.now()),
-      syncStatus: const Value('pendingUpload'),
-    ));
+    await (_db.update(
+      _db.localProducts,
+    )..where((t) => t.id.equals(productId))).write(
+      LocalProductsCompanion(
+        stock: Value(newStock),
+        updatedAt: Value(DateTime.now()),
+        syncStatus: const Value('pendingUpload'),
+      ),
+    );
   }
 
   /// Convert a Drift row to ProductModel.

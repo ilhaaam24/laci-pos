@@ -304,7 +304,7 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
   }
 
   String? _qrisUrl;
-  bool _isUploading = false;  
+  bool _isUploading = false;
 
   Future<void> _onUploadQRIS() async {
     setState(() => _isUploading = true);

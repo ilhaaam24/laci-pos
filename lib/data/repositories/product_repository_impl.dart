@@ -27,7 +27,9 @@ class ProductRepositoryImpl implements ProductRepository {
   @override
   Stream<Either<String, List<Product>>> getProducts() {
     try {
-      return localDataSource.watchProducts(_businessId).map(
+      return localDataSource
+          .watchProducts(_businessId)
+          .map(
             (products) => Right<String, List<Product>>(
               products.map((model) => model.toEntity()).toList(),
             ),
@@ -54,14 +56,13 @@ class ProductRepositoryImpl implements ProductRepository {
   Future<Either<String, String>> createProduct(Product product) async {
     try {
       final productId = product.id.isEmpty ? const Uuid().v4() : product.id;
-      final model = ProductModel.fromEntity(product).copyWith(
-        id: productId,
-        businessId: _businessId,
-      );
-      
+      final model = ProductModel.fromEntity(
+        product,
+      ).copyWith(id: productId, businessId: _businessId);
+
       // 1. Save to local DB
       await localDataSource.upsertProduct(model, syncStatus: 'pendingUpload');
-      
+
       // 2. Add to sync queue
       await localDatabase.addToSyncQueue(
         syncEntityName: 'products',
@@ -70,7 +71,7 @@ class ProductRepositoryImpl implements ProductRepository {
         businessId: _businessId,
         data: jsonEncode(model.toJson()),
       );
-      
+
       return Right(model.id);
     } catch (e) {
       return Left(e.toString());
@@ -81,10 +82,10 @@ class ProductRepositoryImpl implements ProductRepository {
   Future<Either<String, void>> updateProduct(Product product) async {
     try {
       final model = ProductModel.fromEntity(product);
-      
+
       // 1. Update local DB
       await localDataSource.upsertProduct(model, syncStatus: 'pendingUpload');
-      
+
       // 2. Add to sync queue
       await localDatabase.addToSyncQueue(
         syncEntityName: 'products',
@@ -93,7 +94,7 @@ class ProductRepositoryImpl implements ProductRepository {
         businessId: _businessId,
         data: jsonEncode(model.toJson()),
       );
-      
+
       return const Right(null);
     } catch (e) {
       return Left(e.toString());
@@ -105,7 +106,7 @@ class ProductRepositoryImpl implements ProductRepository {
     try {
       // 1. Mark as deleted in local DB
       await localDataSource.markAsDeleted(id);
-      
+
       // 2. Add to sync queue
       await localDatabase.addToSyncQueue(
         syncEntityName: 'products',
@@ -113,7 +114,7 @@ class ProductRepositoryImpl implements ProductRepository {
         operation: 'delete',
         businessId: _businessId,
       );
-      
+
       return const Right(null);
     } catch (e) {
       return Left(e.toString());
@@ -126,7 +127,9 @@ class ProductRepositoryImpl implements ProductRepository {
   ) {
     try {
       // We could add a more specific query in localDataSource if needed
-      return localDataSource.watchProducts(_businessId).map(
+      return localDataSource
+          .watchProducts(_businessId)
+          .map(
             (products) => Right<String, List<Product>>(
               products
                   .where((p) => p.categoryId == categoryId)

@@ -113,7 +113,9 @@ class _BusinessSetupPageState extends State<BusinessSetupPage> {
                         ).animate().fadeIn(delay: 600.ms).slideX(begin: 0.1),
                         const SizedBox(height: 24),
                         ElevatedButton(
-                          onPressed: state.isLoading ? null : () => _onSave(state.businessInfo),
+                          onPressed: state.isLoading
+                              ? null
+                              : () => _onSave(state.businessInfo),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primaryDark,
                             foregroundColor: Colors.white,

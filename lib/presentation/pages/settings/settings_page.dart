@@ -17,7 +17,9 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
-        final role = (state is Authenticated) ? state.user.role : UserRole.kasir;
+        final role = (state is Authenticated)
+            ? state.user.role
+            : UserRole.kasir;
 
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -33,11 +35,10 @@ class SettingsPage extends StatelessWidget {
                   subtitle: 'Tambah, edit, atau hapus produk',
                   icon: Icons.inventory_2_outlined,
                   color: Colors.blue,
-                  onTap:
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ProductsPage()),
-                      ),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ProductsPage()),
+                  ),
                 ),
                 _buildSettingTile(
                   context,
@@ -45,11 +46,10 @@ class SettingsPage extends StatelessWidget {
                   subtitle: 'Atur kategori produk Anda',
                   icon: Icons.category_outlined,
                   color: Colors.orange,
-                  onTap:
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const CategoriesPage()),
-                      ),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CategoriesPage()),
+                  ),
                 ),
                 _buildSettingTile(
                   context,
@@ -57,11 +57,10 @@ class SettingsPage extends StatelessWidget {
                   subtitle: 'Daftar pelanggan dan loyalitas',
                   icon: Icons.people_outline,
                   color: Colors.teal,
-                  onTap:
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const CustomersPage()),
-                      ),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CustomersPage()),
+                  ),
                 ),
                 const SizedBox(height: 24),
               ],
@@ -73,11 +72,10 @@ class SettingsPage extends StatelessWidget {
                   subtitle: 'Nama toko, alamat, dan kontak',
                   icon: Icons.storefront_outlined,
                   color: Colors.indigo,
-                  onTap:
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const BusinessInfoPage()),
-                      ),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const BusinessInfoPage()),
+                  ),
                 ),
               _buildSettingTile(
                 context,
@@ -85,11 +83,10 @@ class SettingsPage extends StatelessWidget {
                 subtitle: 'Sambungkan printer thermal Bluetooth/USB',
                 icon: Icons.print_outlined,
                 color: Colors.blueGrey,
-                onTap:
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const PrinterPage()),
-                    ),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PrinterPage()),
+                ),
               ),
               if (role.canManageUsers)
                 _buildSettingTile(
@@ -98,13 +95,12 @@ class SettingsPage extends StatelessWidget {
                   subtitle: 'Atur akses staf dan password',
                   icon: Icons.lock_outline,
                   color: Colors.redAccent,
-                  onTap:
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const UsersManagementPage(),
-                        ),
-                      ),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const UsersManagementPage(),
+                    ),
+                  ),
                 ),
               const SizedBox(height: 24),
               _buildSectionHeader('Lainnya'),
