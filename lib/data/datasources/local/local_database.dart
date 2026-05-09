@@ -227,7 +227,7 @@ class LocalDatabase extends _$LocalDatabase {
   LocalDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -244,11 +244,23 @@ class LocalDatabase extends _$LocalDatabase {
         }
         if (from < 3) {
           // Add businessId to SyncQueueEntries
+          // Note: If table was missing, it should be created first
+          try {
+            await m.createTable(syncQueueEntries);
+          } catch (_) {
+            // Table might already exist
+          }
           await m.addColumn(syncQueueEntries, syncQueueEntries.businessId);
         }
         if (from < 4) {
           // Create LocalTransactionPayments table
           await m.createTable(localTransactionPayments);
+        }
+        if (from < 5) {
+          // Create tables that might have been missed in previous versions
+          await m.createTable(localStockLogs);
+          await m.createTable(localPromos);
+          await m.createTable(localBusinessInfo);
         }
       },
     );

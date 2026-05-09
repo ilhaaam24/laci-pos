@@ -68,7 +68,9 @@ class PromoRepositoryImpl implements PromoRepository {
   @override
   Future<Either<String, void>> updatePromo(PromoEntity promo) async {
     try {
-      final model = PromoModel.fromEntity(promo);
+      final model = PromoModel.fromEntity(
+        promo,
+      ).copyWith(businessId: _businessId);
 
       // 1. Update local
       await localDataSource.upsertPromo(model, syncStatus: 'pendingUpload');

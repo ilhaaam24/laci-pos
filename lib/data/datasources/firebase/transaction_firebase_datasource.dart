@@ -62,56 +62,6 @@ class TransactionFirebaseDataSourceImpl
           item,
         ).copyWith(businessId: _businessId);
         batch.set(itemRef, itemModel.toMap());
-
-        // Update product stock with logging
-        final productRef = firestore
-            .collection(FirebaseCollections.products)
-            .doc(item.productId);
-
-        final productDoc = await productRef.get();
-        int previousStock = 0;
-        int stockThreshold = 5;
-        if (productDoc.exists) {
-          final data = productDoc.data() as Map<String, dynamic>;
-          previousStock = data['stock'] ?? 0;
-          stockThreshold = data['stockThreshold'] ?? 5;
-        }
-        int newStock = previousStock - item.quantity;
-
-        batch.update(productRef, {
-          'stock': newStock,
-          'updatedAt': f_store.FieldValue.serverTimestamp(),
-        });
-
-        // Create Stock Log
-        final logRef = firestore
-            .collection(FirebaseCollections.stockLogs)
-            .doc();
-
-        final logData = StockLogModel(
-          id: logRef.id,
-          productId: item.productId,
-          productName: item.productName,
-          type: StockLogType.sale,
-          quantity: -item.quantity,
-          previousStock: previousStock,
-          newStock: newStock,
-          reason: 'Transaksi ${transaction.transactionCode}',
-          createdAt: DateTime.now(),
-          businessId: _businessId,
-        ).toFirestore();
-
-        batch.set(logRef, logData);
-
-        // Check for low stock alert
-        log('stok $newStock ${item.productName}');
-        if (newStock <= stockThreshold) {
-          log('stok rendah ${item.productName}');
-          notificationService.showStockAlert(
-            productName: item.productName,
-            currentStock: newStock,
-          );
-        }
       }
 
       await batch.commit();

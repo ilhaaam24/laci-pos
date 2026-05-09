@@ -392,11 +392,15 @@ class SyncService {
     final transactions = await transactionRemote.getTransactions().first;
     await transactionLocal.upsertFromRemote(transactions);
 
-    // 5. Pull Promos
+    // 5. Pull Stock Logs
+    final stockLogs = await stockLogRemote.getStockLogs().first;
+    await stockLogLocal.upsertFromRemote(stockLogs);
+
+    // 6. Pull Promos
     final promos = await promoRemote.getPromos().first;
     await promoLocal.upsertFromRemote(promos);
 
-    // 6. Pull Business Info
+    // 7. Pull Business Info
     final business = await businessRemote.getBusinessInfo();
     log(
       'SyncService: Pulled business info: ${business.id} (${business.businessName})',

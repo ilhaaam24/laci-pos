@@ -77,7 +77,9 @@ class CustomerRepositoryImpl implements CustomerRepository {
   @override
   Future<Either<String, void>> updateCustomer(Customer customer) async {
     try {
-      final model = CustomerModel.fromEntity(customer);
+      final model = CustomerModel.fromEntity(
+        customer,
+      ).copyWith(businessId: _businessId);
 
       // 1. Update local
       await localDataSource.upsertCustomer(model, syncStatus: 'pendingUpload');

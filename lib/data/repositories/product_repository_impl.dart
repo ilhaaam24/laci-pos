@@ -81,7 +81,9 @@ class ProductRepositoryImpl implements ProductRepository {
   @override
   Future<Either<String, void>> updateProduct(Product product) async {
     try {
-      final model = ProductModel.fromEntity(product);
+      final model = ProductModel.fromEntity(
+        product,
+      ).copyWith(businessId: _businessId);
 
       // 1. Update local DB
       await localDataSource.upsertProduct(model, syncStatus: 'pendingUpload');

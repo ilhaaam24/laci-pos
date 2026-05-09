@@ -81,7 +81,9 @@ class CategoryRepositoryImpl implements CategoryRepository {
   @override
   Future<Either<String, void>> updateCategory(Category category) async {
     try {
-      final model = CategoryModel.fromEntity(category);
+      final model = CategoryModel.fromEntity(
+        category,
+      ).copyWith(businessId: _businessId);
 
       // 1. Update local DB
       await localDataSource.upsertCategory(model, syncStatus: 'pendingUpload');
