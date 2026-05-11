@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:laci/domain/entities/user_entity.dart';
 import '../products/products_page.dart';
 import '../categories/categories_page.dart';
@@ -106,11 +107,17 @@ class SettingsPage extends StatelessWidget {
               _buildSectionHeader('Lainnya'),
               _buildSettingTile(
                 context,
-                title: 'Tentang Aplikasi',
-                subtitle: 'Versi 1.0.0',
-                icon: Icons.info_outline,
+                title: 'Kebijakan Privasi',
+                subtitle: 'Syarat & Ketentuan Penggunaan',
+                icon: Icons.privacy_tip_outlined,
                 color: AppColors.textSecondary,
-                onTap: () {},
+                onTap: () async {
+                  // TODO: Ganti dengan link Privacy Policy yang sudah Anda buat
+                  final url = Uri.parse('https://sites.google.com/view/lacipos-privacypolicy');
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
+                },
               ),
               const SizedBox(height: 16),
               _buildLogoutTile(context),

@@ -34,8 +34,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
         if (authState is Authenticated) {
           return BlocBuilder<BusinessBloc, BusinessState>(
             builder: (context, businessState) {
-              // Check for errors first to prevent infinite loop if loading fails
-              if (businessState.message != null && !businessState.isLoading) {
+              // Check for errors first (only if isSuccess is false)
+              if (businessState.message != null &&
+                  !businessState.isLoading &&
+                  !businessState.isSuccess) {
                 return Scaffold(
                   body: Center(
                     child: Padding(

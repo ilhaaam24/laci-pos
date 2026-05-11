@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:laci/core/constants/sync_status.dart';
 import 'package:laci/core/services/connectivity_service.dart';
 import 'package:laci/core/services/session_service.dart';
@@ -130,6 +131,14 @@ class SyncService {
 
       _updateState(AppSyncState.idle);
       log('Full sync completed successfully.');
+    } on FirebaseException catch (e) {
+      if (e.code == 'failed-precondition') {
+        log('Sync error: Missing Firestore index. Check Firebase Console.');
+        log('Error detail: ${e.message}');
+      } else {
+        log('Sync error (Firebase): ${e.code} - ${e.message}');
+      }
+      _updateState(AppSyncState.error);
     } catch (e) {
       log('Sync error: $e');
       _updateState(AppSyncState.error);
@@ -148,6 +157,22 @@ class SyncService {
     final myEntries = pendingEntries
         .where((e) => e.businessId == currentBusinessId)
         .toList();
+
+    final skippedEntries = pendingEntries
+        .where((e) => e.businessId != currentBusinessId)
+        .toList();
+
+    if (skippedEntries.isNotEmpty) {
+      log(
+        'SyncService: Skipping ${skippedEntries.length} entries that do not match current business ID ($currentBusinessId)',
+      );
+      for (var entry in skippedEntries) {
+        log(
+          '  - Entry ${entry.id}: Entity=${entry.syncEntityName}, Op=${entry.operation}, BusinessId=${entry.businessId}',
+        );
+      }
+    }
+
     if (myEntries.isEmpty) return;
 
     log(
@@ -159,7 +184,9 @@ class SyncService {
         await _processSyncEntry(entry);
         await localDatabase.completeSyncEntry(entry.id);
       } catch (e) {
-        log('Failed to process sync entry ${entry.id}: $e');
+        log(
+          'SyncService: Failed to process sync entry ${entry.id} (${entry.syncEntityName}): $e',
+        );
 
         // If the database is locked, we should stop the sync process entirely
         // and not try to call failSyncEntry (which would also likely fail)

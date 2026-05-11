@@ -69,8 +69,10 @@ class AuthRepositoryImpl implements AuthRepository {
         return const Left('Gagal mendaftarkan user');
       }
     } on FirebaseAuthException catch (e) {
+      print('DEBUG: FirebaseAuthException during signUp: ${e.code} - ${e.message}');
       return Left(e.message ?? 'Terjadi kesalahan saat pendaftaran');
     } catch (e) {
+      print('DEBUG: Generic exception during signUp: $e');
       return Left(e.toString());
     }
   }

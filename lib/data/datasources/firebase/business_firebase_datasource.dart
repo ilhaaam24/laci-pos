@@ -69,6 +69,8 @@ class BusinessFirebaseDataSourceImpl implements BusinessFirebaseDataSource {
 
   @override
   Future<void> updateBusinessInfo(BusinessInfoModel businessInfo) async {
-    await _collection.doc(businessInfo.id).update(businessInfo.toFirestore());
+    await _collection
+        .doc(businessInfo.id)
+        .set(businessInfo.toFirestore(), SetOptions(merge: true));
   }
 }
