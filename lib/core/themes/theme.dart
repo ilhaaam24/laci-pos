@@ -50,6 +50,7 @@ class AppThemeLegacy {
         error: AppColors.error,
         onError: AppColors.white,
       ),
+      scaffoldBackgroundColor: const Color(0xFF0F172A),
       appBarTheme: AppAppBarTheme.darkAppBarTheme,
       textButtonTheme: LaciButtonTheme.lightTextButtonTheme,
       floatingActionButtonTheme: LaciButtonTheme.lightFloatingActionButtonTheme,

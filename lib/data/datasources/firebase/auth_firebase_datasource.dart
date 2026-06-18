@@ -60,12 +60,20 @@ class AuthFirebaseDataSourceImpl implements AuthFirebaseDataSource {
     try {
       log('Starting Google Sign-In flow...');
 
-      // 1. Authenticate (Identify the user)
-      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
+      // 1. Trigger Google Sign-In account picker
+      final GoogleSignInAccount? googleUser = await _googleSignIn.authenticate();
+
+      if (googleUser == null) {
+        log('Google Sign-In was canceled by the user.');
+        throw FirebaseAuthException(
+          code: 'ERROR_ABORTED_BY_USER',
+          message: 'Proses login Google dibatalkan oleh pengguna',
+        );
+      }
 
       log('Google user authenticated: ${googleUser.email}');
 
-      // 2. Get Authentication data (for idToken)
+      // 2. Get authentication tokens
       final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
       if (googleAuth.idToken == null) {
@@ -76,15 +84,7 @@ class AuthFirebaseDataSourceImpl implements AuthFirebaseDataSource {
         );
       }
 
-      // 3. Request Authorization (for accessToken)
-      log('Requesting authorization scopes...');
-      final auth = await googleUser.authorizationClient.authorizeScopes([
-        'email',
-        'profile',
-      ]);
-
       final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: auth.accessToken,
         idToken: googleAuth.idToken,
       );
 

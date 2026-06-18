@@ -25,28 +25,64 @@ import 'presentation/pages/auth/auth_wrapper.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  await Firebase.initializeApp();
+  try {
+    // Initialize Firebase
+    await Firebase.initializeApp();
 
-  // Initialize Google Sign In
-  await GoogleSignIn.instance.initialize(
-    serverClientId:
-        '747380789752-gpu0fjfv3k45a5o1aktjqs4b244j3mm4.apps.googleusercontent.com',
-  );
+    // Initialize Google Sign In
+    await GoogleSignIn.instance.initialize(
+      serverClientId:
+          '747380789752-gpu0fjfv3k45a5o1aktjqs4b244j3mm4.apps.googleusercontent.com',
+    );
 
-  // Initialize Dependencies
-  await initializeDependencies();
+    // Initialize Dependencies
+    await initializeDependencies();
 
-  // Initialize Connectivity Service
-  await getIt<ConnectivityService>().init();
+    // Initialize Connectivity Service
+    await getIt<ConnectivityService>().init();
 
-  // Initialize Notification Service
-  await getIt<NotificationService>().init();
+    // Initialize Notification Service
+    try {
+      await getIt<NotificationService>().init();
+    } catch (e) {
+      debugPrint('NotificationService init failed: $e');
+    }
 
-  // Initialize Background Service (Workmanager)
-  await BackgroundService.init();
+    // Initialize Background Service (Workmanager)
+    await BackgroundService.init();
 
-  runApp(const MyApp());
+    runApp(const MyApp());
+  } catch (error, stackTrace) {
+    debugPrint('Fatal Startup Error: $error\n$stackTrace');
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 64),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Gagal Memulai Aplikasi',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    error.toString(),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey[700]),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {

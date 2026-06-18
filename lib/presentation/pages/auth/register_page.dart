@@ -29,13 +29,24 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : AppColors.textPrimary;
+    final textSecondaryColor = isDark
+        ? Colors.grey.shade400
+        : AppColors.textSecondary;
+    final inputFillColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final inputPrefixIconColor = isDark
+        ? AppColors.primaryLight
+        : AppColors.primaryDark;
+    final backButtonColor = isDark ? Colors.white : AppColors.textPrimary;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: Icon(Icons.arrow_back, color: backButtonColor),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -61,21 +72,18 @@ class _RegisterPageState extends State<RegisterPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   'Buat Akun Baru',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: textColor,
                   ),
                 ).animate().fadeIn().slideX(begin: -0.1),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Mulai kelola bisnis Anda dengan Laci POS',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: TextStyle(fontSize: 16, color: textSecondaryColor),
                 ).animate().fadeIn(delay: 200.ms),
                 const SizedBox(height: 40),
 
@@ -85,15 +93,36 @@ class _RegisterPageState extends State<RegisterPage> {
                     children: [
                       TextFormField(
                         controller: _emailController,
+                        style: TextStyle(color: textColor),
                         decoration: InputDecoration(
                           labelText: 'Email',
+                          labelStyle: TextStyle(color: textSecondaryColor),
                           hintText: 'admin@laci.com',
-                          prefixIcon: const Icon(Icons.email_outlined),
+                          hintStyle: TextStyle(
+                            color: isDark
+                                ? Colors.grey.shade500
+                                : Colors.grey.shade400,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.email_outlined,
+                            color: inputPrefixIconColor,
+                          ),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: inputFillColor,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: AppColors.primary,
+                              width: 1.5,
+                            ),
                           ),
                         ),
                         keyboardType: TextInputType.emailAddress,
@@ -105,24 +134,41 @@ class _RegisterPageState extends State<RegisterPage> {
                       TextFormField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
+                        style: TextStyle(color: textColor),
                         decoration: InputDecoration(
                           labelText: 'Password',
-                          prefixIcon: const Icon(Icons.lock_outline),
+                          labelStyle: TextStyle(color: textSecondaryColor),
+                          prefixIcon: Icon(
+                            Icons.lock_outline,
+                            color: inputPrefixIconColor,
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
                                   ? Icons.visibility_outlined
                                   : Icons.visibility_off_outlined,
+                              color: textSecondaryColor,
                             ),
                             onPressed: () => setState(
                               () => _obscurePassword = !_obscurePassword,
                             ),
                           ),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: inputFillColor,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: AppColors.primary,
+                              width: 1.5,
+                            ),
                           ),
                         ),
                         validator: (v) => v == null || v.length < 6
@@ -133,14 +179,30 @@ class _RegisterPageState extends State<RegisterPage> {
                       TextFormField(
                         controller: _confirmPasswordController,
                         obscureText: _obscurePassword,
+                        style: TextStyle(color: textColor),
                         decoration: InputDecoration(
                           labelText: 'Konfirmasi Password',
-                          prefixIcon: const Icon(Icons.lock_outline),
+                          labelStyle: TextStyle(color: textSecondaryColor),
+                          prefixIcon: Icon(
+                            Icons.lock_outline,
+                            color: inputPrefixIconColor,
+                          ),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: inputFillColor,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(
+                              color: AppColors.primary,
+                              width: 1.5,
+                            ),
                           ),
                         ),
                         validator: (v) {
@@ -198,15 +260,21 @@ class _RegisterPageState extends State<RegisterPage> {
                   children: [
                     Text(
                       'Sudah punya akun?',
-                      style: TextStyle(color: Colors.grey.shade600),
+                      style: TextStyle(
+                        color: isDark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
+                      ),
                     ),
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: const Text(
+                      child: Text(
                         'Masuk Sekarang',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                          color: isDark
+                              ? AppColors.primaryLight
+                              : AppColors.primary,
                         ),
                       ),
                     ),
