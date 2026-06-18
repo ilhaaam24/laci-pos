@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>747380789752-3vq5qcj5bcnm2vgsueql084jfsspptve.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.747380789752-3vq5qcj5bcnm2vgsueql084jfsspptve</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>747380789752-2f5hj918c54ntfn211em1hdu1er0ovf9.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyA3ZQYa1gz6WamKJt7y4UO136PfmJRluMs</string>
+	<key>GCM_SENDER_ID</key>
+	<string>747380789752</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.ilhaaam24.lacipos</string>
+	<key>PROJECT_ID</key>
+	<string>chatify-9b6ef</string>
+	<key>STORAGE_BUCKET</key>
+	<string>chatify-9b6ef.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:747380789752:ios:d8e8a8b5fb281b20a1460d</string>
+	<key>DATABASE_URL</key>
+	<string>https://chatify-9b6ef-default-rtdb.asia-southeast1.firebasedatabase.app</string>
+</dict>
+</plist>
