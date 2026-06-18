@@ -99,7 +99,6 @@ class _MainPageState extends State<MainPage> {
                 });
               },
               type: BottomNavigationBarType.fixed,
-              backgroundColor: AppColors.darkBackground,
               selectedItemColor: AppColors.primary,
               unselectedItemColor: AppColors.textDisabled,
               showSelectedLabels: true,
