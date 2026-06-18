@@ -44,7 +44,6 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(_isEdit ? 'Ubah Pelanggan' : 'Tambah Pelanggan'),
         actions: [
@@ -118,21 +117,20 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
                   ],
                 ),
                 const SizedBox(height: 32),
-                TextButton(
-                  onPressed: _onSave,
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.all(24),
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(100),
-                    ),
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(48),
                   ),
-                  child: Text(
-                    _isEdit ? 'SIMPAN PERUBAHAN' : 'TAMBAH PELANGGAN',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                  child: TextButton(
+                    onPressed: _onSave,
+                    child: Text(
+                      _isEdit ? 'Simpan Perubahan' : 'Tambah Pelanggan',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),

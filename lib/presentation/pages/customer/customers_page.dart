@@ -35,7 +35,6 @@ class _CustomersPageState extends State<CustomersPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Kelola Pelanggan')),
       body: Column(
         children: [
@@ -159,7 +158,6 @@ class _CustomersPageState extends State<CustomersPage> {
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: AppColors.textPrimary,
                       ),
                     ),
                     if (customer.phone != null && customer.phone!.isNotEmpty)

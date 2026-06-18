@@ -54,7 +54,7 @@ class AppThemeLegacy {
       appBarTheme: AppAppBarTheme.darkAppBarTheme,
       textButtonTheme: LaciButtonTheme.lightTextButtonTheme,
       floatingActionButtonTheme: LaciButtonTheme.lightFloatingActionButtonTheme,
-      cardTheme: LaciCardTheme.lightCardTheme,
+      cardTheme: LaciCardTheme.darkCardTheme,
       useMaterial3: true,
     );
   }

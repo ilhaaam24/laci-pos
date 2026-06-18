@@ -191,7 +191,6 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(widget.product == null ? 'Tambah Produk' : 'Edit Produk'),
         actions: [
@@ -226,12 +225,14 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
                   width: 150,
                   height: 150,
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: _isUploading
                           ? AppColors.primary
-                          : AppColors.divider,
+                          : (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : AppColors.divider),
                       width: _isUploading ? 2 : 1,
                     ),
                   ),
@@ -292,9 +293,13 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(48),
-                border: Border.all(color: AppColors.divider),
+                border: Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.transparent
+                      : AppColors.divider,
+                ),
               ),
               child: Column(
                 children: [
@@ -427,16 +432,19 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
             ),
             const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.symmetric(vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: AppColors.primary,
                 borderRadius: BorderRadius.circular(48),
-                border: Border.all(color: AppColors.divider),
               ),
               child: TextButton(
                 onPressed: (_isUploading || _isSaving) ? null : _saveProduct,
                 child: Text(
                   widget.product == null ? 'Tambah Produk' : 'Simpan Perubahan',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),

@@ -71,9 +71,9 @@ class _ReportPageState extends State<ReportPage> {
         backgroundColor: Colors.transparent,
         builder: (context) => Container(
           height: MediaQuery.of(context).size.height * 0.6,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           ),
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -89,11 +89,7 @@ class _ReportPageState extends State<ReportPage> {
               const SizedBox(height: 24),
               const Text(
                 'Pilih Rentang Tanggal',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 24),
               Expanded(
@@ -113,10 +109,7 @@ class _ReportPageState extends State<ReportPage> {
                   ),
                   maxDate: DateTime.now(),
                   headerStyle: const DateRangePickerHeaderStyle(
-                    textStyle: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
+                    textStyle: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   monthCellStyle: const DateRangePickerMonthCellStyle(
                     todayTextStyle: TextStyle(color: AppColors.primary),
@@ -200,7 +193,6 @@ class _ReportPageState extends State<ReportPage> {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: AppColors.background,
         body: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -221,9 +213,15 @@ class _ReportPageState extends State<ReportPage> {
                           child: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.white,
+                              color: Theme.of(context).cardColor,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.divider),
+                              border: Border.all(
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.transparent
+                                    : AppColors.divider,
+                              ),
                             ),
                             child: const Icon(
                               Icons.picture_as_pdf_outlined,
@@ -243,9 +241,13 @@ class _ReportPageState extends State<ReportPage> {
                 child: Container(
                   height: 48,
                   decoration: BoxDecoration(
-                    color: AppColors.white,
+                    color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.divider),
+                    border: Border.all(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.transparent
+                          : AppColors.divider,
+                    ),
                   ),
                   child: TabBar(
                     indicator: BoxDecoration(
@@ -351,9 +353,13 @@ class _ReportPageState extends State<ReportPage> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.transparent
+              : AppColors.divider,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -387,7 +393,6 @@ class _ReportPageState extends State<ReportPage> {
                       txn.transactionCode,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
                         fontSize: 15,
                       ),
                     ),
@@ -437,9 +442,14 @@ class _ReportPageState extends State<ReportPage> {
             ],
           ),
           if (txn.items.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Divider(height: 1, color: AppColors.divider),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Divider(
+                height: 1,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : AppColors.divider,
+              ),
             ),
             ...txn.items.map(
               (item) => Padding(
@@ -449,10 +459,7 @@ class _ReportPageState extends State<ReportPage> {
                     Expanded(
                       child: Text(
                         item.productName,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textPrimary,
-                        ),
+                        style: const TextStyle(fontSize: 13),
                       ),
                     ),
                     Text(
@@ -467,7 +474,12 @@ class _ReportPageState extends State<ReportPage> {
               ),
             ),
           ],
-          const Divider(height: 24, color: AppColors.divider),
+          Divider(
+            height: 24,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white.withValues(alpha: 0.1)
+                : AppColors.divider,
+          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -485,7 +497,6 @@ class _ReportPageState extends State<ReportPage> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                 ),
                 style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF25D366),
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                 ),
               ),
@@ -587,7 +598,7 @@ class _ReportPageState extends State<ReportPage> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -655,11 +666,7 @@ class _ReportPageState extends State<ReportPage> {
         ),
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
       ],
     );
@@ -775,7 +782,7 @@ class _ReportPageState extends State<ReportPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
@@ -793,11 +800,7 @@ class _ReportPageState extends State<ReportPage> {
             children: [
               Text(
                 'Weekly Sales',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               Icon(
                 Icons.analytics_outlined,
@@ -988,7 +991,7 @@ class _ReportPageState extends State<ReportPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
@@ -1027,13 +1030,7 @@ class _ReportPageState extends State<ReportPage> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Target',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          const Text('Target', style: TextStyle(fontWeight: FontWeight.bold)),
           const Text(
             'Monthly Goal',
             style: TextStyle(fontSize: 10, color: AppColors.textDisabled),
@@ -1047,7 +1044,7 @@ class _ReportPageState extends State<ReportPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
@@ -1075,11 +1072,7 @@ class _ReportPageState extends State<ReportPage> {
           const SizedBox(height: 16),
           Text(
             count.toString(),
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const Text(
             'New Customers',
@@ -1109,7 +1102,7 @@ class _ReportPageState extends State<ReportPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -1143,7 +1136,6 @@ class _ReportPageState extends State<ReportPage> {
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -1188,11 +1180,7 @@ class _ReportPageState extends State<ReportPage> {
                 children: [
                   const Text(
                     'Top Selling',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   GestureDetector(
                     onTap: () {},
@@ -1217,7 +1205,7 @@ class _ReportPageState extends State<ReportPage> {
                         margin: const EdgeInsets.only(bottom: 16),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.white,
+                          color: Theme.of(context).cardColor,
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
@@ -1234,7 +1222,11 @@ class _ReportPageState extends State<ReportPage> {
                               child: Container(
                                 width: 60,
                                 height: 60,
-                                color: AppColors.background,
+                                color:
+                                    Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.white.withValues(alpha: 0.05)
+                                    : AppColors.background,
                                 child: item['imageUrl'] != null
                                     ? CachedNetworkImage(
                                         imageUrl: item['imageUrl'],
@@ -1256,7 +1248,6 @@ class _ReportPageState extends State<ReportPage> {
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
-                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                   Text(
@@ -1276,7 +1267,6 @@ class _ReportPageState extends State<ReportPage> {
                                   formatter.format(item['totalRevenue']),
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
                                   ),
                                 ),
                                 const Text(

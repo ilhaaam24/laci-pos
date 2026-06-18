@@ -27,7 +27,6 @@ class CustomerDetailPage extends StatelessWidget {
           getIt<TransactionBloc>()
             ..add(LoadTransactionsByCustomerId(customer.id)),
       child: Scaffold(
-        backgroundColor: AppColors.background,
         appBar: AppBar(
           title: const Text('Detail Pelanggan'),
           actions: [
@@ -46,8 +45,8 @@ class CustomerDetailPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(customer),
-              _buildStatsGrid(customer, currencyFormatter),
+              _buildHeader(context, customer),
+              _buildStatsGrid(context, customer, currencyFormatter),
               const Padding(
                 padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
                 child: Text(
@@ -55,7 +54,6 @@ class CustomerDetailPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -67,13 +65,13 @@ class CustomerDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(Customer customer) {
+  Widget _buildHeader(BuildContext context, Customer customer) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(32),
           bottomRight: Radius.circular(32),
         ),
@@ -104,7 +102,6 @@ class CustomerDetailPage extends StatelessWidget {
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
             ),
           ),
           if (customer.email != null && customer.email!.isNotEmpty)
@@ -134,7 +131,6 @@ class CustomerDetailPage extends StatelessWidget {
                     customer.phone!,
                     style: const TextStyle(
                       fontSize: 16,
-                      color: AppColors.textPrimary,
                     ),
                   ),
                 ],
@@ -170,7 +166,7 @@ class CustomerDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsGrid(Customer customer, NumberFormat currencyFormatter) {
+  Widget _buildStatsGrid(BuildContext context, Customer customer, NumberFormat currencyFormatter) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: GridView.count(
@@ -182,18 +178,21 @@ class CustomerDetailPage extends StatelessWidget {
         childAspectRatio: 1.5,
         children: [
           _buildStatCard(
+            context,
             'Total Belanja',
             currencyFormatter.format(customer.totalSpent),
             Icons.shopping_bag_outlined,
             AppColors.primary,
           ),
           _buildStatCard(
+            context,
             'Poin Loyalitas',
             customer.loyaltyPoints.toString(),
             Icons.stars_outlined,
             Colors.orange,
           ),
           _buildStatCard(
+            context,
             'Transaksi Terakhir',
             customer.lastTransactionDate != null
                 ? DateFormat(
@@ -204,6 +203,7 @@ class CustomerDetailPage extends StatelessWidget {
             Colors.blue,
           ),
           _buildStatCard(
+            context,
             'Bergabung Sejak',
             DateFormat('dd MMM yyyy').format(customer.createdAt),
             Icons.calendar_today_outlined,
@@ -215,6 +215,7 @@ class CustomerDetailPage extends StatelessWidget {
   }
 
   Widget _buildStatCard(
+    BuildContext context,
     String title,
     String value,
     IconData icon,
@@ -223,9 +224,13 @@ class CustomerDetailPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.transparent
+              : AppColors.border,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,7 +257,6 @@ class CustomerDetailPage extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
               ),
             ),
           ),
@@ -303,7 +307,7 @@ class CustomerDetailPage extends StatelessWidget {
             itemCount: state.transactions.length,
             itemBuilder: (context, index) {
               final txn = state.transactions[index];
-              return _buildTransactionCard(txn, currencyFormatter);
+              return _buildTransactionCard(context, txn, currencyFormatter);
             },
           );
         }
@@ -326,6 +330,7 @@ class CustomerDetailPage extends StatelessWidget {
   }
 
   Widget _buildTransactionCard(
+    BuildContext context,
     TransactionEntity txn,
     NumberFormat currencyFormatter,
   ) {
@@ -333,9 +338,13 @@ class CustomerDetailPage extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.transparent
+              : AppColors.border,
+        ),
       ),
       child: Row(
         children: [
@@ -356,7 +365,6 @@ class CustomerDetailPage extends StatelessWidget {
                   txn.transactionCode,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
                   ),
                 ),
                 Text(

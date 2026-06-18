@@ -61,15 +61,7 @@ class AuthFirebaseDataSourceImpl implements AuthFirebaseDataSource {
       log('Starting Google Sign-In flow...');
 
       // 1. Trigger Google Sign-In account picker
-      final GoogleSignInAccount? googleUser = await _googleSignIn.authenticate();
-
-      if (googleUser == null) {
-        log('Google Sign-In was canceled by the user.');
-        throw FirebaseAuthException(
-          code: 'ERROR_ABORTED_BY_USER',
-          message: 'Proses login Google dibatalkan oleh pengguna',
-        );
-      }
+      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
 
       log('Google user authenticated: ${googleUser.email}');
 
@@ -96,6 +88,13 @@ class AuthFirebaseDataSourceImpl implements AuthFirebaseDataSource {
 
       if (e is FirebaseAuthException) {
         rethrow;
+      }
+
+      if (e is GoogleSignInException && e.code == GoogleSignInExceptionCode.canceled) {
+        throw FirebaseAuthException(
+          code: 'ERROR_ABORTED_BY_USER',
+          message: 'Proses login Google dibatalkan oleh pengguna',
+        );
       }
 
       throw FirebaseAuthException(

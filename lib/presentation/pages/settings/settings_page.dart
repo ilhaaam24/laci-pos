@@ -23,7 +23,6 @@ class SettingsPage extends StatelessWidget {
             : UserRole.kasir;
 
         return Scaffold(
-          backgroundColor: AppColors.background,
           appBar: AppBar(title: const Text('Pengaturan')),
           body: ListView(
             padding: const EdgeInsets.all(16),
@@ -112,8 +111,9 @@ class SettingsPage extends StatelessWidget {
                 icon: Icons.privacy_tip_outlined,
                 color: AppColors.textSecondary,
                 onTap: () async {
-                  // TODO: Ganti dengan link Privacy Policy yang sudah Anda buat
-                  final url = Uri.parse('https://sites.google.com/view/lacipos-privacypolicy');
+                  final url = Uri.parse(
+                    'https://sites.google.com/view/lacipos-privacypolicy',
+                  );
                   if (await canLaunchUrl(url)) {
                     await launchUrl(url, mode: LaunchMode.externalApplication);
                   }
@@ -165,7 +165,7 @@ class SettingsPage extends StatelessWidget {
         content: const Text('Apakah Anda yakin ingin keluar dari aplikasi?'),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Batal'),
           ),
@@ -218,7 +218,7 @@ class SettingsPage extends StatelessWidget {
             color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(100),
           ),
-          child: Icon(icon, color: color),
+          child: Icon(icon, color: AppColors.primary),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),

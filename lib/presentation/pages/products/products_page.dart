@@ -37,7 +37,6 @@ class _ProductsPageState extends State<ProductsPage> {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Manajemen Produk')),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -155,7 +154,6 @@ class _ProductsPageState extends State<ProductsPage> {
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -180,13 +178,14 @@ class _ProductsPageState extends State<ProductsPage> {
   }
 
   Widget _buildProductImage(Product product) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: 70,
       height: 70,
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.background,
         borderRadius: BorderRadius.circular(48),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.border),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(48),

@@ -64,7 +64,6 @@ class _PrinterPageState extends State<PrinterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Pengaturan Printer'),
         actions: [
@@ -161,10 +160,11 @@ class _PrinterPageState extends State<PrinterPage> {
   }
 
   Widget _buildStatusHeader() {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
-      color: Colors.white,
+      color: theme.colorScheme.surface,
       child: Row(
         children: [
           Container(

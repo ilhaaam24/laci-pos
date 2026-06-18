@@ -65,7 +65,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Checkout'),
         actions: [
@@ -339,7 +338,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           margin: const EdgeInsets.all(16),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(100),
             border: Border.all(color: Colors.teal.withValues(alpha: 0.3)),
           ),
@@ -358,9 +357,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       customer?.name ?? 'Pilih Pelanggan',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: customer == null
-                            ? Colors.grey
-                            : AppColors.textPrimary,
+                        color: customer == null ? Colors.grey : null,
                       ),
                     ),
                     if (customer != null)
@@ -419,9 +416,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
           return StatefulBuilder(
             builder: (contextSheet, setStateSheet) {
               return Container(
-                decoration: const BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                decoration: BoxDecoration(
+                  color: Theme.of(contextSheet).scaffoldBackgroundColor,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: Column(
                   children: [
@@ -445,7 +442,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
                             ),
                           ),
                           TextButton.icon(
@@ -489,7 +485,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         decoration: InputDecoration(
                           hintText: 'Cari nama atau telepon...',
                           prefixIcon: const Icon(Icons.search),
-                          fillColor: AppColors.surface,
+                          fillColor: Theme.of(contextSheet).cardColor,
                           filled: true,
                           contentPadding: const EdgeInsets.symmetric(
                             vertical: 0,
@@ -557,7 +553,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                   side: BorderSide(
                                     color: isSelected
                                         ? AppColors.primary
-                                        : AppColors.divider,
+                                        : (Theme.of(contextSheet).brightness == Brightness.dark
+                                            ? Colors.white.withValues(alpha: 0.1)
+                                            : AppColors.divider),
                                     width: isSelected ? 2 : 1,
                                   ),
                                 ),
@@ -662,7 +660,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: AppColors.background,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : AppColors.background,
                 borderRadius: BorderRadius.circular(100),
               ),
               child: const Icon(
@@ -741,7 +741,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.divider),
+          border: Border.all(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white.withValues(alpha: 0.1)
+                : AppColors.divider,
+          ),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Icon(icon, size: 16),
@@ -763,10 +767,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
-        color: AppColors.surface,
+        color: Theme.of(context).cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -813,7 +819,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(100),
         border: Border.all(color: Colors.pinkAccent.withValues(alpha: 0.3)),
       ),
@@ -832,9 +838,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   _selectedPromo?.name ?? 'Gunakan Promo',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: _selectedPromo == null
-                        ? Colors.grey
-                        : AppColors.textPrimary,
+                    color: _selectedPromo == null ? Colors.grey : null,
                   ),
                 ),
                 if (_selectedPromo != null)
@@ -1027,7 +1031,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             style: TextStyle(
               fontSize: isTotal ? 18 : 14,
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              color: isTotal ? AppColors.textPrimary : AppColors.textSecondary,
+              color: isTotal ? null : AppColors.textSecondary,
             ),
           ),
           Text(
@@ -1038,8 +1042,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
               color: isDiscount
                   ? Colors.green
                   : isTotal
-                  ? AppColors.primary
-                  : AppColors.textPrimary,
+                      ? AppColors.primary
+                      : null,
             ),
           ),
         ],

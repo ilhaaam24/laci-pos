@@ -28,7 +28,6 @@ class _CategoriesPageState extends State<CategoriesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Kelola Kategori')),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -143,7 +142,6 @@ class _CategoriesPageState extends State<CategoriesPage> {
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),

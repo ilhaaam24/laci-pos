@@ -315,7 +315,6 @@ class _PaymentDialogState extends State<PaymentDialog> {
                             return ActionChip(
                               label: Text(_currencyFormatter.format(amount)),
                               onPressed: () => _setQuickAmount(amount),
-                              backgroundColor: AppColors.background,
                             );
                           }),
                           ActionChip(
@@ -348,7 +347,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                       padding: const EdgeInsets.all(20),
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
-                      disabledBackgroundColor: AppColors.divider,
+                      disabledBackgroundColor: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : AppColors.divider,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),

@@ -58,7 +58,6 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Info Bisnis')),
       body: BlocConsumer<BusinessBloc, BusinessState>(
         listener: (context, state) {
@@ -224,11 +223,10 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                   const SizedBox(height: 16),
 
                   Container(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.symmetric(vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: AppColors.primary,
                       borderRadius: BorderRadius.circular(48),
-                      border: Border.all(color: AppColors.divider),
                     ),
                     child: TextButton(
                       onPressed: state.isLoading || state.businessInfo == null

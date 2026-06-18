@@ -18,7 +18,6 @@ class StockHistoryPage extends StatelessWidget {
     final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
           product == null ? 'Riwayat Stok' : 'Riwayat: ${product!.name}',
