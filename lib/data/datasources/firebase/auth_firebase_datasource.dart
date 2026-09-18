@@ -16,6 +16,10 @@ abstract class AuthFirebaseDataSource {
     required String password,
   });
 
+  Future<void> sendEmailVerification();
+
+  Future<bool> checkEmailVerified();
+
   Future<void> signOut();
 
   User? getCurrentUser();
@@ -102,6 +106,24 @@ class AuthFirebaseDataSourceImpl implements AuthFirebaseDataSource {
         message: 'Gagal login dengan Google: ${e.toString()}',
       );
     }
+  }
+
+  @override
+  Future<void> sendEmailVerification() async {
+    final user = _firebaseAuth.currentUser;
+    if (user != null && !user.emailVerified) {
+      await user.sendEmailVerification();
+    }
+  }
+
+  @override
+  Future<bool> checkEmailVerified() async {
+    final user = _firebaseAuth.currentUser;
+    if (user != null) {
+      await user.reload();
+      return _firebaseAuth.currentUser?.emailVerified ?? false;
+    }
+    return false;
   }
 
   @override

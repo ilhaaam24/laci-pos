@@ -5,6 +5,8 @@ import '../../../domain/entities/user_entity.dart';
 import '../../../domain/repositories/auth_repository.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/background_service.dart';
+import '../../../core/services/sync_service.dart';
+import '../../../core/di/injection.dart';
 import '../../../data/datasources/local/local_database.dart';
 
 // Events
@@ -34,6 +36,10 @@ class SignUpRequested extends AuthEvent {
 }
 
 class SignOutRequested extends AuthEvent {}
+
+class SendEmailVerificationRequested extends AuthEvent {}
+
+class CheckEmailVerificationRequested extends AuthEvent {}
 
 // States
 abstract class AuthState extends Equatable {
@@ -78,11 +84,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<GoogleSignInRequested>(_onGoogleSignInRequested);
     on<SignUpRequested>(_onSignUpRequested);
     on<SignOutRequested>(_onSignOutRequested);
+    on<SendEmailVerificationRequested>(_onSendEmailVerificationRequested);
+    on<CheckEmailVerificationRequested>(_onCheckEmailVerificationRequested);
     on<_AuthStatusChanged>(_onAuthStatusChanged);
 
-    _authStateSubscription = repository.authStateChanges.listen((user) {
-      add(_AuthStatusChanged(user));
-    });
+    _authStateSubscription = repository.authStateChanges.listen(
+      (user) {
+        add(_AuthStatusChanged(user));
+      },
+      onError: (_) {},
+    );
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
@@ -125,7 +136,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
     result.fold(
       (error) => emit(AuthError(error)),
-      (_) {}, // Status will be updated by stream
+      (user) {
+        sessionService.setUser(user);
+        if (user.businessId != null) {
+          BackgroundService.scheduleDailySummary(user.businessId!);
+        }
+        emit(Authenticated(user));
+      },
     );
   }
 
@@ -151,7 +168,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
     result.fold(
       (error) => emit(AuthError(error)),
-      (_) {}, // Status will be updated by stream
+      (user) {
+        sessionService.setUser(user);
+        if (user.businessId != null) {
+          BackgroundService.scheduleDailySummary(user.businessId!);
+        }
+        emit(Authenticated(user));
+      },
     );
   }
 
@@ -160,10 +183,41 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
+    try {
+      if (sessionService.businessId != null) {
+        await getIt<SyncService>().pushToRemote();
+      }
+    } catch (_) {}
     await repository.signOut();
     // Clear local database on sign out to prevent data leakage
     await localDatabase.clearAllData();
-    // Status will be updated by stream
+    sessionService.setUser(null);
+    emit(Unauthenticated());
+  }
+
+  Future<void> _onSendEmailVerificationRequested(
+    SendEmailVerificationRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    await repository.sendEmailVerification();
+  }
+
+  Future<void> _onCheckEmailVerificationRequested(
+    CheckEmailVerificationRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    final result = await repository.checkEmailVerified();
+    result.fold(
+      (error) => null,
+      (isVerified) {
+        if (isVerified && state is Authenticated) {
+          final currentUser = (state as Authenticated).user;
+          final updatedUser = currentUser.copyWith(isEmailVerified: true);
+          sessionService.setUser(updatedUser);
+          emit(Authenticated(updatedUser));
+        }
+      },
+    );
   }
 
   @override

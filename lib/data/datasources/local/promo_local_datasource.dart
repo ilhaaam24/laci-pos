@@ -10,10 +10,15 @@ class PromoLocalDataSource {
   PromoLocalDataSource(this._db);
 
   Stream<List<PromoModel>> watchPromos(String businessId) {
+    final hasBusiness = businessId.isNotEmpty;
     final query = _db.select(_db.localPromos)
       ..where(
         (t) =>
-            t.businessId.equals(businessId) &
+            (hasBusiness
+                ? (t.businessId.equals(businessId) |
+                    t.businessId.isNull() |
+                    t.businessId.equals(''))
+                : const Constant(true)) &
             t.syncStatus.equals('pendingDelete').not(),
       );
     return query.watch().map(

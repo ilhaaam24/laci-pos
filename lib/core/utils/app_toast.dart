@@ -5,7 +5,13 @@ import 'package:cherry_toast/resources/arrays.dart';
 class AppToast {
   static void showSuccess(BuildContext context, String message) {
     CherryToast.success(
-      title: Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(
+        message,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+        ),
+      ),
       displayCloseButton: false,
       shadowColor: Colors.transparent,
       animationType: AnimationType.fromTop,
@@ -15,7 +21,13 @@ class AppToast {
 
   static void showError(BuildContext context, String message) {
     CherryToast.error(
-      title: Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(
+        message,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+        ),
+      ),
       displayCloseButton: false,
       shadowColor: Colors.transparent,
       animationType: AnimationType.fromTop,
@@ -25,7 +37,13 @@ class AppToast {
 
   static void showWarning(BuildContext context, String message) {
     CherryToast.warning(
-      title: Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(
+        message,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+        ),
+      ),
       displayCloseButton: false,
       shadowColor: Colors.transparent,
       animationType: AnimationType.fromTop,
@@ -35,7 +53,13 @@ class AppToast {
 
   static void showInfo(BuildContext context, String message) {
     CherryToast.info(
-      title: Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(
+        message,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+        ),
+      ),
       displayCloseButton: false,
       shadowColor: Colors.transparent,
       animationType: AnimationType.fromTop,

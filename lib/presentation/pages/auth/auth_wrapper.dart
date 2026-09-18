@@ -8,6 +8,8 @@ import '../../blocs/business/business_bloc.dart';
 import '../../blocs/product/product_bloc.dart';
 import '../../blocs/category/category_bloc.dart';
 import '../../blocs/customer/customer_bloc.dart';
+import '../../blocs/cart/cart_bloc.dart';
+import '../../blocs/transaction/transaction_bloc.dart';
 import '../../blocs/report/report_bloc.dart';
 import '../../blocs/promo/promo_bloc.dart';
 import '../../blocs/users/users_bloc.dart';
@@ -16,6 +18,7 @@ import '../../../core/di/injection.dart';
 import '../main_page.dart';
 import 'login_page.dart';
 import 'business_setup_page.dart';
+import 'email_verification_page.dart';
 
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
@@ -32,6 +35,11 @@ class _AuthWrapperState extends State<AuthWrapper> {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, authState) {
         if (authState is Authenticated) {
+          // If email is not verified, require email verification first
+          if (!authState.user.isEmailVerified) {
+            return EmailVerificationPage(user: authState.user);
+          }
+
           return BlocBuilder<BusinessBloc, BusinessState>(
             builder: (context, businessState) {
               // Check for errors first (only if isSuccess is false)
@@ -97,11 +105,22 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 // Update tracker
                 _lastUserId = currentUserId;
 
-                // Force reload all blocs to prevent data leakage between businesses/users
+                // 1. Clear cart from previous session
+                context.read<CartBloc>().add(ClearCart());
+
+                // 2. Reset blocs to prevent stale data leakage
+                context.read<ProductBloc>().add(ResetProducts());
+                context.read<CategoryBloc>().add(ResetCategories());
+                context.read<CustomerBloc>().add(ResetCustomers());
+                context.read<TransactionBloc>().add(ResetTransactions());
+                context.read<BusinessBloc>().add(ResetBusinessInfo());
+
+                // 3. Force reload all blocs with new session data
                 context.read<BusinessBloc>().add(LoadBusinessInfo());
                 context.read<ProductBloc>().add(LoadProducts());
                 context.read<CategoryBloc>().add(LoadCategories());
                 context.read<CustomerBloc>().add(LoadCustomers());
+                context.read<TransactionBloc>().add(LoadTransactions());
                 context.read<ReportBloc>().add(LoadDailyReport(DateTime.now()));
                 context.read<PromoBloc>().add(LoadPromos());
                 context.read<UsersBloc>().add(LoadUsers());
@@ -154,7 +173,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
               return const MainPage();
             },
           );
-        } else if (authState is Unauthenticated || authState is AuthError) {
+        } else if (authState is Unauthenticated ||
+            authState is AuthError ||
+            (authState is AuthLoading && _lastUserId == null)) {
+          if (authState is Unauthenticated) {
+            _lastUserId = null;
+          }
           return const LoginPage();
         } else {
           return const Scaffold(

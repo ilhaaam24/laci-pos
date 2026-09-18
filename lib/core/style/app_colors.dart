@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   AppColors._();
-  // Primary colors
-  static const Color primary = Color(0xFF6366F1); // Indigo
-  static const Color primaryDark = Color(0xFF4F46E5);
-  static const Color primaryLight = Color(0xFFEEF2FF);
+  // Primary colors - Modern Forest Teal / Emerald
+  static const Color primary = Color(0xFF009951); // Deep Teal
+  static const Color primaryDark = Color(0xFF065F55);
+  static const Color primaryLight = Color(0xFFE6F4F2);
+  static const Color darkCharcoal = Color(0xFF1E232A);
 
   // Secondary colors
   static const Color secondary = Color(0xFF0EA5E9); // Sky blue

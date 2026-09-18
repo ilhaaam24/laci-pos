@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:laci/core/services/cloudinary_service.dart';
 import '../../blocs/business/business_bloc.dart';
 import '../../../domain/entities/business_entity.dart';
@@ -22,6 +23,11 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
   late TextEditingController _phoneController;
   late TextEditingController _emailController;
 
+  String? _logoUrl;
+  bool _isUploadingLogo = false;
+  String? _qrisUrl;
+  bool _isUploading = false;
+
   @override
   void initState() {
     super.initState();
@@ -30,7 +36,6 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
     _phoneController = TextEditingController();
     _emailController = TextEditingController();
 
-    // Load existing info
     final state = context.read<BusinessBloc>().state;
     if (state.businessInfo != null) {
       _populateFields(state.businessInfo!);
@@ -44,6 +49,8 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
     _addressController.text = info.address ?? '';
     _phoneController.text = info.phone ?? '';
     _emailController.text = info.email ?? '';
+    _logoUrl = info.logoUrl;
+    _qrisUrl = info.qrisUrl;
   }
 
   @override
@@ -55,227 +62,113 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Info Bisnis')),
-      body: BlocConsumer<BusinessBloc, BusinessState>(
-        listener: (context, state) {
-          if (state.isSuccess && state.message != null) {
-            AppToast.showSuccess(context, state.message!);
-            Navigator.pop(context);
-          }
-          if (state.isSuccess && state.businessInfo != null) {
-            _populateFields(state.businessInfo!);
-          }
-          if (state.message != null && !state.isSuccess) {
-            AppToast.showError(context, state.message!);
-          }
-        },
-        builder: (context, state) {
-          if (state.isLoading && state.businessInfo == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildSectionCard(
-                    title: 'Identitas Toko',
-                    children: [
-                      const Text(
-                        'Nama Bisnis',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _nameController,
-                        decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons.storefront_outlined),
-                        ),
-                        validator: (v) => v == null || v.isEmpty
-                            ? 'Nama tidak boleh kosong'
-                            : null,
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Alamat',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _addressController,
-                        decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons.location_on_outlined),
-                        ),
-                        maxLines: 3,
-                      ),
-                    ],
+  void _showLogoPickerSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  'Ubah Logo Usaha',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
                   ),
-                  const SizedBox(height: 16),
-                  _buildSectionCard(
-                    title: 'Kontak',
-                    children: [
-                      const Text(
-                        'Nomor Telepon',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _phoneController,
-                        decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons.phone_outlined),
-                        ),
-                        keyboardType: TextInputType.phone,
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Email',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _emailController,
-                        decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons.email_outlined),
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSectionCard(
-                    title: 'Metode Pembayaran QRIS',
-                    children: [
-                      const Text(
-                        'Unggah gambar QRIS Anda agar pelanggan dapat melakukan pembayaran dengan memindai kode.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      if (_qrisUrl != null ||
-                          (state.businessInfo?.qrisUrl != null &&
-                              state.businessInfo!.qrisUrl!.isNotEmpty))
-                        Container(
-                          height: 200,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: AppColors.border),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              _qrisUrl ?? state.businessInfo?.qrisUrl ?? '',
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Center(
-                                    child: Icon(Icons.broken_image_outlined),
-                                  ),
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 16),
-                      OutlinedButton.icon(
-                        onPressed: _isUploading ? null : _onUploadQRIS,
-                        icon: _isUploading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.qr_code_2),
-                        label: Text(
-                          _isUploading ? 'Mengunggah...' : 'Unggah QRIS',
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                            horizontal: 20,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(48),
-                    ),
-                    child: TextButton(
-                      onPressed: state.isLoading || state.businessInfo == null
-                          ? null
-                          : () => _onSave(state.businessInfo),
-                      child: Text(
-                        'Simpan Perubahan',
-                        style: TextStyle(
-                          color: AppColors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                ),
               ),
-            ),
-          );
-        },
+              ListTile(
+                leading: const Icon(
+                  Icons.camera_alt_outlined,
+                  color: Color(0xFF0F172A),
+                ),
+                title: const Text('Ambil dari Kamera'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _onUploadLogo(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.photo_library_outlined,
+                  color: Color(0xFF0F172A),
+                ),
+                title: const Text('Pilih dari Galeri'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _onUploadLogo(ImageSource.gallery);
+                },
+              ),
+              if (_logoUrl != null && _logoUrl!.isNotEmpty)
+                ListTile(
+                  leading: const Icon(
+                    Icons.delete_outline,
+                    color: Color(0xFFDC2626),
+                  ),
+                  title: const Text(
+                    'Hapus Logo',
+                    style: TextStyle(color: Color(0xFFDC2626)),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    setState(() => _logoUrl = null);
+                  },
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildSectionCard({
-    required String title,
-    required List<Widget> children,
-  }) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...children,
-          ],
-        ),
-      ),
-    );
+  Future<void> _onUploadLogo(ImageSource source) async {
+    setState(() => _isUploadingLogo = true);
+    try {
+      final url = await getIt<CloudinaryService>().uploadImage(source);
+      if (url.isNotEmpty) {
+        setState(() => _logoUrl = url);
+        if (mounted) {
+          AppToast.showSuccess(context, 'Logo usaha berhasil diunggah');
+        }
+      } else {
+        if (mounted) {
+          AppToast.showError(context, 'Gagal mengunggah logo usaha');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.showError(context, 'Gagal mengunggah logo usaha: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingLogo = false);
+    }
+  }
+
+  Future<void> _onUploadQRIS() async {
+    setState(() => _isUploading = true);
+    try {
+      final url = await getIt<CloudinaryService>().uploadImage(
+        ImageSource.gallery,
+      );
+      if (url.isNotEmpty) {
+        setState(() => _qrisUrl = url);
+        if (mounted) AppToast.showSuccess(context, 'QRIS berhasil diunggah');
+      }
+    } catch (e) {
+      if (mounted) AppToast.showError(context, 'Gagal mengunggah QRIS: $e');
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
   }
 
   void _onSave(BusinessInfo? currentInfo) {
@@ -291,8 +184,8 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
         address: _addressController.text.trim(),
         phone: _phoneController.text.trim(),
         email: _emailController.text.trim(),
-        logoUrl: currentInfo.logoUrl,
-        qrisUrl: _qrisUrl ?? currentInfo.qrisUrl,
+        logoUrl: _logoUrl != null && _logoUrl!.isNotEmpty ? _logoUrl : null,
+        qrisUrl: _qrisUrl != null && _qrisUrl!.isNotEmpty ? _qrisUrl : null,
         createdAt: currentInfo.createdAt,
         updatedAt: DateTime.now(),
       );
@@ -301,20 +194,527 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
     }
   }
 
-  String? _qrisUrl;
-  bool _isUploading = false;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Profil Bisnis & QRIS',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF0F172A),
+          ),
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+        ),
+      ),
+      body: BlocConsumer<BusinessBloc, BusinessState>(
+        listener: (context, state) {
+          if (state.isSuccess && state.message != null) {
+            AppToast.showSuccess(context, state.message!);
+            Navigator.pop(context);
+          }
+          if (state.isSuccess && state.businessInfo != null) {
+            _populateFields(state.businessInfo!);
+          }
+          if (state.message != null && !state.isSuccess) {
+            AppToast.showError(context, state.message!);
+          }
+        },
+        builder: (context, state) {
+          if (state.isLoading && state.businessInfo == null) {
+            return const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              ),
+            );
+          }
 
-  Future<void> _onUploadQRIS() async {
-    setState(() => _isUploading = true);
-    try {
-      final url = await getIt<CloudinaryService>().uploadImage(
-        ImageSource.gallery,
-      );
-      setState(() => _qrisUrl = url);
-    } catch (e) {
-      AppToast.showError(context, 'Gagal mengunggah QRIS: $e');
-    } finally {
-      setState(() => _isUploading = false);
-    }
+          final effectiveLogo = _logoUrl ?? state.businessInfo?.logoUrl ?? '';
+          final effectiveQris = _qrisUrl ?? state.businessInfo?.qrisUrl;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildCardGroup(
+                    title: 'IDENTITAS TOKO',
+                    children: [
+                      // Logo Toko / Usaha
+                      _buildLabel('Logo Usaha'),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Row(
+                          children: [
+                            GestureDetector(
+                              onTap: _isUploadingLogo
+                                  ? null
+                                  : _showLogoPickerSheet,
+                              child: Stack(
+                                children: [
+                                  Container(
+                                    width: 76,
+                                    height: 76,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: _isUploadingLogo
+                                            ? AppColors.primary
+                                            : const Color(0xFFCBD5E1),
+                                        width: _isUploadingLogo ? 2 : 1,
+                                      ),
+                                    ),
+                                    child: _isUploadingLogo
+                                        ? const Center(
+                                            child: SizedBox(
+                                              width: 24,
+                                              height: 24,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                      Color
+                                                    >(AppColors.primary),
+                                              ),
+                                            ),
+                                          )
+                                        : (effectiveLogo.isNotEmpty)
+                                        ? ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              13,
+                                            ),
+                                            child: CachedNetworkImage(
+                                              imageUrl: effectiveLogo,
+                                              width: 76,
+                                              height: 76,
+                                              fit: BoxFit.cover,
+                                              placeholder: (context, url) =>
+                                                  const Center(
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                        ),
+                                                  ),
+                                              errorWidget:
+                                                  (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) => const Center(
+                                                    child: Icon(
+                                                      Icons
+                                                          .broken_image_outlined,
+                                                      color: Color(0xFF94A3B8),
+                                                    ),
+                                                  ),
+                                            ),
+                                          )
+                                        : const Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons
+                                                    .add_photo_alternate_outlined,
+                                                size: 26,
+                                                color: Color(0xFF94A3B8),
+                                              ),
+                                              SizedBox(height: 3),
+                                              Text(
+                                                'Unggah',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  color: Color(0xFF64748B),
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                  ),
+                                  if (!_isUploadingLogo)
+                                    Positioned(
+                                      bottom: 0,
+                                      right: 0,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.camera_alt,
+                                          size: 11,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    effectiveLogo.isNotEmpty
+                                        ? 'Logo terpasang'
+                                        : 'Belum ada logo',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  const Text(
+                                    'Format PNG/JPG. Ditampilkan pada profil toko dan aplikasi.',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Color(0xFF64748B),
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildLabel('Nama Usaha / Toko'),
+                      TextFormField(
+                        controller: _nameController,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF0F172A),
+                        ),
+                        decoration: _buildInputDecoration(
+                          hint: 'Contoh: Laci Kopi & Resto',
+                          prefixIcon: Icons.storefront_outlined,
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty
+                            ? 'Nama bisnis tidak boleh kosong'
+                            : null,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildLabel('Alamat Usaha (Dicetak pada Struk)'),
+                      TextFormField(
+                        controller: _addressController,
+                        maxLines: 3,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF0F172A),
+                        ),
+                        decoration: _buildInputDecoration(
+                          hint: 'Jl. Pemuda No. 12, Kelurahan...',
+                          prefixIcon: Icons.location_on_outlined,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildCardGroup(
+                    title: 'KONTAK BISNIS',
+                    children: [
+                      _buildLabel('Nomor Telepon / WhatsApp'),
+                      TextFormField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF0F172A),
+                        ),
+                        decoration: _buildInputDecoration(
+                          hint: '0812xxxxxxxx',
+                          prefixIcon: Icons.phone_outlined,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildLabel('Email Bisnis'),
+                      TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF0F172A),
+                        ),
+                        decoration: _buildInputDecoration(
+                          hint: 'kontak@tokoanda.com',
+                          prefixIcon: Icons.email_outlined,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildCardGroup(
+                    title: 'METODE PEMBAYARAN QRIS',
+                    children: [
+                      const Text(
+                        'Unggah gambar QRIS statis Anda agar kasir dapat menampilkan barcode QRIS langsung ke pelanggan saat checkout.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF64748B),
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      if (effectiveQris != null && effectiveQris.isNotEmpty)
+                        Column(
+                          children: [
+                            Container(
+                              height: 220,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(0xFFE2E8F0),
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(11),
+                                child: Image.network(
+                                  effectiveQris,
+                                  fit: BoxFit.contain,
+                                  loadingBuilder: (context, child, progress) {
+                                    if (progress == null) return child;
+                                    return const Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Center(
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.broken_image_outlined,
+                                              color: Color(0xFF94A3B8),
+                                              size: 32,
+                                            ),
+                                            SizedBox(height: 6),
+                                            Text(
+                                              'Gagal memuat gambar QRIS',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Color(0xFF94A3B8),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: _isUploading
+                                        ? null
+                                        : _onUploadQRIS,
+                                    icon: const Icon(Icons.refresh, size: 16),
+                                    label: const Text('Ganti Gambar QRIS'),
+                                    style: OutlinedButton.styleFrom(
+                                      side: const BorderSide(
+                                        color: Color(0xFFE2E8F0),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  onPressed: () =>
+                                      setState(() => _qrisUrl = ''),
+                                  tooltip: 'Hapus QRIS',
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    color: Color(0xFFDC2626),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        )
+                      else
+                        OutlinedButton.icon(
+                          onPressed: _isUploading ? null : _onUploadQRIS,
+                          icon: _isUploading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      AppColors.primary,
+                                    ),
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.qr_code_2,
+                                  color: AppColors.primary,
+                                ),
+                          label: Text(
+                            _isUploading
+                                ? 'Sedang Mengunggah...'
+                                : 'Unggah Barcode QRIS',
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFFCBD5E1)),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: state.isLoading || state.businessInfo == null
+                          ? null
+                          : () => _onSave(state.businessInfo),
+                      style: ElevatedButton.styleFrom(
+                        elevation: 0,
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Simpan Perubahan',
+                        style: TextStyle(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF475569),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardGroup({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+              color: Color(0xFF64748B),
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: children,
+          ),
+        ),
+      ],
+    );
+  }
+
+  InputDecoration _buildInputDecoration({
+    required String hint,
+    required IconData prefixIcon,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+      prefixIcon: Icon(prefixIcon, size: 20, color: const Color(0xFF64748B)),
+      filled: true,
+      fillColor: const Color(0xFFF8FAFC),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFDC2626)),
+      ),
+    );
   }
 }

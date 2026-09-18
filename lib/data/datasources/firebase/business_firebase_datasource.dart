@@ -4,6 +4,7 @@ import 'package:laci/core/constants/firebase_collections.dart';
 import 'package:laci/data/models/business_model.dart';
 
 import '../../../core/services/session_service.dart';
+import 'category_firebase_datasource.dart';
 
 abstract class BusinessFirebaseDataSource {
   Future<BusinessInfoModel> getBusinessInfo();
@@ -13,10 +14,12 @@ abstract class BusinessFirebaseDataSource {
 class BusinessFirebaseDataSourceImpl implements BusinessFirebaseDataSource {
   final FirebaseFirestore firestore;
   final SessionService sessionService;
+  final CategoryFirebaseDataSource categoryDataSource;
 
   BusinessFirebaseDataSourceImpl({
     required this.firestore,
     required this.sessionService,
+    required this.categoryDataSource,
   });
 
   CollectionReference get _collection =>
@@ -62,6 +65,14 @@ class BusinessFirebaseDataSourceImpl implements BusinessFirebaseDataSource {
         updatedAt: DateTime.now(),
       );
       await _collection.doc(_businessId).set(defaultInfo.toFirestore());
+
+      // Auto seed default categories for new business
+      try {
+        await categoryDataSource.seedDefaultCategories(_businessId);
+      } catch (e) {
+        log('BusinessFirebaseDataSource: Error seeding default categories: $e');
+      }
+
       return defaultInfo;
     }
     return BusinessInfoModel.fromFirestore(doc);

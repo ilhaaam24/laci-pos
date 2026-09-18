@@ -1,7 +1,8 @@
+import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:laci/core/constants/firebase_collections.dart';
 import 'package:laci/data/models/category_model.dart';
-
+import '../../../core/constants/default_categories.dart';
 import '../../../core/services/session_service.dart';
 
 abstract class CategoryFirebaseDataSource {
@@ -10,6 +11,7 @@ abstract class CategoryFirebaseDataSource {
   Future<String> createCategory(CategoryModel category);
   Future<void> updateCategory(CategoryModel category);
   Future<void> deleteCategory(String id);
+  Future<List<CategoryModel>> seedDefaultCategories(String businessId);
 }
 
 class CategoryFirebaseDataSourceImpl implements CategoryFirebaseDataSource {
@@ -97,6 +99,46 @@ class CategoryFirebaseDataSourceImpl implements CategoryFirebaseDataSource {
       await _collection.doc(id).delete();
     } catch (e) {
       throw Exception('Failed to delete category: $e');
+    }
+  }
+
+  @override
+  Future<List<CategoryModel>> seedDefaultCategories(String businessId) async {
+    if (businessId.isEmpty) return [];
+
+    try {
+      // Check if categories already exist for this business
+      final existing = await _collection
+          .where('businessId', isEqualTo: businessId)
+          .limit(1)
+          .get();
+
+      if (existing.docs.isNotEmpty) {
+        log(
+          'CategoryFirebaseDataSource: Categories already exist for business "$businessId", skipping seeding.',
+        );
+        return [];
+      }
+
+      log(
+        'CategoryFirebaseDataSource: Seeding default categories for business "$businessId"...',
+      );
+      final defaults = DefaultCategories.getDefaults(businessId);
+      final batch = firestore.batch();
+
+      for (final cat in defaults) {
+        final docRef = _collection.doc(cat.id);
+        batch.set(docRef, cat.toFirestore());
+      }
+
+      await batch.commit();
+      log(
+        'CategoryFirebaseDataSource: Successfully seeded ${defaults.length} default categories.',
+      );
+      return defaults;
+    } catch (e) {
+      log('CategoryFirebaseDataSource: Failed to seed default categories: $e');
+      return [];
     }
   }
 }

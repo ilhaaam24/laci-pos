@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>747380789752-3vq5qcj5bcnm2vgsueql084jfsspptve.apps.googleusercontent.com</string>
+	<string>747380789752-3fc9vsd745mgi56l0r036a70mjom62q1.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.747380789752-3vq5qcj5bcnm2vgsueql084jfsspptve</string>
+	<string>com.googleusercontent.apps.747380789752-3fc9vsd745mgi56l0r036a70mjom62q1</string>
 	<key>ANDROID_CLIENT_ID</key>
 	<string>747380789752-2f5hj918c54ntfn211em1hdu1er0ovf9.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
@@ -15,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.ilhaaam24.lacipos</string>
+	<string>com.ilham24.lacipos</string>
 	<key>PROJECT_ID</key>
 	<string>chatify-9b6ef</string>
 	<key>STORAGE_BUCKET</key>
@@ -31,7 +31,7 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:747380789752:ios:d8e8a8b5fb281b20a1460d</string>
+	<string>1:747380789752:ios:ea1baf4c485313f6a1460d</string>
 	<key>DATABASE_URL</key>
 	<string>https://chatify-9b6ef-default-rtdb.asia-southeast1.firebasedatabase.app</string>
 </dict>

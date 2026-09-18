@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:dartz/dartz.dart';
 import 'package:uuid/uuid.dart';
+import '../../core/di/injection.dart';
 import '../../core/services/session_service.dart';
+import '../../core/services/sync_service.dart';
 import '../../domain/entities/product_entity.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../datasources/firebase/product_firebase_datasource.dart';
@@ -24,11 +26,21 @@ class ProductRepositoryImpl implements ProductRepository {
 
   String get _businessId => sessionService.businessId ?? '';
 
+  void _triggerSync() {
+    try {
+      getIt<SyncService>().fullSync();
+    } catch (_) {}
+  }
+
   @override
   Stream<Either<String, List<Product>>> getProducts() {
+    final businessId = _businessId;
+    if (businessId.isEmpty) {
+      return Stream.value(const Right([]));
+    }
     try {
       return localDataSource
-          .watchProducts(_businessId)
+          .watchProducts(businessId)
           .map(
             (products) => Right<String, List<Product>>(
               products.map((model) => model.toEntity()).toList(),
@@ -72,6 +84,9 @@ class ProductRepositoryImpl implements ProductRepository {
         data: jsonEncode(model.toJson()),
       );
 
+      // 3. Trigger immediate sync
+      _triggerSync();
+
       return Right(model.id);
     } catch (e) {
       return Left(e.toString());
@@ -97,6 +112,9 @@ class ProductRepositoryImpl implements ProductRepository {
         data: jsonEncode(model.toJson()),
       );
 
+      // 3. Trigger immediate sync
+      _triggerSync();
+
       return const Right(null);
     } catch (e) {
       return Left(e.toString());
@@ -117,6 +135,9 @@ class ProductRepositoryImpl implements ProductRepository {
         businessId: _businessId,
       );
 
+      // 3. Trigger immediate sync
+      _triggerSync();
+
       return const Right(null);
     } catch (e) {
       return Left(e.toString());
@@ -127,10 +148,13 @@ class ProductRepositoryImpl implements ProductRepository {
   Stream<Either<String, List<Product>>> getProductsByCategory(
     String categoryId,
   ) {
+    final businessId = _businessId;
+    if (businessId.isEmpty) {
+      return Stream.value(const Right([]));
+    }
     try {
-      // We could add a more specific query in localDataSource if needed
       return localDataSource
-          .watchProducts(_businessId)
+          .watchProducts(businessId)
           .map(
             (products) => Right<String, List<Product>>(
               products

@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:dartz/dartz.dart';
 import 'package:uuid/uuid.dart';
+import '../../core/di/injection.dart';
 import '../../core/services/session_service.dart';
+import '../../core/services/sync_service.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/repositories/category_repository.dart';
 import '../datasources/firebase/category_firebase_datasource.dart';
@@ -24,11 +26,21 @@ class CategoryRepositoryImpl implements CategoryRepository {
 
   String get _businessId => sessionService.businessId ?? '';
 
+  void _triggerSync() {
+    try {
+      getIt<SyncService>().fullSync();
+    } catch (_) {}
+  }
+
   @override
   Stream<Either<String, List<Category>>> getCategories() {
+    final businessId = _businessId;
+    if (businessId.isEmpty) {
+      return Stream.value(const Right([]));
+    }
     try {
       return localDataSource
-          .watchCategories(_businessId)
+          .watchCategories(businessId)
           .map(
             (categories) => Right<String, List<Category>>(
               categories.map((model) => model.toEntity()).toList(),
@@ -72,6 +84,9 @@ class CategoryRepositoryImpl implements CategoryRepository {
         data: jsonEncode(model.toJson()),
       );
 
+      // 3. Trigger immediate sync
+      _triggerSync();
+
       return Right(model.id);
     } catch (e) {
       return Left(e.toString());
@@ -97,6 +112,9 @@ class CategoryRepositoryImpl implements CategoryRepository {
         data: jsonEncode(model.toJson()),
       );
 
+      // 3. Trigger immediate sync
+      _triggerSync();
+
       return const Right(null);
     } catch (e) {
       return Left(e.toString());
@@ -116,6 +134,9 @@ class CategoryRepositoryImpl implements CategoryRepository {
         operation: 'delete',
         businessId: _businessId,
       );
+
+      // 3. Trigger immediate sync
+      _triggerSync();
 
       return const Right(null);
     } catch (e) {

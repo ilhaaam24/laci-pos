@@ -7,8 +7,19 @@ class BusinessLocalDataSource {
 
   BusinessLocalDataSource(this.db);
 
-  Future<BusinessInfoModel?> getBusinessInfo() async {
-    final result = await db.select(db.localBusinessInfo).getSingleOrNull();
+  Future<BusinessInfoModel?> getBusinessInfo([String? businessId]) async {
+    LocalBusinessInfoData? result;
+    if (businessId != null && businessId.isNotEmpty) {
+      result = await (db.select(db.localBusinessInfo)
+            ..where((t) => t.id.equals(businessId)))
+          .get()
+          .then((list) => list.firstOrNull);
+    } else {
+      result = await db
+          .select(db.localBusinessInfo)
+          .get()
+          .then((list) => list.firstOrNull);
+    }
     if (result == null) return null;
 
     return BusinessInfoModel(

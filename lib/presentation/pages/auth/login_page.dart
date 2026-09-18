@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
@@ -67,32 +68,15 @@ class _LoginPageState extends State<LoginPage> {
                       // Logo & Header
                       Center(
                         child:
-                            Container(
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: surfaceColor,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.primary.withValues(
-                                      alpha: isDark ? 0.2 : 0.1,
-                                    ),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.storefront_rounded,
-                                size: 64,
-                                color: AppColors.primary,
-                              ),
+                            SvgPicture.asset(
+                              "assets/icons/logo.svg",
+                              height: 84,
                             ).animate().scale(
                               duration: 600.ms,
                               curve: Curves.bounceIn,
                             ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       Text(
                         'Selamat Datang',
                         textAlign: TextAlign.center,
@@ -167,6 +151,11 @@ class _LoginPageState extends State<LoginPage> {
                                   style: TextStyle(color: textColor),
                                   decoration: InputDecoration(
                                     hintText: 'Password',
+                                    hintStyle: TextStyle(
+                                      color: isDark
+                                          ? Colors.grey.shade500
+                                          : Colors.grey.shade400,
+                                    ),
                                     labelStyle: TextStyle(
                                       color: textSecondaryColor,
                                     ),
@@ -241,15 +230,11 @@ class _LoginPageState extends State<LoginPage> {
                           return ElevatedButton(
                             onPressed: isLoading ? null : _handleEmailLogin,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primaryDark,
+                              backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
-                              ),
-                              elevation: 4,
-                              shadowColor: AppColors.primary.withValues(
-                                alpha: 0.4,
                               ),
                             ),
                             child: isLoading
@@ -387,7 +372,7 @@ class _LoginPageState extends State<LoginPage> {
     if (_formKey.currentState!.validate()) {
       context.read<AuthBloc>().add(
         SignInRequested(
-          email: _emailController.text.trim(),
+          email: _emailController.text.trim().toLowerCase(),
           password: _passwordController.text,
         ),
       );

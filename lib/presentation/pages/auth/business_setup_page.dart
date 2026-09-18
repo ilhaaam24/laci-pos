@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_svg/svg.dart';
 import '../../blocs/business/business_bloc.dart';
 import '../../../domain/entities/business_entity.dart';
 import '../../../core/style/app_colors.dart';
@@ -50,24 +51,9 @@ class _BusinessSetupPageState extends State<BusinessSetupPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.storefront_rounded,
-                      size: 64,
-                      color: AppColors.primary,
-                    ),
+                  SvgPicture.asset(
+                    "assets/icons/logo.svg",
+                    height: 84,
                   ).animate().scale(duration: 600.ms, curve: Curves.bounceIn),
                   const SizedBox(height: 32),
                   const Text(
@@ -97,8 +83,10 @@ class _BusinessSetupPageState extends State<BusinessSetupPage> {
                         TextFormField(
                           controller: _nameController,
                           decoration: InputDecoration(
-                            labelText: 'Nama Bisnis',
                             hintText: 'Contoh: Kedai Kopi Maju',
+                            hintStyle: TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
                             prefixIcon: const Icon(Icons.edit_note_rounded),
                             filled: true,
                             fillColor: Colors.white,
@@ -117,13 +105,13 @@ class _BusinessSetupPageState extends State<BusinessSetupPage> {
                               ? null
                               : () => _onSave(state.businessInfo),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryDark,
+                            backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            elevation: 4,
+                            elevation: 0,
                           ),
                           child: state.isLoading
                               ? const SizedBox(

@@ -42,9 +42,13 @@ class TransactionRepositoryImpl implements TransactionRepository {
 
   @override
   Stream<Either<String, List<TransactionEntity>>> getTransactions() {
+    final businessId = _businessId;
+    if (businessId.isEmpty) {
+      return Stream.value(const Right([]));
+    }
     try {
       return localDataSource
-          .watchTransactions(_businessId)
+          .watchTransactions(businessId)
           .map(
             (transactions) => Right<String, List<TransactionEntity>>(
               transactions.map((model) => model.toEntity()).toList(),
@@ -75,9 +79,13 @@ class TransactionRepositoryImpl implements TransactionRepository {
     DateTime startDate,
     DateTime endDate,
   ) {
+    final businessId = _businessId;
+    if (businessId.isEmpty) {
+      return Stream.value(const Right([]));
+    }
     try {
       return localDataSource
-          .watchTransactionsByDateRange(_businessId, startDate, endDate)
+          .watchTransactionsByDateRange(businessId, startDate, endDate)
           .map(
             (transactions) => Right<String, List<TransactionEntity>>(
               transactions.map((model) => model.toEntity()).toList(),
@@ -92,9 +100,13 @@ class TransactionRepositoryImpl implements TransactionRepository {
   Stream<Either<String, List<TransactionEntity>>> getTransactionsByCustomerId(
     String customerId,
   ) {
+    final businessId = _businessId;
+    if (businessId.isEmpty) {
+      return Stream.value(const Right([]));
+    }
     try {
       return localDataSource
-          .watchTransactionsByCustomer(_businessId, customerId)
+          .watchTransactionsByCustomer(businessId, customerId)
           .map(
             (transactions) => Right<String, List<TransactionEntity>>(
               transactions.map((model) => model.toEntity()).toList(),

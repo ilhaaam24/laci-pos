@@ -9,6 +9,7 @@ class UserModel extends UserEntity {
     super.photoUrl,
     super.role,
     super.businessId,
+    super.isEmailVerified,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -41,9 +42,11 @@ class UserModel extends UserEntity {
       photoUrl: entity.photoUrl,
       role: entity.role,
       businessId: entity.businessId,
+      isEmailVerified: entity.isEmailVerified,
     );
   }
 
+  @override
   UserModel copyWith({
     String? id,
     String? email,
@@ -51,6 +54,7 @@ class UserModel extends UserEntity {
     String? photoUrl,
     UserRole? role,
     String? businessId,
+    bool? isEmailVerified,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -59,6 +63,7 @@ class UserModel extends UserEntity {
       photoUrl: photoUrl ?? this.photoUrl,
       role: role ?? this.role,
       businessId: businessId ?? this.businessId,
+      isEmailVerified: isEmailVerified ?? this.isEmailVerified,
     );
   }
 }

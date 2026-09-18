@@ -13,10 +13,13 @@ class StockLogLocalDataSource {
     String businessId, {
     String? productId,
   }) {
+    final hasBusiness = businessId.isNotEmpty;
     var query = _db.select(_db.localStockLogs)
       ..where(
         (t) =>
-            t.businessId.equals(businessId) &
+            (hasBusiness
+                ? (t.businessId.equals(businessId) | t.businessId.isNull())
+                : const Constant(true)) &
             t.syncStatus.equals('pendingDelete').not(),
       )
       ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]);
@@ -24,7 +27,9 @@ class StockLogLocalDataSource {
       query = _db.select(_db.localStockLogs)
         ..where(
           (t) =>
-              t.businessId.equals(businessId) &
+              (hasBusiness
+                  ? (t.businessId.equals(businessId) | t.businessId.isNull())
+                  : const Constant(true)) &
               t.productId.equals(productId) &
               t.syncStatus.equals('pendingDelete').not(),
         )

@@ -1,30 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:laci/core/services/session_service.dart';
-import 'package:laci/core/services/sync_service.dart';
-import 'package:laci/presentation/blocs/customer/customer_bloc.dart';
-import 'package:laci/presentation/pages/promo/promo_page.dart';
-import '../../../domain/entities/customer_entity.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
+import '../main_page.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../blocs/cart/cart_bloc.dart';
-import '../../blocs/payment/payment_bloc.dart';
-import '../../../domain/entities/transaction_entity.dart';
-import '../../../core/services/transaction_service.dart';
 import '../../../core/di/injection.dart';
+import '../../../core/services/printer_service.dart';
+import '../../../core/services/session_service.dart';
+import '../../../core/services/sync_service.dart';
+import '../../../core/services/transaction_service.dart';
+import '../../../core/services/whatsapp_service.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
-import '../../blocs/promo/promo_bloc.dart';
+import '../../../domain/entities/customer_entity.dart';
 import '../../../domain/entities/promo_entity.dart';
-import 'widgets/payment_dialog.dart';
+import '../../../domain/entities/transaction_entity.dart';
 import '../../blocs/business/business_bloc.dart';
-import '../../../core/services/printer_service.dart';
-import '../../../core/services/whatsapp_service.dart';
+import '../../blocs/cart/cart_bloc.dart';
+import '../../blocs/customer/customer_bloc.dart';
+import '../../blocs/payment/payment_bloc.dart';
+import '../../blocs/product/product_bloc.dart';
+import '../../blocs/promo/promo_bloc.dart';
+import '../../blocs/report/report_bloc.dart';
+import '../../blocs/transaction/transaction_bloc.dart';
 import '../customer/add_edit_customer_page.dart';
+import 'widgets/payment_dialog.dart';
+import 'widgets/transaction_success_dialog.dart';
 
 class CheckoutPage extends StatefulWidget {
-  const CheckoutPage({super.key});
+  final VoidCallback? onBackToKasir;
+  final VoidCallback? onOpenDrawer;
+
+  const CheckoutPage({super.key, this.onBackToKasir, this.onOpenDrawer});
 
   @override
   State<CheckoutPage> createState() => _CheckoutPageState();
@@ -33,19 +41,26 @@ class CheckoutPage extends StatefulWidget {
 class _CheckoutPageState extends State<CheckoutPage> {
   final double _taxPercent = 10.0;
   PromoEntity? _selectedPromo;
-  final TextEditingController _customerSearchController =
-      TextEditingController();
+  String _orderType = 'Dine In';
+  final Map<String, String> _itemNotes = {};
+  late final String _orderCode;
+  late final String _orderTime;
 
   @override
-  void dispose() {
-    _customerSearchController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    context.read<PromoBloc>().add(LoadPromos());
+    final now = DateTime.now();
+    final orderNum = (now.minute * 10 + now.second % 100).toString().padLeft(
+      3,
+      '0',
+    );
+    _orderCode = '#ORD-$orderNum';
+    _orderTime = '${DateFormat('HH:mm').format(now)} WIB';
   }
 
   double get _discountAmount {
     if (_selectedPromo == null) return 0.0;
-
-    // Check min purchase
     final cartState = context.read<CartBloc>().state;
     if (cartState.totalAmount < _selectedPromo!.minPurchase) return 0.0;
 
@@ -53,6 +68,19 @@ class _CheckoutPageState extends State<CheckoutPage> {
       return cartState.totalAmount * (_selectedPromo!.value / 100);
     } else {
       return _selectedPromo!.value;
+    }
+  }
+
+  void _handleBackToKasir() {
+    if (widget.onBackToKasir != null) {
+      widget.onBackToKasir!();
+    } else if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MainPage()),
+      );
     }
   }
 
@@ -64,41 +92,1001 @@ class _CheckoutPageState extends State<CheckoutPage> {
       decimalDigits: 0,
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Checkout'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_sweep_outlined),
-            onPressed: () => context.read<CartBloc>().add(ClearCart()),
-          ),
-        ],
-      ),
-      body: BlocBuilder<CartBloc, CartState>(
-        builder: (context, state) {
-          if (state.items.isEmpty) {
-            return _buildEmptyState();
-          }
+    final canPopRoute = Navigator.canPop(context);
 
-          return Column(
+    return PopScope(
+      canPop: canPopRoute,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handleBackToKasir();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          title: const Text(
+            'Pesanan',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          bottom: const PreferredSize(
+            preferredSize: Size.fromHeight(1),
+            child: Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+          ),
+        ),
+        backgroundColor: const Color(0xFFF8FAFC),
+        body: SafeArea(
+          child: Column(
             children: [
-              _buildCustomerSelector(),
-              _buildPromoSelector(),
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: state.items.length,
-                  itemBuilder: (context, index) {
-                    final item = state.items[index];
-                    return _buildCartItem(context, item, currencyFormatter);
+                child: BlocBuilder<CartBloc, CartState>(
+                  builder: (context, state) {
+                    if (state.items.isEmpty) {
+                      return _buildEmptyState();
+                    }
+
+                    final subtotal = state.totalAmount;
+                    final discount = _discountAmount;
+                    final taxAmount = (subtotal - discount > 0)
+                        ? (subtotal - discount) * (_taxPercent / 100)
+                        : 0.0;
+                    final grandTotal = subtotal - discount + taxAmount;
+
+                    return ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 32),
+                      children: [
+                        // Card 1: Order Code & Service Type Segment
+                        _buildOrderHeaderCard(),
+                        const SizedBox(height: 12),
+
+                        // Card 2: Customer Card
+                        _buildCustomerCard(state.customer),
+                        const SizedBox(height: 12),
+
+                        // Card 3: Rincian Menu
+                        _buildOrderItemsCard(state.items, currencyFormatter),
+                        const SizedBox(height: 12),
+
+                        // Card 4: Voucher / Promo Card
+                        _buildPromoCard(currencyFormatter),
+                        const SizedBox(height: 12),
+
+                        // Card 5: Billing Summary Card
+                        _buildSummaryCard(
+                          subtotal: subtotal,
+                          discount: discount,
+                          tax: taxAmount,
+                          grandTotal: grandTotal,
+                          formatter: currencyFormatter,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Card 6: Action Buttons (Payment & Secondary)
+                        _buildActionButtons(
+                          state: state,
+                          grandTotal: grandTotal,
+                          formatter: currencyFormatter,
+                        ),
+                      ],
+                    );
                   },
                 ),
               ),
-              _buildOrderSummary(context, state, currencyFormatter),
-              SizedBox(height: 24),
             ],
-          );
-        },
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 2. Card 1: Order Number, Active Status, Timestamp & Service Segment (Flat, NO SHADOW)
+  Widget _buildOrderHeaderCard() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text(
+                _orderCode,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3.5,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE6F4F2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '• Aktif',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              const Icon(
+                Icons.access_time_rounded,
+                size: 16,
+                color: Color(0xFF475569),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                _orderTime,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF475569),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Segmented Service Type Toggle (Dine In / Take Away / Delivery)
+          Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                _buildServiceSegment('Dine In'),
+                _buildServiceSegment('Take Away'),
+                _buildServiceSegment('Delivery'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServiceSegment(String type) {
+    final isSelected = _orderType == type;
+
+    return Expanded(
+      child: InkWell(
+        onTap: () => setState(() => _orderType = type),
+        borderRadius: BorderRadius.circular(10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: isSelected
+                ? Border.all(color: const Color(0xFFE2E8F0))
+                : null,
+          ),
+          child: Center(
+            child: Text(
+              type,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? AppColors.primary : const Color(0xFF64748B),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 3. Card 2: Customer Selector (Flat, NO SHADOW)
+  Widget _buildCustomerCard(Customer? customer) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          SvgPicture.asset("assets/icons/customer.svg", height: 34),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        customer?.name ?? 'Pelanggan Umum',
+                        style: const TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        customer != null ? 'Gold' : 'Walk-in',
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFB45309),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  customer?.phone ??
+                      (customer != null
+                          ? '120 Pts terkumpul'
+                          : 'Tanpa Akun Member'),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          InkWell(
+            onTap: () => _showCustomerPicker(customer),
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: const Row(
+                children: [
+                  Text(
+                    'Ganti',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF334155),
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 16,
+                    color: Color(0xFF64748B),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 4. Card 3: Rincian Menu (List Items with Trash, Stepper, & Notes)
+  Widget _buildOrderItemsCard(
+    List<TransactionItem> items,
+    NumberFormat formatter,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Rincian Menu (${items.length})',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+              InkWell(
+                onTap: () => _confirmClearCart(context),
+                child: const Text(
+                  'Kosongkan',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFDC2626),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ...items.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            final hasNote = _itemNotes[item.productId]?.isNotEmpty == true;
+
+            return Column(
+              children: [
+                if (index > 0)
+                  const Divider(
+                    height: 20,
+                    thickness: 1,
+                    color: Color(0xFFF1F5F9),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Line 1: Name & Subtotal
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.productName,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF0F172A),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            formatter.format(item.subtotal).trim(),
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      // Line 2: Note row (tap to edit note)
+                      InkWell(
+                        onTap: () => _showEditNoteDialog(item),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Row(
+                            children: [
+                              Icon(
+                                hasNote
+                                    ? Icons.notes_rounded
+                                    : Icons.add_comment_outlined,
+                                size: 14,
+                                color: hasNote
+                                    ? const Color(0xFF64748B)
+                                    : AppColors.primary,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  hasNote
+                                      ? _itemNotes[item.productId]!
+                                      : 'Tambah Catatan',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: hasNote
+                                        ? FontWeight.w500
+                                        : FontWeight.w600,
+                                    color: hasNote
+                                        ? const Color(0xFF64748B)
+                                        : AppColors.primary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      // Line 3: Unit Price, Trash Icon & Stepper
+                      Row(
+                        children: [
+                          Text(
+                            '@ ${formatter.format(item.price).trim()}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const Spacer(),
+
+                          // Stepper Pill (- QTY +)
+                          Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                InkWell(
+                                  onTap: () {
+                                    context.read<CartBloc>().add(
+                                      DecreaseQuantity(item.productId),
+                                    );
+                                  },
+                                  borderRadius: const BorderRadius.horizontal(
+                                    left: Radius.circular(8),
+                                  ),
+                                  child: const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    child: Icon(
+                                      Icons.remove,
+                                      size: 15,
+                                      color: Color(0xFF475569),
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  constraints: const BoxConstraints(
+                                    minWidth: 26,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 4,
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    '${item.quantity}',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: () {
+                                    context.read<CartBloc>().add(
+                                      IncrementQuantity(item.productId),
+                                    );
+                                  },
+                                  borderRadius: const BorderRadius.horizontal(
+                                    right: Radius.circular(8),
+                                  ),
+                                  child: const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    child: Icon(
+                                      Icons.add,
+                                      size: 15,
+                                      color: Color(0xFF475569),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  // 5. Card 4: Voucher & Promo Card (Flat, NO SHADOW)
+  Widget _buildPromoCard(NumberFormat formatter) {
+    if (_selectedPromo != null) {
+      final discountText = _selectedPromo!.type == PromoType.percentage
+          ? '-${_selectedPromo!.value.toStringAsFixed(0)}% (Voucher Toko)'
+          : '-${formatter.format(_selectedPromo!.value).trim()} (Voucher Toko)';
+
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: const Color(0xFFCCFBF1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.confirmation_number_outlined,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        _selectedPromo!.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE6F4F2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'Terpasang',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    discountText,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(
+                Icons.close_rounded,
+                size: 20,
+                color: Color(0xFF64748B),
+              ),
+              onPressed: () => setState(() => _selectedPromo = null),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: InkWell(
+        onTap: _showPromoPicker,
+        child: Row(
+          children: [
+            SvgPicture.asset("assets/icons/discount.svg", height: 28),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Gunakan Voucher / Promo',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+            ),
+            Text(
+              'Pilih',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
+            SizedBox(width: 2),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: AppColors.primary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 6. Card 5: Summary Card (Subtotal, Discount, PB1 Resto, Grand Total)
+  Widget _buildSummaryCard({
+    required double subtotal,
+    required double discount,
+    required double tax,
+    required double grandTotal,
+    required NumberFormat formatter,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          _buildSummaryRow('Subtotal', formatter.format(subtotal).trim()),
+          if (discount > 0)
+            _buildSummaryRow(
+              'Diskon Promo',
+              '-${formatter.format(discount).trim()}',
+              isDiscount: true,
+            ),
+          _buildSummaryRow(
+            'PB1 Resto (${_taxPercent.toStringAsFixed(0)}%)',
+            formatter.format(tax).trim(),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Grand Total',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Termasuk pajak & layanan',
+                    style: TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8)),
+                  ),
+                ],
+              ),
+              Text(
+                formatter.format(grandTotal).trim(),
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(
+    String label,
+    String value, {
+    bool isDiscount = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF475569),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: isDiscount ? AppColors.primary : const Color(0xFF0F172A),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 7. Action Buttons (Primary Payment & Secondary Kitchen/Hold Bill)
+  Widget _buildActionButtons({
+    required CartState state,
+    required double grandTotal,
+    required NumberFormat formatter,
+  }) {
+    return Column(
+      children: [
+        // Primary Button: Pilih Pembayaran (Flat, NO SHADOW)
+        InkWell(
+          onTap: () => _showPaymentDialog(context, state),
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            height: 60,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(
+                      Icons.payments_outlined,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Pilih Pembayaran',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  formatter.format(grandTotal).trim(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _handleHoldOrder() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Bill order $_orderCode berhasil disimpan sebagai pending bill.',
+        ),
+        backgroundColor: const Color(0xFF0F172A),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset("assets/icons/order.svg", height: 64),
+            const SizedBox(height: 16),
+            const Text(
+              'Belum ada pesanan aktif',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Pilih menu dari tab Kasir untuk mulai transaksi',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: _handleBackToKasir,
+              child: const Text("Kembali ke kasir"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditNoteDialog(TransactionItem item) {
+    final controller = TextEditingController(
+      text: _itemNotes[item.productId] ?? '',
+    );
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          'Catatan: ${item.productName}',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Contoh: Less Ice, Oatmilk, Hangatkan...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xFFE2E8F0)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: Color(0xFF64748B)),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              setState(() {
+                if (controller.text.trim().isEmpty) {
+                  _itemNotes.remove(item.productId);
+                } else {
+                  _itemNotes[item.productId] = controller.text.trim();
+                }
+              });
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmClearCart(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'Kosongkan Keranjang?',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        content: const Text(
+          'Semua menu yang sudah dipilih akan dihapus dari daftar pesanan ini.',
+          style: TextStyle(fontSize: 13.5, color: Color(0xFF64748B)),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xFFE2E8F0)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: Color(0xFF64748B)),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              context.read<CartBloc>().add(ClearCart());
+              setState(() {
+                _selectedPromo = null;
+                _itemNotes.clear();
+              });
+              Navigator.pop(dialogContext);
+            },
+            child: const Text(
+              'Kosongkan',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -107,18 +1095,38 @@ class _CheckoutPageState extends State<CheckoutPage> {
     BuildContext context,
     CartState cartState,
   ) async {
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => BlocProvider(
-        create: (_) => PaymentBloc(),
-        child: PaymentDialog(
-          subtotal: cartState.totalAmount,
-          taxPercent: _taxPercent,
-          discountAmount: _discountAmount,
-          onConfirm: (payments, changeAmount) {
-            _processPayment(cartState, payments, changeAmount);
-          },
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (pageContext) => BlocProvider(
+          create: (_) => PaymentBloc(),
+          child: PaymentDialog(
+            orderCode: _orderCode,
+            orderType: _orderType,
+            itemCount: cartState.items.length,
+            subtotal: cartState.totalAmount,
+            taxPercent: _taxPercent,
+            discountAmount: _discountAmount,
+            customer: cartState.customer,
+            onHoldOrder: () {
+              Navigator.pop(pageContext);
+              _handleHoldOrder();
+            },
+            onAddDiscount: () {
+              Navigator.pop(pageContext);
+              _showPromoPicker();
+            },
+            onConfirm: (payments, changeAmount, shouldPrint, shouldSendWA) {
+              Navigator.pop(pageContext);
+              _processPayment(
+                cartState,
+                payments,
+                changeAmount,
+                shouldPrint: shouldPrint,
+                shouldSendWA: shouldSendWA,
+              );
+            },
+          ),
         ),
       ),
     );
@@ -127,20 +1135,24 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Future<void> _processPayment(
     CartState cartState,
     List<PaymentDetail> payments,
-    double changeAmount,
-  ) async {
+    double changeAmount, {
+    bool shouldPrint = true,
+    bool shouldSendWA = false,
+  }) async {
+    final businessInfo = context.read<BusinessBloc>().state.businessInfo;
     try {
-      // Show loading
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
+        builder: (context) =>
+            const Center(child: CircularProgressIndicator(strokeWidth: 2)),
       );
 
       final now = DateTime.now();
       final transactionCode = 'INV-${DateFormat('yyyyMMddHHmmss').format(now)}';
-
-      final taxAmount = cartState.totalAmount * (_taxPercent / 100);
+      final taxAmount = (cartState.totalAmount - _discountAmount > 0)
+          ? (cartState.totalAmount - _discountAmount) * (_taxPercent / 100)
+          : 0.0;
       final grandTotal = cartState.totalAmount + taxAmount - _discountAmount;
 
       final sessionService = getIt<SessionService>();
@@ -182,48 +1194,50 @@ class _CheckoutPageState extends State<CheckoutPage> {
         businessId: businessId,
       );
 
-      // Process transaction with stock update
       final transactionService = getIt<TransactionService>();
       await transactionService.processTransaction(transaction);
-
-      // Trigger background sync to push changes to Firebase immediately
       getIt<SyncService>().fullSync();
 
-      // Close loading
-      if (!mounted) return;
-      Navigator.pop(context);
+      if (mounted) {
+        context.read<TransactionBloc>().add(LoadTransactions());
+        context.read<ReportBloc>().add(LoadDailyReport(DateTime.now()));
+        context.read<ProductBloc>().add(LoadProducts());
+      }
 
-      // Show success with AppToast
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading
+
       AppToast.showSuccess(context, 'Transaksi berhasil!');
 
-      // Print Receipt if printer is connected
       final printerService = PrinterService();
-      if (printerService.isConnected) {
-        final businessState = context.read<BusinessBloc>().state;
+      if (shouldPrint && printerService.isConnected) {
         await printerService.printReceipt(
           transaction: transaction,
-          businessInfo: businessState.businessInfo,
+          businessInfo: businessInfo,
+        );
+      }
+
+      if (shouldSendWA) {
+        final customerPhone = cartState.customer?.phone;
+        await WhatsappService.shareReceipt(
+          transaction: transaction,
+          businessInfo: businessInfo,
+          phoneNumber: customerPhone,
         );
       }
 
       if (!mounted) return;
-
-      // Clear cart
       context.read<CartBloc>().add(ClearCart());
+      setState(() {
+        _selectedPromo = null;
+        _itemNotes.clear();
+      });
 
-      // Show success dialog with Share options
       if (!mounted) return;
       await _showSuccessDialog(context, transaction);
-
-      // Navigate back to Kasir
-      if (!mounted) return;
-      Navigator.pop(context);
     } catch (e) {
-      // Close loading
       if (!mounted) return;
       Navigator.pop(context);
-
-      // Show error with AppToast
       AppToast.showError(context, 'Gagal memproses transaksi: $e');
     }
   }
@@ -240,164 +1254,27 @@ class _CheckoutPageState extends State<CheckoutPage> {
     return showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Column(
-          children: [
-            Icon(
-              Icons.check_circle_outline,
-              color: AppColors.success,
-              size: 64,
-            ),
-            SizedBox(height: 16),
-            Text('Transaksi Berhasil!', textAlign: TextAlign.center),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Invoice: ${transaction.transactionCode}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Total: ${NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(transaction.totalAmount)}',
-            ),
-          ],
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Column(
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      final printerService = PrinterService();
-                      await printerService.printReceipt(
-                        transaction: transaction,
-                        businessInfo: businessInfo,
-                      );
-                    },
-                    icon: const Icon(Icons.print_outlined),
-                    label: const Text('Cetak Struk'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      await WhatsappService.shareReceipt(
-                        transaction: transaction,
-                        businessInfo: businessInfo,
-                        phoneNumber: customerPhone,
-                      );
-                    },
-                    icon: const Icon(Icons.share_outlined),
-                    label: const Text('Kirim via WhatsApp'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF25D366),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Selesai'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+      builder: (dialogContext) => TransactionSuccessDialog(
+        transaction: transaction,
+        businessInfo: businessInfo,
+        customerPhone: customerPhone,
+        onNewTransaction: () {
+          Navigator.pop(dialogContext);
+          if (widget.onBackToKasir != null) {
+            widget.onBackToKasir!();
+          } else if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+        },
+        onBackToKasir: () {
+          Navigator.pop(dialogContext);
+          if (widget.onBackToKasir != null) {
+            widget.onBackToKasir!();
+          } else if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          }
+        },
       ),
-    );
-  }
-
-  Widget _buildCustomerSelector() {
-    return BlocBuilder<CartBloc, CartState>(
-      builder: (context, state) {
-        final customer = state.customer;
-        return Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(100),
-            border: Border.all(color: Colors.teal.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.person_outline,
-                color: customer == null ? Colors.grey : Colors.teal,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      customer?.name ?? 'Pilih Pelanggan',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: customer == null ? Colors.grey : null,
-                      ),
-                    ),
-                    if (customer != null)
-                      Text(
-                        customer.phone ?? 'Tanpa nomor telepon',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              if (customer != null)
-                IconButton(
-                  icon: const Icon(
-                    Icons.close,
-                    size: 18,
-                    color: AppColors.error,
-                  ),
-                  onPressed: () =>
-                      context.read<CartBloc>().add(SetCartCustomer(null)),
-                ),
-              TextButton(
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 24,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                ),
-                onPressed: () => _showCustomerPicker(customer),
-                child: Text(customer == null ? 'PILIH' : 'GANTI'),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -408,91 +1285,76 @@ class _CheckoutPageState extends State<CheckoutPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (contextSheet) => DraggableScrollableSheet(
-        initialChildSize: 0.8,
-        maxChildSize: 0.95,
-        minChildSize: 0.5,
+        initialChildSize: 0.75,
+        maxChildSize: 0.9,
+        minChildSize: 0.4,
         expand: false,
         builder: (contextSheet, scrollController) {
+          final searchCtrl = TextEditingController();
           return StatefulBuilder(
             builder: (contextSheet, setStateSheet) {
               return Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(contextSheet).scaffoldBackgroundColor,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
                 child: Column(
                   children: [
-                    // Handle
                     Container(
-                      margin: const EdgeInsets.symmetric(vertical: 12),
-                      width: 40,
+                      margin: const EdgeInsets.symmetric(vertical: 10),
+                      width: 36,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: AppColors.divider,
+                        color: const Color(0xFFCBD5E1),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 10, 8),
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
                             'Pilih Pelanggan',
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 17,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          TextButton.icon(
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              backgroundColor: AppColors.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(100),
-                              ),
-                            ),
-                            onPressed: () async {
-                              await Navigator.push(
-                                contextSheet,
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(contextSheet);
+                              Navigator.push(
+                                context,
                                 MaterialPageRoute(
                                   builder: (_) => const AddEditCustomerPage(),
                                 ),
                               );
-                              // Refresh customers after adding
-                              if (context.mounted) {
-                                context.read<CustomerBloc>().add(
-                                  LoadCustomers(),
-                                );
-                              }
                             },
-                            icon: const Icon(Icons.person_add_alt_1_outlined),
-                            label: const Text('Tambah Baru'),
+                            child: const Icon(Icons.person_add_alt_1),
                           ),
                         ],
                       ),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 8,
+                        horizontal: 16,
+                        vertical: 4,
                       ),
                       child: TextField(
-                        onChanged: (value) => setStateSheet(() {}),
-                        controller: _customerSearchController,
+                        controller: searchCtrl,
+                        onChanged: (_) => setStateSheet(() {}),
                         decoration: InputDecoration(
                           hintText: 'Cari nama atau telepon...',
-                          prefixIcon: const Icon(Icons.search),
-                          fillColor: Theme.of(contextSheet).cardColor,
+                          prefixIcon: const Icon(Icons.search, size: 20),
                           filled: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 0,
-                          ),
+                          fillColor: const Color(0xFFF1F5F9),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 10,
                           ),
                         ),
                       ),
@@ -500,111 +1362,75 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     Expanded(
                       child: BlocBuilder<CustomerBloc, CustomerState>(
                         builder: (context, state) {
-                          if (state.isLoading && state.customers.isEmpty) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          }
-
-                          final query = _customerSearchController.text
-                              .toLowerCase();
-                          final filteredCustomers = state.customers.where((c) {
+                          final query = searchCtrl.text.toLowerCase();
+                          final filtered = state.customers.where((c) {
                             return c.name.toLowerCase().contains(query) ||
                                 (c.phone?.contains(query) ?? false);
                           }).toList();
 
-                          if (filteredCustomers.isEmpty) {
-                            return Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.person_search_outlined,
-                                    size: 64,
-                                    color: AppColors.textDisabled.withValues(
-                                      alpha: 0.5,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  const Text(
-                                    'Tidak ada pelanggan ditemukan',
-                                    style: TextStyle(
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-
                           return ListView.builder(
                             controller: scrollController,
-                            padding: const EdgeInsets.all(12),
-                            itemCount: filteredCustomers.length,
+                            itemCount: filtered.length + 1,
                             itemBuilder: (context, index) {
-                              final customer = filteredCustomers[index];
-                              final isSelected =
-                                  currentCustomer?.id == customer.id;
-
-                              return Card(
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  side: BorderSide(
-                                    color: isSelected
-                                        ? AppColors.primary
-                                        : (Theme.of(contextSheet).brightness == Brightness.dark
-                                            ? Colors.white.withValues(alpha: 0.1)
-                                            : AppColors.divider),
-                                    width: isSelected ? 2 : 1,
-                                  ),
-                                ),
-                                margin: const EdgeInsets.only(bottom: 8),
-                                child: ListTile(
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 4,
-                                  ),
-                                  leading: CircleAvatar(
-                                    backgroundColor: isSelected
-                                        ? AppColors.primary
-                                        : AppColors.primary.withValues(
-                                            alpha: 0.1,
-                                          ),
-                                    child: Text(
-                                      customer.name
-                                          .substring(0, 1)
-                                          .toUpperCase(),
-                                      style: TextStyle(
-                                        color: isSelected
-                                            ? Colors.white
-                                            : AppColors.primary,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                              if (index == 0) {
+                                return ListTile(
+                                  leading: const CircleAvatar(
+                                    backgroundColor: Color(0xFFF1F5F9),
+                                    child: Icon(
+                                      Icons.people_alt_outlined,
+                                      size: 20,
                                     ),
                                   ),
-                                  title: Text(
-                                    customer.name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  subtitle: Text(
-                                    customer.phone ?? 'Tanpa nomor telepon',
-                                  ),
-                                  trailing: isSelected
+                                  title: const Text('Pelanggan Umum / Walk-in'),
+                                  trailing: currentCustomer == null
                                       ? const Icon(
-                                          Icons.check_circle,
+                                          Icons.check,
                                           color: AppColors.primary,
                                         )
                                       : null,
                                   onTap: () {
                                     context.read<CartBloc>().add(
-                                      SetCartCustomer(customer),
+                                      SetCartCustomer(null),
                                     );
                                     Navigator.pop(contextSheet);
                                   },
+                                );
+                              }
+
+                              final customer = filtered[index - 1];
+                              final isSelected =
+                                  currentCustomer?.id == customer.id;
+
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: AppColors.primaryLight,
+                                  child: Text(
+                                    customer.name.substring(0, 1).toUpperCase(),
+                                    style: const TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
+                                title: Text(
+                                  customer.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                subtitle: Text(customer.phone ?? '-'),
+                                trailing: isSelected
+                                    ? const Icon(
+                                        Icons.check,
+                                        color: AppColors.primary,
+                                      )
+                                    : null,
+                                onTap: () {
+                                  context.read<CartBloc>().add(
+                                    SetCartCustomer(customer),
+                                  );
+                                  Navigator.pop(contextSheet);
+                                },
                               );
                             },
                           );
@@ -621,433 +1447,228 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.shopping_cart_outlined,
-            size: 100,
-            color: AppColors.textDisabled.withValues(alpha: 0.2),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Keranjang belanja kosong',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCartItem(
-    BuildContext context,
-    dynamic item,
-    NumberFormat formatter,
-  ) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : AppColors.background,
-                borderRadius: BorderRadius.circular(100),
+  void _showPromoPicker() {
+    context.read<PromoBloc>().add(LoadPromos());
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.65,
+          maxChildSize: 0.85,
+          minChildSize: 0.4,
+          expand: false,
+          builder: (sheetContext, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
-              child: const Icon(
-                Icons.fastfood_outlined,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.productName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                  Container(
+                    margin: const EdgeInsets.all(10),
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  Text(
-                    '${formatter.format(item.price)} x ${item.quantity}',
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text(
+                      'Pilih Voucher Promo',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: BlocBuilder<PromoBloc, PromoState>(
+                      builder: (context, state) {
+                        if (state.isLoading) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                            ),
+                          );
+                        }
+
+                        final now = DateTime.now();
+                        final activePromos = state.promos.where((p) {
+                          if (!p.isActive) return false;
+                          if (p.startDate != null) {
+                            final startDay = DateTime(
+                              p.startDate!.year,
+                              p.startDate!.month,
+                              p.startDate!.day,
+                            );
+                            if (now.isBefore(startDay)) return false;
+                          }
+                          if (p.endDate != null) {
+                            final endDay = DateTime(
+                              p.endDate!.year,
+                              p.endDate!.month,
+                              p.endDate!.day,
+                              23,
+                              59,
+                              59,
+                            );
+                            if (now.isAfter(endDay)) return false;
+                          }
+                          return true;
+                        }).toList();
+
+                        if (activePromos.isEmpty) {
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(14),
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFF1F5F9),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.confirmation_number_outlined,
+                                      size: 32,
+                                      color: Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    'Tidak ada promo aktif saat ini',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Buat promo baru melalui menu Promo untuk memberikan diskon transaksi.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
+                        final cartTotal = context
+                            .read<CartBloc>()
+                            .state
+                            .totalAmount;
+
+                        return ListView.separated(
+                          controller: scrollController,
+                          padding: const EdgeInsets.all(16),
+                          itemCount: activePromos.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final promo = activePromos[index];
+                            final bool isDisabled =
+                                cartTotal < promo.minPurchase;
+
+                            return InkWell(
+                              onTap: isDisabled
+                                  ? null
+                                  : () {
+                                      setState(() => _selectedPromo = promo);
+                                      Navigator.pop(modalContext);
+                                    },
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: isDisabled
+                                      ? const Color(0xFFF8FAFC)
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isDisabled
+                                        ? const Color(0xFFE2E8F0)
+                                        : AppColors.primary,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.confirmation_number_outlined,
+                                      color: isDisabled
+                                          ? const Color(0xFF94A3B8)
+                                          : AppColors.primary,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            promo.name,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                              color: isDisabled
+                                                  ? const Color(0xFF94A3B8)
+                                                  : const Color(0xFF0F172A),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            promo.minPurchase > 0
+                                                ? 'Min. Belanja: Rp ${NumberFormat('#,###', 'id_ID').format(promo.minPurchase)}'
+                                                : 'Tanpa minimum belanja',
+                                            style: TextStyle(
+                                              fontSize: 11.5,
+                                              color: isDisabled
+                                                  ? const Color(0xFF94A3B8)
+                                                  : const Color(0xFF64748B),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (isDisabled)
+                                      const Text(
+                                        'Belum Cukup',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Color(0xFFDC2626),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      )
+                                    else
+                                      const Icon(
+                                        Icons.chevron_right,
+                                        color: AppColors.primary,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
                     ),
                   ),
                 ],
               ),
-            ),
-            Row(
-              children: [
-                _buildQtyButton(
-                  icon: Icons.remove,
-                  onTap: () => context.read<CartBloc>().add(
-                    DecreaseQuantity(item.productId),
-                  ),
-                ),
-                SizedBox(
-                  width: 30,
-                  child: Text(
-                    '${item.quantity}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                _buildQtyButton(
-                  icon: Icons.add,
-                  onTap: () => context.read<CartBloc>().add(
-                    IncrementQuantity(item.productId),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(
-                    Icons.delete_outline,
-                    color: AppColors.error,
-                  ),
-                  onPressed: () => context.read<CartBloc>().add(
-                    RemoveFromCart(item.productId),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQtyButton({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white.withValues(alpha: 0.1)
-                : AppColors.divider,
-          ),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Icon(icon, size: 16),
-      ),
-    );
-  }
-
-  Widget _buildOrderSummary(
-    BuildContext context,
-    CartState state,
-    NumberFormat formatter,
-  ) {
-    final taxAmount = state.totalAmount * (_taxPercent / 100);
-    final grandTotal = state.totalAmount + taxAmount - _discountAmount;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      width: double.infinity,
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        color: Theme.of(context).cardColor,
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.black.withValues(alpha: 0.3)
-                : Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          _buildSummaryRow('Subtotal', formatter.format(state.totalAmount)),
-          _buildSummaryRow(
-            'Pajak ($_taxPercent%)',
-            formatter.format(taxAmount),
-          ),
-          if (_discountAmount > 0)
-            _buildSummaryRow(
-              'Diskon',
-              '- ${formatter.format(_discountAmount)}',
-              isDiscount: true,
-            ),
-          const Divider(height: 24),
-          _buildSummaryRow(
-            'Total',
-            formatter.format(grandTotal),
-            isTotal: true,
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: TextButton(
-              onPressed: () => _showPaymentDialog(context, state),
-              style: ButtonStyle(),
-              child: const Text(
-                'BAYAR SEKARANG',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPromoSelector() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: Colors.pinkAccent.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.confirmation_number_outlined,
-            color: _selectedPromo == null ? Colors.grey : Colors.pinkAccent,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _selectedPromo?.name ?? 'Gunakan Promo',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: _selectedPromo == null ? Colors.grey : null,
-                  ),
-                ),
-                if (_selectedPromo != null)
-                  Text(
-                    _selectedPromo!.type == PromoType.percentage
-                        ? 'Diskon ${_selectedPromo!.value.toStringAsFixed(0)}%'
-                        : 'Potongan Rp ${NumberFormat('#,###', 'id_ID').format(_selectedPromo!.value)}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.pinkAccent,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          if (_selectedPromo != null)
-            IconButton(
-              icon: const Icon(Icons.close, size: 18, color: AppColors.error),
-              onPressed: () => setState(() => _selectedPromo = null),
-            ),
-          TextButton(
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(100),
-              ),
-            ),
-            onPressed: () => _showPromoPicker(),
-            child: Text(_selectedPromo == null ? 'PILIH' : 'GANTI'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showPromoPicker() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        context.read<PromoBloc>().add(LoadPromos());
-        return DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          maxChildSize: 0.9,
-          minChildSize: 0.5,
-          expand: false,
-          builder: (context, scrollController) {
-            return Column(
-              children: [
-                Container(
-                  margin: const EdgeInsets.all(8),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text(
-                    'Pilih Promo',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Expanded(
-                  child: BlocBuilder<PromoBloc, PromoState>(
-                    builder: (context, state) {
-                      final activePromos = state.promos.where((p) {
-                        final now = DateTime.now();
-                        final isNotFuture =
-                            p.startDate == null || p.startDate!.isBefore(now);
-                        final isNotExpired =
-                            p.endDate == null || p.endDate!.isAfter(now);
-                        return p.isActive && isNotFuture && isNotExpired;
-                      }).toList();
-
-                      if (state.isLoading && state.promos.isEmpty) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (activePromos.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text('Tidak ada promo aktif'),
-                              const SizedBox(height: 12),
-                              TextButton.icon(
-                                onPressed: () {
-                                  Navigator.pop(context); // Close picker
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const PromoPage(),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.add),
-                                label: const Text('Kelola Promo'),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      final cartTotal = context
-                          .read<CartBloc>()
-                          .state
-                          .totalAmount;
-
-                      return ListView.builder(
-                        controller: scrollController,
-                        itemCount: activePromos.length,
-                        itemBuilder: (context, index) {
-                          final promo = activePromos[index];
-                          final bool isDisabled = cartTotal < promo.minPurchase;
-
-                          return ListTile(
-                            leading: Icon(
-                              Icons.confirmation_number_outlined,
-                              color: isDisabled
-                                  ? Colors.grey
-                                  : Colors.pinkAccent,
-                            ),
-                            title: Text(
-                              promo.name,
-                              style: TextStyle(
-                                decoration: isDisabled
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                                color: isDisabled ? Colors.grey : null,
-                              ),
-                            ),
-                            subtitle: Text(
-                              promo.minPurchase > 0
-                                  ? 'Min. Belanja: Rp ${NumberFormat('#,###', 'id_ID').format(promo.minPurchase)}'
-                                  : 'Tanpa minimum belanja',
-                              style: TextStyle(
-                                color: isDisabled
-                                    ? AppColors.error.withValues(alpha: 0.5)
-                                    : null,
-                              ),
-                            ),
-                            trailing: isDisabled
-                                ? const Text(
-                                    'Belum cukup',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: AppColors.error,
-                                    ),
-                                  )
-                                : const Icon(Icons.chevron_right),
-                            onTap: isDisabled
-                                ? null
-                                : () {
-                                    setState(() => _selectedPromo = promo);
-                                    Navigator.pop(context);
-                                  },
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
             );
           },
         );
       },
-    );
-  }
-
-  Widget _buildSummaryRow(
-    String label,
-    String value, {
-    bool isTotal = false,
-    bool isDiscount = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: isTotal ? 18 : 14,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-              color: isTotal ? null : AppColors.textSecondary,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: isTotal ? 20 : 14,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
-              color: isDiscount
-                  ? Colors.green
-                  : isTotal
-                      ? AppColors.primary
-                      : null,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

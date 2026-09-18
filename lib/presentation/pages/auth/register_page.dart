@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_svg/svg.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
@@ -56,13 +57,20 @@ class _RegisterPageState extends State<RegisterPage> {
             AppToast.showError(context, state.message);
           }
           if (state is Authenticated) {
-            AppToast.showSuccess(
-              context,
-              'Akun berhasil dibuat! Silakan atur bisnis Anda.',
-            );
+            if (!state.user.isEmailVerified) {
+              AppToast.showSuccess(
+                context,
+                'Akun berhasil dibuat! Silakan cek email untuk verifikasi.',
+              );
+            } else {
+              AppToast.showSuccess(
+                context,
+                'Akun berhasil dibuat! Silakan atur bisnis Anda.',
+              );
+            }
             Navigator.pop(
               context,
-            ); // Go back to AuthWrapper which will show BusinessSetupPage
+            ); // Go back to AuthWrapper which will show EmailVerificationPage or BusinessSetupPage
           }
         },
         child: SingleChildScrollView(
@@ -71,9 +79,18 @@ class _RegisterPageState extends State<RegisterPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const SizedBox(height: 60),
+                // Logo & Header
+                Center(
+                  child: SvgPicture.asset(
+                    "assets/icons/logo.svg",
+                    height: 84,
+                  ).animate().scale(duration: 600.ms, curve: Curves.bounceIn),
+                ),
                 const SizedBox(height: 20),
                 Text(
                   'Buat Akun Baru',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -83,6 +100,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 const SizedBox(height: 8),
                 Text(
                   'Mulai kelola bisnis Anda dengan Laci POS',
+                  textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16, color: textSecondaryColor),
                 ).animate().fadeIn(delay: 200.ms),
                 const SizedBox(height: 40),
@@ -224,13 +242,13 @@ class _RegisterPageState extends State<RegisterPage> {
                     return ElevatedButton(
                       onPressed: isLoading ? null : _handleRegister,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryDark,
+                        backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        elevation: 4,
+                        elevation: 0,
                       ),
                       child: isLoading
                           ? const SizedBox(
@@ -292,7 +310,7 @@ class _RegisterPageState extends State<RegisterPage> {
     if (_formKey.currentState!.validate()) {
       context.read<AuthBloc>().add(
         SignUpRequested(
-          email: _emailController.text.trim(),
+          email: _emailController.text.trim().toLowerCase(),
           password: _passwordController.text,
         ),
       );

@@ -150,6 +150,7 @@ Future<void> initializeDependencies() async {
     () => BusinessFirebaseDataSourceImpl(
       firestore: getIt(),
       sessionService: getIt(),
+      categoryDataSource: getIt(),
     ),
   );
 

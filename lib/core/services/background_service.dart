@@ -1,6 +1,9 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../firebase_options.dart';
 import 'notification_service.dart';
 import '../constants/firebase_collections.dart';
 
@@ -8,7 +11,9 @@ import '../constants/firebase_collections.dart';
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     try {
-      await Firebase.initializeApp();
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
       final businessId = inputData?['businessId'];
 
       if (task == "dailySalesSummary" && businessId != null) {
@@ -45,6 +50,7 @@ void callbackDispatcher() {
       }
       return Future.value(true);
     } catch (e) {
+      debugPrint('Background task error: $e');
       return Future.value(false);
     }
   });
@@ -52,18 +58,28 @@ void callbackDispatcher() {
 
 class BackgroundService {
   static Future<void> init() async {
-    await Workmanager().initialize(callbackDispatcher);
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
+    try {
+      await Workmanager().initialize(callbackDispatcher);
+    } catch (e) {
+      debugPrint('Error initializing Workmanager: $e');
+    }
   }
 
   static Future<void> scheduleDailySummary(String businessId) async {
-    await Workmanager().registerPeriodicTask(
-      "dailySalesSummaryTask",
-      "dailySalesSummary",
-      frequency: const Duration(hours: 24),
-      inputData: {'businessId': businessId},
-      initialDelay: _calculateInitialDelay(),
-      constraints: Constraints(networkType: NetworkType.connected),
-    );
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
+    try {
+      await Workmanager().registerPeriodicTask(
+        "dailySalesSummaryTask",
+        "dailySalesSummary",
+        frequency: const Duration(hours: 24),
+        inputData: {'businessId': businessId},
+        initialDelay: _calculateInitialDelay(),
+        constraints: Constraints(networkType: NetworkType.connected),
+      );
+    } catch (e) {
+      debugPrint('Error scheduling daily summary task: $e');
+    }
   }
 
   static Duration _calculateInitialDelay() {

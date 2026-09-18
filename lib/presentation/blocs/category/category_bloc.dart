@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/category_entity.dart';
@@ -10,6 +12,15 @@ abstract class CategoryEvent extends Equatable {
 }
 
 class LoadCategories extends CategoryEvent {}
+
+class ResetCategories extends CategoryEvent {}
+
+class _CategoriesUpdated extends CategoryEvent {
+  final Either<String, List<Category>> result;
+  _CategoriesUpdated(this.result);
+  @override
+  List<Object?> get props => [result];
+}
 
 class CreateCategory extends CategoryEvent {
   final Category category;
@@ -76,9 +87,12 @@ class CategoryError extends CategoryState {
 
 class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
   final CategoryRepository repository;
+  StreamSubscription<Either<String, List<Category>>>? _categoriesSubscription;
 
   CategoryBloc({required this.repository}) : super(const CategoryState()) {
     on<LoadCategories>(_onLoadCategories);
+    on<_CategoriesUpdated>(_onCategoriesUpdated);
+    on<ResetCategories>(_onResetCategories);
     on<CreateCategory>(_onCreateCategory);
     on<UpdateCategory>(_onUpdateCategory);
     on<DeleteCategory>(_onDeleteCategory);
@@ -89,19 +103,35 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
     Emitter<CategoryState> emit,
   ) async {
     emit(state.copyWith(isLoading: true));
-    await emit.forEach(
-      repository.getCategories(),
-      onData: (result) {
-        return result.fold(
-          (error) => CategoryError(error, state.categories),
-          (categories) => CategoryState(
-            categories: categories,
-            isLoading: false,
-            isSuccess: true,
-          ),
-        );
-      },
+    await _categoriesSubscription?.cancel();
+    _categoriesSubscription = repository.getCategories().listen((result) {
+      add(_CategoriesUpdated(result));
+    });
+  }
+
+  void _onCategoriesUpdated(
+    _CategoriesUpdated event,
+    Emitter<CategoryState> emit,
+  ) {
+    event.result.fold(
+      (error) => emit(CategoryError(error, state.categories)),
+      (categories) => emit(
+        CategoryState(
+          categories: categories,
+          isLoading: false,
+          isSuccess: true,
+        ),
+      ),
     );
+  }
+
+  Future<void> _onResetCategories(
+    ResetCategories event,
+    Emitter<CategoryState> emit,
+  ) async {
+    await _categoriesSubscription?.cancel();
+    _categoriesSubscription = null;
+    emit(const CategoryState());
   }
 
   Future<void> _onCreateCategory(
@@ -144,5 +174,11 @@ class CategoryBloc extends Bloc<CategoryEvent, CategoryState> {
         CategoryActionSuccess('Kategori berhasil dihapus', state.categories),
       ),
     );
+  }
+
+  @override
+  Future<void> close() {
+    _categoriesSubscription?.cancel();
+    return super.close();
   }
 }

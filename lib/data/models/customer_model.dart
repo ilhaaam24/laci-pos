@@ -110,7 +110,6 @@ class CustomerModel extends Customer {
     );
   }
 
-  @override
   CustomerModel copyWith({
     String? id,
     String? name,

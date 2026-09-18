@@ -15,6 +15,9 @@ abstract class AuthRepository {
 
   Future<Either<String, void>> signOut();
 
+  Future<Either<String, void>> sendEmailVerification();
+  Future<Either<String, bool>> checkEmailVerified();
+
   Future<Either<String, UserEntity?>> getCurrentUser();
 
   Stream<UserEntity?> get authStateChanges;

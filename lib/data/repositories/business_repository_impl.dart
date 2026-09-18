@@ -31,7 +31,8 @@ class BusinessRepositoryImpl implements BusinessRepository {
       );
 
       // Always try local first, but ONLY if it matches the current session businessId
-      final localModel = await localDataSource.getBusinessInfo();
+      final localModel =
+          await localDataSource.getBusinessInfo(currentBusinessId);
       log(
         'BusinessRepository: localModel: ${localModel?.id} (${localModel?.businessName})',
       );

@@ -11,6 +11,8 @@ abstract class BusinessEvent extends Equatable {
 
 class LoadBusinessInfo extends BusinessEvent {}
 
+class ResetBusinessInfo extends BusinessEvent {}
+
 class UpdateBusinessInfo extends BusinessEvent {
   final BusinessInfo businessInfo;
   UpdateBusinessInfo(this.businessInfo);
@@ -55,7 +57,15 @@ class BusinessBloc extends Bloc<BusinessEvent, BusinessState> {
 
   BusinessBloc({required this.repository}) : super(const BusinessState()) {
     on<LoadBusinessInfo>(_onLoadBusinessInfo);
+    on<ResetBusinessInfo>(_onResetBusinessInfo);
     on<UpdateBusinessInfo>(_onUpdateBusinessInfo);
+  }
+
+  void _onResetBusinessInfo(
+    ResetBusinessInfo event,
+    Emitter<BusinessState> emit,
+  ) {
+    emit(const BusinessState());
   }
 
   Future<void> _onLoadBusinessInfo(

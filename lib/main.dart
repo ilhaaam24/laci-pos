@@ -1,15 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:laci/core/services/connectivity_service.dart';
 import 'package:laci/core/themes/theme.dart';
-import 'package:laci/core/services/notification_service.dart';
-import 'package:laci/core/services/background_service.dart';
-import 'package:laci/presentation/blocs/users/users_bloc.dart';
-
+import 'package:laci/firebase_options.dart';
 import 'core/di/injection.dart';
-
 import 'presentation/blocs/product/product_bloc.dart';
 import 'presentation/blocs/category/category_bloc.dart';
 import 'presentation/blocs/customer/customer_bloc.dart';
@@ -19,70 +16,38 @@ import 'presentation/blocs/cart/cart_bloc.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
 import 'presentation/blocs/report/report_bloc.dart';
 import 'presentation/blocs/promo/promo_bloc.dart';
-
+import 'presentation/blocs/users/users_bloc.dart';
+import 'package:flutter/foundation.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'core/services/background_service.dart';
+import 'core/services/notification_service.dart';
 import 'presentation/pages/auth/auth_wrapper.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
-  try {
-    // Initialize Firebase
-    await Firebase.initializeApp();
+  await initializeDateFormatting('id_ID', null);
 
-    // Initialize Google Sign In
-    await GoogleSignIn.instance.initialize(
-      serverClientId:
-          '747380789752-gpu0fjfv3k45a5o1aktjqs4b244j3mm4.apps.googleusercontent.com',
-    );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-    // Initialize Dependencies
-    await initializeDependencies();
+  await GoogleSignIn.instance.initialize(
+    clientId: Platform.isAndroid
+        ? DefaultFirebaseOptions.currentPlatform.androidClientId
+        : DefaultFirebaseOptions.currentPlatform.iosClientId,
+  );
 
-    // Initialize Connectivity Service
-    await getIt<ConnectivityService>().init();
+  await initializeDependencies();
 
-    // Initialize Notification Service
-    try {
-      await getIt<NotificationService>().init();
-    } catch (e) {
-      debugPrint('NotificationService init failed: $e');
-    }
-
-    // Initialize Background Service (Workmanager)
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
     await BackgroundService.init();
-
-    runApp(const MyApp());
-  } catch (error, stackTrace) {
-    debugPrint('Fatal Startup Error: $error\n$stackTrace');
-    runApp(
-      MaterialApp(
-        home: Scaffold(
-          body: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.red, size: 64),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Gagal Memulai Aplikasi',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    error.toString(),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey[700]),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+    await getIt<NotificationService>().init();
   }
+
+  FlutterNativeSplash.remove();
+
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -110,7 +75,7 @@ class MyApp extends StatelessWidget {
               getIt<ReportBloc>()..add(LoadDailyReport(DateTime.now())),
         ),
         BlocProvider(create: (_) => getIt<PromoBloc>()..add(LoadPromos())),
-        BlocProvider(create: (_) => getIt<UsersBloc>()..add(LoadUsers())),
+        BlocProvider(create: (_) => getIt<UsersBloc>()),
       ],
       child: MaterialApp(
         title: 'Laci POS',

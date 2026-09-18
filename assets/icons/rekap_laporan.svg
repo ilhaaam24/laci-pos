@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Dokumen Rekap Laporan -->
+  <path d="M10 7C10 5.9 10.9 5 12 5H28L38 15V26" stroke="#1E293B" stroke-width="2.5" fill="#E6F5EE"/>
+  
+  <!-- Lipatan Dokumen Atas -->
+  <path d="M28 5V15H38" stroke="#1E293B" stroke-width="2.2" fill="#CEEBDC"/>
+
+  <!-- Sisi Kiri & Bawah Dokumen -->
+  <path d="M10 7V41C10 42.1 10.9 43 12 43H24" stroke="#1E293B" stroke-width="2.5"/>
+
+  <!-- Grafik Bar Rekap POS -->
+  <rect x="15" y="27" width="3" height="8" rx="1" fill="#1E293B"/>
+  <rect x="21" y="22" width="3" height="13" rx="1" fill="#1E293B"/>
+  <rect x="27" y="18" width="3" height="17" rx="1" fill="#009951"/>
+  <line x1="14" y1="38" x2="31" y2="38" stroke="#1E293B" stroke-width="1.8"/>
+
+  <!-- Label Header PDF Hijau Brand -->
+  <rect x="15" y="11" width="10" height="4" rx="1.5" fill="#009951"/>
+
+  <!-- Badge Unduh (Download Circle + Arrow) -->
+  <g transform="translate(23, 23)">
+    <circle cx="12" cy="12" r="10" fill="#009951" stroke="#FFFFFF" stroke-width="2"/>
+    <path d="M12 7V15" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M8.5 12.5L12 16L15.5 12.5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="8" y1="18" x2="16" y2="18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+  </g>
+</svg>

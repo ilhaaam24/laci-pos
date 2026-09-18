@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:laci/core/constants/sync_status.dart';
 import 'package:laci/core/services/connectivity_service.dart';
 import 'package:laci/core/services/session_service.dart';
@@ -115,6 +116,11 @@ class SyncService {
 
     if (sessionService.businessId == null) {
       log('SyncService: No businessId found, skipping sync.');
+      return;
+    }
+
+    if (FirebaseAuth.instance.currentUser == null) {
+      log('SyncService: User not authenticated in Firebase, skipping sync.');
       return;
     }
 
@@ -369,7 +375,7 @@ class SyncService {
       if (data != null) {
         model = BusinessInfoModel.fromJson(data);
       } else {
-        model = await businessLocal.getBusinessInfo();
+        model = await businessLocal.getBusinessInfo(id);
       }
 
       if (model != null && model.id == id) {
@@ -408,7 +414,15 @@ class SyncService {
     await productLocal.upsertFromRemote(products);
 
     // 2. Pull Categories
-    final categories = await categoryRemote.getCategories().first;
+    var categories = await categoryRemote.getCategories().first;
+    final currentBusinessId = sessionService.businessId;
+    if (categories.isEmpty && (currentBusinessId?.isNotEmpty ?? false)) {
+      log('SyncService: No categories found for business $currentBusinessId, seeding defaults...');
+      final seeded = await categoryRemote.seedDefaultCategories(currentBusinessId!);
+      if (seeded.isNotEmpty) {
+        categories = seeded;
+      }
+    }
     await categoryLocal.upsertFromRemote(categories);
 
     // 3. Pull Customers

@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:dartz/dartz.dart';
 import 'package:uuid/uuid.dart';
+import '../../core/di/injection.dart';
 import '../../core/services/session_service.dart';
+import '../../core/services/sync_service.dart';
 import '../../domain/entities/customer_entity.dart';
 import '../../domain/repositories/customer_repository.dart';
 import '../datasources/firebase/customer_firebase_datasource.dart';
@@ -24,11 +26,21 @@ class CustomerRepositoryImpl implements CustomerRepository {
 
   String get _businessId => sessionService.businessId ?? '';
 
+  void _triggerSync() {
+    try {
+      getIt<SyncService>().fullSync();
+    } catch (_) {}
+  }
+
   @override
   Stream<Either<String, List<Customer>>> getCustomers() {
+    final businessId = _businessId;
+    if (businessId.isEmpty) {
+      return Stream.value(const Right([]));
+    }
     try {
       return localDataSource
-          .watchCustomers(_businessId)
+          .watchCustomers(businessId)
           .map((models) => Right<String, List<Customer>>(models));
     } catch (e) {
       return Stream.value(Left(e.toString()));
@@ -68,6 +80,9 @@ class CustomerRepositoryImpl implements CustomerRepository {
         data: jsonEncode(model.toJson()),
       );
 
+      // 3. Trigger immediate sync
+      _triggerSync();
+
       return Right(model.id);
     } catch (e) {
       return Left(e.toString());
@@ -93,6 +108,9 @@ class CustomerRepositoryImpl implements CustomerRepository {
         data: jsonEncode(model.toJson()),
       );
 
+      // 3. Trigger immediate sync
+      _triggerSync();
+
       return const Right(null);
     } catch (e) {
       return Left(e.toString());
@@ -112,6 +130,9 @@ class CustomerRepositoryImpl implements CustomerRepository {
         operation: 'delete',
         businessId: _businessId,
       );
+
+      // 3. Trigger immediate sync
+      _triggerSync();
 
       return const Right(null);
     } catch (e) {

@@ -16,7 +16,7 @@ class PromoEntity extends Equatable {
   const PromoEntity({
     required this.id,
     required this.name,
-    required this.type,
+    this.type = PromoType.fixed,
     required this.value,
     this.minPurchase = 0,
     this.isActive = true,

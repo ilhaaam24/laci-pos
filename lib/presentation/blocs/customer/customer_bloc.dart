@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/customer_entity.dart';
@@ -10,6 +12,15 @@ abstract class CustomerEvent extends Equatable {
 }
 
 class LoadCustomers extends CustomerEvent {}
+
+class ResetCustomers extends CustomerEvent {}
+
+class _CustomersUpdated extends CustomerEvent {
+  final Either<String, List<Customer>> result;
+  _CustomersUpdated(this.result);
+  @override
+  List<Object?> get props => [result];
+}
 
 class CreateCustomer extends CustomerEvent {
   final Customer customer;
@@ -76,9 +87,12 @@ class CustomerError extends CustomerState {
 
 class CustomerBloc extends Bloc<CustomerEvent, CustomerState> {
   final CustomerRepository repository;
+  StreamSubscription<Either<String, List<Customer>>>? _customersSubscription;
 
   CustomerBloc({required this.repository}) : super(const CustomerState()) {
     on<LoadCustomers>(_onLoadCustomers);
+    on<_CustomersUpdated>(_onCustomersUpdated);
+    on<ResetCustomers>(_onResetCustomers);
     on<CreateCustomer>(_onCreateCustomer);
     on<UpdateCustomer>(_onUpdateCustomer);
     on<DeleteCustomer>(_onDeleteCustomer);
@@ -89,19 +103,35 @@ class CustomerBloc extends Bloc<CustomerEvent, CustomerState> {
     Emitter<CustomerState> emit,
   ) async {
     emit(state.copyWith(isLoading: true));
-    await emit.forEach(
-      repository.getCustomers(),
-      onData: (result) {
-        return result.fold(
-          (error) => CustomerError(error, state.customers),
-          (customers) => CustomerState(
-            customers: customers,
-            isLoading: false,
-            isSuccess: true,
-          ),
-        );
-      },
+    await _customersSubscription?.cancel();
+    _customersSubscription = repository.getCustomers().listen((result) {
+      add(_CustomersUpdated(result));
+    });
+  }
+
+  void _onCustomersUpdated(
+    _CustomersUpdated event,
+    Emitter<CustomerState> emit,
+  ) {
+    event.result.fold(
+      (error) => emit(CustomerError(error, state.customers)),
+      (customers) => emit(
+        CustomerState(
+          customers: customers,
+          isLoading: false,
+          isSuccess: true,
+        ),
+      ),
     );
+  }
+
+  Future<void> _onResetCustomers(
+    ResetCustomers event,
+    Emitter<CustomerState> emit,
+  ) async {
+    await _customersSubscription?.cancel();
+    _customersSubscription = null;
+    emit(const CustomerState());
   }
 
   Future<void> _onCreateCustomer(
@@ -144,5 +174,11 @@ class CustomerBloc extends Bloc<CustomerEvent, CustomerState> {
         CustomerActionSuccess('Pelanggan berhasil dihapus', state.customers),
       ),
     );
+  }
+
+  @override
+  Future<void> close() {
+    _customersSubscription?.cancel();
+    return super.close();
   }
 }
