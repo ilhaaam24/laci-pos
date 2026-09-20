@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/product_entity.dart';
+import '../../domain/entities/product_variant.dart';
 
 class ProductModel extends Product {
   const ProductModel({
@@ -16,6 +17,8 @@ class ProductModel extends Product {
     required super.createdAt,
     required super.updatedAt,
     super.businessId,
+    super.variants = const [],
+    super.modifierGroups = const [],
   });
 
   factory ProductModel.fromFirestore(DocumentSnapshot doc) {
@@ -38,6 +41,22 @@ class ProductModel extends Product {
           ? (data['updatedAt'] as Timestamp).toDate()
           : DateTime.now(),
       businessId: data['businessId'],
+      variants: (data['variants'] as List<dynamic>?)
+              ?.map(
+                (v) => ProductVariant.fromJson(
+                  Map<String, dynamic>.from(v as Map),
+                ),
+              )
+              .toList() ??
+          const [],
+      modifierGroups: (data['modifierGroups'] as List<dynamic>?)
+              ?.map(
+                (g) => ModifierGroup.fromJson(
+                  Map<String, dynamic>.from(g as Map),
+                ),
+              )
+              .toList() ??
+          const [],
     );
   }
 
@@ -55,6 +74,8 @@ class ProductModel extends Product {
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'businessId': businessId,
+      'variants': variants.map((v) => v.toJson()).toList(),
+      'modifierGroups': modifierGroups.map((g) => g.toJson()).toList(),
     };
   }
 
@@ -73,6 +94,8 @@ class ProductModel extends Product {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'businessId': businessId,
+      'variants': variants.map((v) => v.toJson()).toList(),
+      'modifierGroups': modifierGroups.map((g) => g.toJson()).toList(),
     };
   }
 
@@ -95,6 +118,22 @@ class ProductModel extends Product {
           ? DateTime.parse(json['updatedAt'])
           : DateTime.now(),
       businessId: json['businessId'],
+      variants: (json['variants'] as List<dynamic>?)
+              ?.map(
+                (v) => ProductVariant.fromJson(
+                  Map<String, dynamic>.from(v as Map),
+                ),
+              )
+              .toList() ??
+          const [],
+      modifierGroups: (json['modifierGroups'] as List<dynamic>?)
+              ?.map(
+                (g) => ModifierGroup.fromJson(
+                  Map<String, dynamic>.from(g as Map),
+                ),
+              )
+              .toList() ??
+          const [],
     );
   }
 
@@ -113,6 +152,8 @@ class ProductModel extends Product {
       createdAt: createdAt,
       updatedAt: updatedAt,
       businessId: businessId,
+      variants: variants,
+      modifierGroups: modifierGroups,
     );
   }
 
@@ -131,6 +172,8 @@ class ProductModel extends Product {
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
       businessId: product.businessId,
+      variants: product.variants,
+      modifierGroups: product.modifierGroups,
     );
   }
 
@@ -148,6 +191,8 @@ class ProductModel extends Product {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? businessId,
+    List<ProductVariant>? variants,
+    List<ModifierGroup>? modifierGroups,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -163,6 +208,8 @@ class ProductModel extends Product {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       businessId: businessId ?? this.businessId,
+      variants: variants ?? this.variants,
+      modifierGroups: modifierGroups ?? this.modifierGroups,
     );
   }
 }

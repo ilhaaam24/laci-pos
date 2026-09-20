@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import '../../blocs/customer/customer_bloc.dart';
 import '../../../domain/entities/customer_entity.dart';
@@ -34,6 +33,13 @@ class _CustomersPageState extends State<CustomersPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final subtextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     final currencyFormatter = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',
@@ -41,26 +47,26 @@ class _CustomersPageState extends State<CustomersPage> {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: cardColor,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
+          icon: Icon(Icons.arrow_back, color: textColor),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Kelola Pelanggan',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF0F172A),
+            color: textColor,
           ),
         ),
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: borderColor),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -76,7 +82,7 @@ class _CustomersPageState extends State<CustomersPage> {
       ),
       body: Column(
         children: [
-          _buildSearchBar(),
+          _buildSearchBar(cardColor, bgColor, borderColor, textColor, subtextColor),
           Expanded(
             child: BlocConsumer<CustomerBloc, CustomerState>(
               listener: (context, state) {
@@ -103,7 +109,7 @@ class _CustomersPageState extends State<CustomersPage> {
                 }).toList();
 
                 if (filteredCustomers.isEmpty) {
-                  return _buildEmptyState();
+                  return _buildEmptyState(cardColor, borderColor, textColor, subtextColor);
                 }
 
                 return ListView.builder(
@@ -111,7 +117,7 @@ class _CustomersPageState extends State<CustomersPage> {
                   itemCount: filteredCustomers.length,
                   itemBuilder: (context, index) {
                     final customer = filteredCustomers[index];
-                    return _buildCustomerCard(customer, currencyFormatter);
+                    return _buildCustomerCard(customer, currencyFormatter, cardColor, borderColor, textColor, subtextColor);
                   },
                 );
               },
@@ -122,15 +128,21 @@ class _CustomersPageState extends State<CustomersPage> {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(
+    Color cardColor,
+    Color searchBg,
+    Color borderColor,
+    Color textColor,
+    Color subtextColor,
+  ) {
     return Container(
-      color: Colors.white,
+      color: cardColor,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
+          color: searchBg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: borderColor),
         ),
         child: TextField(
           controller: _searchController,
@@ -139,21 +151,21 @@ class _CustomersPageState extends State<CustomersPage> {
               _searchQuery = value;
             });
           },
-          style: const TextStyle(fontSize: 14, color: Color(0xFF0F172A)),
+          style: TextStyle(fontSize: 14, color: textColor),
           decoration: InputDecoration(
             hintText: 'Cari nama atau no. telepon...',
-            hintStyle: const TextStyle(fontSize: 14, color: Color(0xFF94A3B8)),
-            prefixIcon: const Icon(
+            hintStyle: TextStyle(fontSize: 14, color: subtextColor),
+            prefixIcon: Icon(
               Icons.search,
-              color: Color(0xFF64748B),
+              color: subtextColor,
               size: 20,
             ),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.clear,
                       size: 18,
-                      color: Color(0xFF64748B),
+                      color: subtextColor,
                     ),
                     onPressed: () {
                       _searchController.clear();
@@ -171,7 +183,14 @@ class _CustomersPageState extends State<CustomersPage> {
     );
   }
 
-  Widget _buildCustomerCard(Customer customer, NumberFormat formatter) {
+  Widget _buildCustomerCard(
+    Customer customer,
+    NumberFormat formatter,
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+    Color subtextColor,
+  ) {
     final initial = customer.name.trim().isNotEmpty
         ? customer.name.trim().substring(0, 1).toUpperCase()
         : 'P';
@@ -179,9 +198,9 @@ class _CustomersPageState extends State<CustomersPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: borderColor),
       ),
       child: InkWell(
         onTap: () => Navigator.push(
@@ -198,16 +217,15 @@ class _CustomersPageState extends State<CustomersPage> {
               Container(
                 width: 44,
                 height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE6F4F2),
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFCCECE8)),
                 ),
                 child: Center(
                   child: Text(
                     initial,
                     style: const TextStyle(
-                      color: AppColors.primary,
+                      color: AppColors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 17,
                     ),
@@ -221,37 +239,37 @@ class _CustomersPageState extends State<CustomersPage> {
                   children: [
                     Text(
                       customer.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
-                        color: Color(0xFF0F172A),
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 4),
                     if (customer.phone != null && customer.phone!.isNotEmpty)
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.phone_outlined,
                             size: 13,
-                            color: Color(0xFF64748B),
+                            color: subtextColor,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             customer.phone!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
-                              color: Color(0xFF64748B),
+                              color: subtextColor,
                             ),
                           ),
                         ],
                       )
                     else
-                      const Text(
+                      Text(
                         'Tidak ada nomor telepon',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF94A3B8),
+                          color: subtextColor,
                         ),
                       ),
                     const SizedBox(height: 4),
@@ -266,7 +284,7 @@ class _CustomersPageState extends State<CustomersPage> {
                   ],
                 ),
               ),
-              _buildPopupMenu(customer),
+              _buildPopupMenu(customer, cardColor, borderColor, textColor),
             ],
           ),
         ),
@@ -274,42 +292,47 @@ class _CustomersPageState extends State<CustomersPage> {
     );
   }
 
-  Widget _buildPopupMenu(Customer customer) {
+  Widget _buildPopupMenu(
+    Customer customer,
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+  ) {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, color: Color(0xFF64748B), size: 20),
-      color: Colors.white,
+      color: cardColor,
       elevation: 3,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
+        side: BorderSide(color: borderColor),
       ),
       itemBuilder: (context) => [
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'detail',
           child: Row(
             children: [
               Icon(
                 Icons.visibility_outlined,
                 size: 18,
-                color: Color(0xFF0F172A),
+                color: textColor,
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Text(
                 'Lihat Detail',
-                style: TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
+                style: TextStyle(fontSize: 13, color: textColor),
               ),
             ],
           ),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'edit',
           child: Row(
             children: [
-              Icon(Icons.edit_outlined, size: 18, color: Color(0xFF0F172A)),
-              SizedBox(width: 10),
+              Icon(Icons.edit_outlined, size: 18, color: textColor),
+              const SizedBox(width: 10),
               Text(
                 'Edit Pelanggan',
-                style: TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
+                style: TextStyle(fontSize: 13, color: textColor),
               ),
             ],
           ),
@@ -344,27 +367,45 @@ class _CustomersPageState extends State<CustomersPage> {
             ),
           );
         } else if (value == 'delete') {
-          _showDeleteDialog(context, customer);
+          _showDeleteDialog(context, customer, cardColor, borderColor, textColor);
         }
       },
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+    Color subtextColor,
+  ) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SvgPicture.asset("assets/icons/customer.svg", height: 64),
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: cardColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: borderColor),
+              ),
+              child: const Icon(
+                Icons.person_search_outlined,
+                size: 34,
+                color: Color(0xFF94A3B8),
+              ),
+            ),
             const SizedBox(height: 16),
             Text(
               _searchQuery.isNotEmpty
                   ? 'Pelanggan tidak ditemukan'
                   : 'Belum ada pelanggan',
-              style: const TextStyle(
-                color: Color(0xFF0F172A),
+              style: TextStyle(
+                color: textColor,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -372,10 +413,10 @@ class _CustomersPageState extends State<CustomersPage> {
             const SizedBox(height: 6),
             Text(
               _searchQuery.isNotEmpty
-                  ? 'Coba gunakan nama atau nomor telepon lain'
-                  : 'Daftarkan pelanggan untuk melacak riwayat transaksi & loyalitas',
+                  ? 'Coba gunakan kata kunci pencarian lainnya'
+                  : 'Tambahkan data pelanggan untuk mulai mencatat transaksi',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              style: TextStyle(color: subtextColor, fontSize: 13),
             ),
           ],
         ),
@@ -383,41 +424,51 @@ class _CustomersPageState extends State<CustomersPage> {
     );
   }
 
-  void _showDeleteDialog(BuildContext context, Customer customer) {
+  void _showDeleteDialog(
+    BuildContext context,
+    Customer customer,
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+  ) {
+    final subtextColor = Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: cardColor,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFE2E8F0)),
+          side: BorderSide(color: borderColor),
         ),
-        title: const Text(
+        title: Text(
           'Hapus Pelanggan?',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF0F172A),
+            color: textColor,
           ),
         ),
         content: Text(
           'Apakah Anda yakin ingin menghapus data pelanggan "${customer.name}"? Riwayat belanja pelanggan ini akan terlepas.',
-          style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+          style: TextStyle(fontSize: 14, color: subtextColor),
         ),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
           OutlinedButton(
             onPressed: () => Navigator.pop(dialogContext),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFFE2E8F0)),
+              side: BorderSide(color: borderColor),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text(
+            child: Text(
               'Batal',
-              style: TextStyle(color: Color(0xFF64748B)),
+              style: TextStyle(color: subtextColor),
             ),
           ),
           ElevatedButton(

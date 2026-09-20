@@ -181,9 +181,11 @@ class _PaymentDialogState extends State<PaymentDialog> {
   }
 
   void _showNumericKeypad(double total) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -236,7 +238,10 @@ class _PaymentDialogState extends State<PaymentDialog> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFCBD5E1),
+                        color:
+                            isDark
+                                ? const Color(0xFF334155)
+                                : const Color(0xFFCBD5E1),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -244,12 +249,15 @@ class _PaymentDialogState extends State<PaymentDialog> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Input Nominal Pembayaran',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F172A),
+                            color:
+                                isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0F172A),
                           ),
                         ),
                         InkWell(
@@ -272,18 +280,29 @@ class _PaymentDialogState extends State<PaymentDialog> {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
+                        color:
+                            isDark
+                                ? const Color(0xFF0F172A)
+                                : const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        border: Border.all(
+                          color:
+                              isDark
+                                  ? const Color(0xFF334155)
+                                  : const Color(0xFFE2E8F0),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Text(
+                          Text(
                             'Rp ',
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF475569),
+                              color:
+                                  isDark
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF475569),
                             ),
                           ),
                           Expanded(
@@ -292,18 +311,24 @@ class _PaymentDialogState extends State<PaymentDialog> {
                                   .format(displayVal)
                                   .replaceAll('Rp', '')
                                   .trim(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 26,
                                 fontWeight: FontWeight.w900,
-                                color: Color(0xFF0F172A),
+                                color:
+                                    isDark
+                                        ? Colors.white
+                                        : const Color(0xFF0F172A),
                               ),
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.backspace_outlined,
                               size: 20,
-                              color: Color(0xFF475569),
+                              color:
+                                  isDark
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF475569),
                             ),
                             onPressed: deleteDigit,
                           ),
@@ -338,19 +363,28 @@ class _PaymentDialogState extends State<PaymentDialog> {
                             borderRadius: BorderRadius.circular(10),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF1F5F9),
+                                color:
+                                    isDark
+                                        ? const Color(0xFF0F172A)
+                                        : const Color(0xFFF1F5F9),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: const Color(0xFFE2E8F0),
+                                  color:
+                                      isDark
+                                          ? const Color(0xFF334155)
+                                          : const Color(0xFFE2E8F0),
                                 ),
                               ),
                               child: Center(
                                 child: Text(
                                   digit,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF0F172A),
+                                    color:
+                                        isDark
+                                            ? Colors.white
+                                            : const Color(0xFF0F172A),
                                   ),
                                 ),
                               ),
@@ -421,8 +455,11 @@ class _PaymentDialogState extends State<PaymentDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor:
+          isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       body: SafeArea(
         child: BlocBuilder<PaymentBloc, PaymentState>(
           builder: (context, state) {
@@ -433,38 +470,42 @@ class _PaymentDialogState extends State<PaymentDialog> {
 
             return Column(
               children: [
-                _buildTopAppBar(),
+                _buildTopAppBar(isDark),
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                     children: [
                       // 1. Order Info Card
-                      _buildOrderInfoCard(),
+                      _buildOrderInfoCard(isDark),
                       const SizedBox(height: 16),
 
                       // 2. Total Tagihan Section
-                      _buildTotalTagihan(grandTotal),
+                      _buildTotalTagihan(grandTotal, isDark),
                       const SizedBox(height: 18),
 
                       // 3. Payment Method Pills
-                      _buildPaymentMethodSelector(),
+                      _buildPaymentMethodSelector(isDark),
                       const SizedBox(height: 18),
 
                       // 4. Content based on selected payment method
                       if (_selectedType == PaymentType.cash) ...[
-                        _buildCashPaymentSection(grandTotal, changeAmount),
+                        _buildCashPaymentSection(
+                          grandTotal,
+                          changeAmount,
+                          isDark,
+                        ),
                       ] else if (_selectedType == PaymentType.qris) ...[
-                        _buildQrisSection(grandTotal),
+                        _buildQrisSection(grandTotal, isDark),
                       ] else if (_selectedType == PaymentType.debit) ...[
-                        _buildDebitSection(grandTotal),
+                        _buildDebitSection(grandTotal, isDark),
                       ] else if (_selectedType == PaymentType.transfer) ...[
-                        _buildTransferSection(grandTotal),
+                        _buildTransferSection(grandTotal, isDark),
                       ],
 
                       const SizedBox(height: 16),
 
                       // 5. Setting Switches (Thermal Print & Send WA)
-                      _buildSettingSwitches(),
+                      _buildSettingSwitches(isDark),
                       const SizedBox(height: 20),
 
                       // 6. Action Button (Selesaikan & Cetak Struk)
@@ -482,7 +523,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
   }
 
   // App Bar: Back Arrow, Teal POS Icon, Pembayaran Title & Store Subtitle, Avatar
-  Widget _buildTopAppBar() {
+  Widget _buildTopAppBar(bool isDark) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
       child: BlocBuilder<BusinessBloc, BusinessState>(
@@ -496,37 +537,27 @@ class _PaymentDialogState extends State<PaymentDialog> {
           return Row(
             children: [
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.arrow_back_rounded,
-                  color: Color(0xFF0F172A),
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                   size: 24,
                 ),
                 onPressed: () => Navigator.pop(context),
               ),
               const SizedBox(width: 4),
-              // Container(
-              //   width: 36,
-              //   height: 36,
-              //   decoration: BoxDecoration(
-              //     color: AppColors.primary,
-              //     borderRadius: BorderRadius.circular(10),
-              //   ),
-              //   child: const Center(
-              //     child: Icon(
-              //       Icons.point_of_sale_rounded,
-              //       color: Colors.white,
-              //       size: 20,
-              //     ),
-              //   ),
-              // ),
               if (businessLogo.isNotEmpty)
                 Container(
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(
+                      color:
+                          isDark
+                              ? const Color(0xFF334155)
+                              : const Color(0xFFE2E8F0),
+                    ),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(9),
@@ -540,10 +571,13 @@ class _PaymentDialogState extends State<PaymentDialog> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       ),
-                      errorWidget: (context, url, error) => const Center(
+                      errorWidget: (context, url, error) => Center(
                         child: Icon(
                           Icons.storefront_rounded,
-                          color: Color(0xFF64748B),
+                          color:
+                              isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
                           size: 20,
                         ),
                       ),
@@ -554,21 +588,24 @@ class _PaymentDialogState extends State<PaymentDialog> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Pembayaran',
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
                       letterSpacing: -0.2,
                     ),
                   ),
                   Text(
                     businessName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF64748B),
+                      color:
+                          isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B),
                     ),
                   ),
                 ],
@@ -598,14 +635,15 @@ class _PaymentDialogState extends State<PaymentDialog> {
     );
   }
 
-  // 1. Order Info Card: Order #KS-0842 • 3 Menu | • Kasir Aktif (Flat, NO SHADOW)
-  Widget _buildOrderInfoCard() {
+  Widget _buildOrderInfoCard(bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: Row(
         children: [
@@ -614,16 +652,16 @@ class _PaymentDialogState extends State<PaymentDialog> {
           Expanded(
             child: Text(
               'Order ${widget.orderCode} • ${widget.itemCount} Menu',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF334155),
+                color: isDark ? Colors.white : const Color(0xFF334155),
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const Row(
+          Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
@@ -631,7 +669,10 @@ class _PaymentDialogState extends State<PaymentDialog> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF065F46),
+                  color:
+                      isDark
+                          ? const Color(0xFF34D399)
+                          : const Color(0xFF065F46),
                 ),
               ),
             ],
@@ -642,7 +683,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
   }
 
   // 2. Total Tagihan Section: TOTAL TAGIHAN, Rp 70.400, Store Icon + Dine-in • Meja 04
-  Widget _buildTotalTagihan(double grandTotal) {
+  Widget _buildTotalTagihan(double grandTotal, bool isDark) {
     final formatted = _currencyFormatter
         .format(grandTotal)
         .replaceAll('Rp', '')
@@ -650,12 +691,12 @@ class _PaymentDialogState extends State<PaymentDialog> {
 
     return Column(
       children: [
-        const Text(
+        Text(
           'TOTAL TAGIHAN',
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF64748B),
+            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
             letterSpacing: 0.5,
           ),
         ),
@@ -665,16 +706,20 @@ class _PaymentDialogState extends State<PaymentDialog> {
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            const Text(
+            Text(
               'Rp ',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : Colors.black,
+              ),
             ),
             Text(
               formatted,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 36,
                 fontWeight: FontWeight.w900,
-                color: Color(0xFF0F172A),
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
                 letterSpacing: -0.5,
               ),
             ),
@@ -684,25 +729,31 @@ class _PaymentDialogState extends State<PaymentDialog> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFFF1F5F9),
+            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.storefront_outlined,
                 size: 14,
-                color: Color(0xFF64748B),
+                color:
+                    isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
               ),
               const SizedBox(width: 5),
               Text(
                 '${widget.orderType} • Meja 04',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF475569),
+                  color:
+                      isDark
+                          ? const Color(0xFFCBD5E1)
+                          : const Color(0xFF475569),
                 ),
               ),
             ],
@@ -712,8 +763,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
     );
   }
 
-  // 3. Payment Method Pills: Tunai, QRIS, Debit EDC, Transfer (Flat, NO SHADOW)
-  Widget _buildPaymentMethodSelector() {
+  Widget _buildPaymentMethodSelector(bool isDark) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -722,24 +772,28 @@ class _PaymentDialogState extends State<PaymentDialog> {
             type: PaymentType.cash,
             label: 'Tunai',
             icon: Icons.payments_outlined,
+            isDark: isDark,
           ),
           const SizedBox(width: 8),
           _buildMethodPill(
             type: PaymentType.qris,
             label: 'QRIS',
             icon: Icons.qr_code_scanner_rounded,
+            isDark: isDark,
           ),
           const SizedBox(width: 8),
           _buildMethodPill(
             type: PaymentType.debit,
             label: 'Debit EDC',
             icon: Icons.point_of_sale_outlined,
+            isDark: isDark,
           ),
           const SizedBox(width: 8),
           _buildMethodPill(
             type: PaymentType.transfer,
             label: 'Transfer Bank',
             icon: Icons.account_balance_outlined,
+            isDark: isDark,
           ),
         ],
       ),
@@ -750,6 +804,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
     required PaymentType type,
     required String label,
     required IconData icon,
+    required bool isDark,
   }) {
     final isSelected = _selectedType == type;
 
@@ -760,11 +815,20 @@ class _PaymentDialogState extends State<PaymentDialog> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1E293B) : Colors.white,
+          color:
+              isSelected
+                  ? (isDark ? AppColors.primary : const Color(0xFF1E293B))
+                  : (isDark ? const Color(0xFF1E293B) : Colors.white),
           borderRadius: BorderRadius.circular(12),
-          border: isSelected
-              ? null
-              : Border.all(color: const Color(0xFFE2E8F0)),
+          border:
+              isSelected
+                  ? null
+                  : Border.all(
+                    color:
+                        isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                  ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -772,7 +836,12 @@ class _PaymentDialogState extends State<PaymentDialog> {
             Icon(
               icon,
               size: 18,
-              color: isSelected ? Colors.white : const Color(0xFF334155),
+              color:
+                  isSelected
+                      ? Colors.white
+                      : (isDark
+                          ? const Color(0xFFCBD5E1)
+                          : const Color(0xFF334155)),
             ),
             const SizedBox(width: 6),
             Text(
@@ -780,7 +849,12 @@ class _PaymentDialogState extends State<PaymentDialog> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                color: isSelected ? Colors.white : const Color(0xFF334155),
+                color:
+                    isSelected
+                        ? Colors.white
+                        : (isDark
+                            ? const Color(0xFFCBD5E1)
+                            : const Color(0xFF334155)),
               ),
             ),
           ],
@@ -790,7 +864,11 @@ class _PaymentDialogState extends State<PaymentDialog> {
   }
 
   // 4. Cash Payment Section: Uang Diterima, Quick Amounts, & Kembalian Kasir Card
-  Widget _buildCashPaymentSection(double grandTotal, double changeAmount) {
+  Widget _buildCashPaymentSection(
+    double grandTotal,
+    double changeAmount,
+    bool isDark,
+  ) {
     final quickAmounts = _generateQuickAmounts(grandTotal);
 
     return Column(
@@ -800,21 +878,23 @@ class _PaymentDialogState extends State<PaymentDialog> {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
           ),
           child: Column(
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     'Uang Diterima',
                     style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF0F172A),
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
                     ),
                   ),
                 ],
@@ -829,18 +909,29 @@ class _PaymentDialogState extends State<PaymentDialog> {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color:
+                        isDark
+                            ? const Color(0xFF0F172A)
+                            : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(
+                      color:
+                          isDark
+                              ? const Color(0xFF334155)
+                              : const Color(0xFFE2E8F0),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Text(
+                      Text(
                         'Rp ',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF475569),
+                          color:
+                              isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF475569),
                         ),
                       ),
                       Expanded(
@@ -849,10 +940,11 @@ class _PaymentDialogState extends State<PaymentDialog> {
                               .format(_receivedAmount)
                               .replaceAll('Rp', '')
                               .trim(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w900,
-                            color: Color(0xFF0F172A),
+                            color:
+                                isDark ? Colors.white : const Color(0xFF0F172A),
                             letterSpacing: -0.5,
                           ),
                         ),
@@ -862,14 +954,25 @@ class _PaymentDialogState extends State<PaymentDialog> {
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color:
+                                isDark
+                                    ? const Color(0xFF1E293B)
+                                    : Colors.white,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                            border: Border.all(
+                              color:
+                                  isDark
+                                      ? const Color(0xFF334155)
+                                      : const Color(0xFFCBD5E1),
+                            ),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.backspace_outlined,
                             size: 18,
-                            color: Color(0xFF475569),
+                            color:
+                                isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF475569),
                           ),
                         ),
                       ),
@@ -916,14 +1019,22 @@ class _PaymentDialogState extends State<PaymentDialog> {
                         vertical: vPadding,
                       ),
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? const Color(0xFF1E293B)
-                            : Colors.white,
+                        color:
+                            isSelected
+                                ? (isDark
+                                    ? AppColors.primary
+                                    : const Color(0xFF1E293B))
+                                : (isDark
+                                    ? const Color(0xFF1E293B)
+                                    : Colors.white),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isSelected
-                              ? Colors.transparent
-                              : const Color(0xFFE2E8F0),
+                          color:
+                              isSelected
+                                  ? Colors.transparent
+                                  : (isDark
+                                      ? const Color(0xFF334155)
+                                      : const Color(0xFFE2E8F0)),
                         ),
                       ),
                       child: Column(
@@ -942,7 +1053,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                                     ? const Color(0xFFF9FAFB)
                                     : (isExact
                                           ? AppColors.primary
-                                          : const Color(0xFF64748B)),
+                                          : (isDark
+                                              ? const Color(0xFF94A3B8)
+                                              : const Color(0xFF64748B))),
                               ),
                             ),
                           ),
@@ -961,7 +1074,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                                       ? const Color(0xFFF9FAFB)
                                       : (isExact
                                             ? AppColors.primary
-                                            : const Color(0xFF64748B)),
+                                            : (isDark
+                                                ? Colors.white
+                                                : const Color(0xFF64748B))),
                                 ),
                               ),
                             ),
@@ -980,8 +1095,15 @@ class _PaymentDialogState extends State<PaymentDialog> {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
+            color:
+                isDark
+                    ? const Color(0xFF064E3B).withValues(alpha: 0.3)
+                    : const Color(0xFFECFDF5),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.transparent),
+            border: Border.all(
+              color:
+                  isDark ? const Color(0xFF047857) : const Color(0xFFA7F3D0),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -990,12 +1112,15 @@ class _PaymentDialogState extends State<PaymentDialog> {
                 children: [
                   SvgPicture.asset("assets/icons/sync.svg", height: 22),
                   const SizedBox(width: 6),
-                  const Text(
+                  Text(
                     'KEMBALIAN KASIR',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF065F46),
+                      color:
+                          isDark
+                              ? const Color(0xFF6EE7B7)
+                              : const Color(0xFF065F46),
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -1011,7 +1136,10 @@ class _PaymentDialogState extends State<PaymentDialog> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.black,
+                      color:
+                          isDark
+                              ? const Color(0xFF6EE7B7)
+                              : const Color(0xFF065F46),
                     ),
                   ),
                   Text(
@@ -1019,22 +1147,28 @@ class _PaymentDialogState extends State<PaymentDialog> {
                         .format(changeAmount)
                         .replaceAll('Rp', '')
                         .trim(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w900,
-                      color: Color(0xFF042F2C),
+                      color:
+                          isDark
+                              ? Colors.white
+                              : const Color(0xFF042F2C),
                       letterSpacing: -0.5,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Pastikan hitung uang kembalian sebelum menyerahkan ke pelanggan',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.black,
+                  color:
+                      isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF047857),
                 ),
               ),
             ],
@@ -1045,13 +1179,15 @@ class _PaymentDialogState extends State<PaymentDialog> {
   }
 
   // QRIS Section
-  Widget _buildQrisSection(double grandTotal) {
+  Widget _buildQrisSection(double grandTotal, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: BlocBuilder<BusinessBloc, BusinessState>(
         builder: (context, bState) {
@@ -1059,18 +1195,24 @@ class _PaymentDialogState extends State<PaymentDialog> {
 
           return Column(
             children: [
-              const Text(
+              Text(
                 'Pindai Kode QRIS',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Dapat dipindai via GoPay, OVO, Dana, ShopeePay, BCA, dll.',
-                style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                style: TextStyle(
+                  fontSize: 12,
+                  color:
+                      isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B),
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 14),
@@ -1086,23 +1228,22 @@ class _PaymentDialogState extends State<PaymentDialog> {
                     ),
                   ),
                   errorWidget: (context, url, error) =>
-                      _buildFallbackQrisPlaceholder(),
+                      _buildFallbackQrisPlaceholder(isDark),
                 )
               else
-                _buildFallbackQrisPlaceholder(),
+                _buildFallbackQrisPlaceholder(isDark),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 6,
                 ),
-
                 child: Text(
                   'Nominal: ${_currencyFormatter.format(grandTotal).trim()}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.black,
+                    color: isDark ? Colors.white : AppColors.black,
                   ),
                 ),
               ),
@@ -1113,26 +1254,33 @@ class _PaymentDialogState extends State<PaymentDialog> {
     );
   }
 
-  Widget _buildFallbackQrisPlaceholder() {
+  Widget _buildFallbackQrisPlaceholder(bool isDark) {
     return Container(
       width: 170,
       height: 170,
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFCBD5E1)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+        ),
       ),
-      child: const Column(
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.qr_code_2_rounded, size: 90, color: Color(0xFF1E293B)),
-          SizedBox(height: 4),
+          Icon(
+            Icons.qr_code_2_rounded,
+            size: 90,
+            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF1E293B),
+          ),
+          const SizedBox(height: 4),
           Text(
             'QRIS Standar POS',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF64748B),
+              color:
+                  isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
             ),
           ),
         ],
@@ -1140,26 +1288,27 @@ class _PaymentDialogState extends State<PaymentDialog> {
     );
   }
 
-  // Debit EDC Section
-  Widget _buildDebitSection(double grandTotal) {
+  Widget _buildDebitSection(double grandTotal, bool isDark) {
     final banks = ['BCA', 'Mandiri', 'BRI', 'BNI', 'Lainnya'];
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Pilih Mesin EDC / Bank',
             style: TextStyle(
               fontSize: 13.5,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A),
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
             ),
           ),
           const SizedBox(height: 10),
@@ -1179,22 +1328,34 @@ class _PaymentDialogState extends State<PaymentDialog> {
                         vertical: 7,
                       ),
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.primary
-                            : const Color(0xFFF1F5F9),
+                        color:
+                            isSelected
+                                ? AppColors.primary
+                                : (isDark
+                                    ? const Color(0xFF0F172A)
+                                    : const Color(0xFFF1F5F9)),
                         borderRadius: BorderRadius.circular(8),
-                        border: isSelected
-                            ? null
-                            : Border.all(color: const Color(0xFFE2E8F0)),
+                        border:
+                            isSelected
+                                ? null
+                                : Border.all(
+                                  color:
+                                      isDark
+                                          ? const Color(0xFF334155)
+                                          : const Color(0xFFE2E8F0),
+                                ),
                       ),
                       child: Text(
                         bank,
                         style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.bold,
-                          color: isSelected
-                              ? Colors.white
-                              : const Color(0xFF334155),
+                          color:
+                              isSelected
+                                  ? Colors.white
+                                  : (isDark
+                                      ? const Color(0xFFCBD5E1)
+                                      : const Color(0xFF334155)),
                         ),
                       ),
                     ),
@@ -1206,19 +1367,49 @@ class _PaymentDialogState extends State<PaymentDialog> {
           const SizedBox(height: 14),
           TextField(
             controller: _refCodeController,
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
+            ),
             decoration: InputDecoration(
               labelText: 'Nomor Kartu / Approval Code (Opsional)',
               hintText: 'Contoh: 1234-5678-XXXX',
-              labelStyle: const TextStyle(fontSize: 13),
+              labelStyle: TextStyle(
+                fontSize: 13,
+                color:
+                    isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              ),
+              hintStyle: TextStyle(
+                fontSize: 13,
+                color:
+                    isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+              ),
               filled: true,
-              fillColor: const Color(0xFFF8FAFC),
+              fillColor:
+                  isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                borderSide: BorderSide(
+                  color:
+                      isDark
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFE2E8F0),
+                ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                borderSide: BorderSide(
+                  color:
+                      isDark
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFE2E8F0),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 1.5,
+                ),
               ),
             ),
           ),
@@ -1227,40 +1418,51 @@ class _PaymentDialogState extends State<PaymentDialog> {
     );
   }
 
-  // Transfer Bank Section
-  Widget _buildTransferSection(double grandTotal) {
+  Widget _buildTransferSection(double grandTotal, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Konfirmasi Transfer Bank',
             style: TextStyle(
               fontSize: 13.5,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF0F172A),
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
             ),
           ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color:
+                  isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(
+                color:
+                    isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Nominal Transfer',
-                  style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color:
+                        isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B),
+                  ),
                 ),
                 Text(
                   _currencyFormatter.format(grandTotal).trim(),
@@ -1276,19 +1478,49 @@ class _PaymentDialogState extends State<PaymentDialog> {
           const SizedBox(height: 12),
           TextField(
             controller: _refCodeController,
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
+            ),
             decoration: InputDecoration(
               labelText: 'Catatan / Nama Pengirim / Ref',
               hintText: 'Contoh: BCA Bpk. Aditya',
-              labelStyle: const TextStyle(fontSize: 13),
+              labelStyle: TextStyle(
+                fontSize: 13,
+                color:
+                    isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              ),
+              hintStyle: TextStyle(
+                fontSize: 13,
+                color:
+                    isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+              ),
               filled: true,
-              fillColor: const Color(0xFFF8FAFC),
+              fillColor:
+                  isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                borderSide: BorderSide(
+                  color:
+                      isDark
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFE2E8F0),
+                ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                borderSide: BorderSide(
+                  color:
+                      isDark
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFE2E8F0),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 1.5,
+                ),
               ),
             ),
           ),
@@ -1297,17 +1529,18 @@ class _PaymentDialogState extends State<PaymentDialog> {
     );
   }
 
-  // 5. Setting Switches (Auto-print struk thermal & Kirim struk WA)
-  Widget _buildSettingSwitches() {
+  Widget _buildSettingSwitches(bool isDark) {
     return Column(
       children: [
-        // Switch 1: Thermal Print
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(
+              color:
+                  isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
           ),
           child: Row(
             children: [
@@ -1317,20 +1550,24 @@ class _PaymentDialogState extends State<PaymentDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Auto-print struk thermal',
                       style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
+                        color:
+                            isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
                     ),
                     Text(
                       PrinterService().connectedDeviceName ??
                           'Cetak via Bluetooth 58mm',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11.5,
-                        color: Color(0xFF64748B),
+                        color:
+                            isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
                       ),
                     ),
                   ],
@@ -1346,19 +1583,21 @@ class _PaymentDialogState extends State<PaymentDialog> {
         ),
         const SizedBox(height: 10),
 
-        // Switch 2: Kirim Struk WA
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(
+              color:
+                  isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
           ),
           child: Row(
             children: [
               SvgPicture.asset("assets/icons/e-receipt.svg", height: 32),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1367,14 +1606,18 @@ class _PaymentDialogState extends State<PaymentDialog> {
                       style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
+                        color:
+                            isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
                     ),
                     Text(
                       'Kirim link struk digital',
                       style: TextStyle(
                         fontSize: 11.5,
-                        color: Color(0xFF64748B),
+                        color:
+                            isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
                       ),
                     ),
                   ],
@@ -1407,28 +1650,19 @@ class _PaymentDialogState extends State<PaymentDialog> {
           color: canSubmit ? AppColors.primary : const Color(0xFFCBD5E1),
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.check_circle_rounded,
+        child: Center(
+          child: Text(
+            canSubmit
+                ? (_autoPrint
+                      ? 'Selesaikan & Cetak Struk'
+                      : 'Selesaikan Pembayaran')
+                : 'Uang Pembayaran Belum Cukup',
+            style: const TextStyle(
               color: Colors.white,
-              size: 20,
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(width: 8),
-            Text(
-              canSubmit
-                  ? (_autoPrint
-                        ? 'Selesaikan & Cetak Struk'
-                        : 'Selesaikan Pembayaran')
-                  : 'Uang Pembayaran Belum Cukup',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

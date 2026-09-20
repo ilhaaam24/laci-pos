@@ -47,6 +47,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                   !businessState.isLoading &&
                   !businessState.isSuccess) {
                 return Scaffold(
+                  backgroundColor: Colors.white,
                   body: Center(
                     child: Padding(
                       padding: const EdgeInsets.all(24.0),

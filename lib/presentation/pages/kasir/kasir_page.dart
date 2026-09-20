@@ -20,6 +20,7 @@ import '../../../core/utils/app_toast.dart';
 import '../../widgets/barcode_scanner_page.dart';
 import '../checkout/checkout_page.dart';
 import '../customer/add_edit_customer_page.dart';
+import 'widgets/product_customization_sheet.dart';
 
 class KasirPage extends StatefulWidget {
   final VoidCallback? onOpenOrders;
@@ -61,6 +62,38 @@ class _KasirPageState extends State<KasirPage> {
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onProductSelected(Product product) {
+    if (product.stock <= 0) {
+      AppToast.showWarning(context, 'Stok ${product.name} telah habis');
+      return;
+    }
+
+    if (product.hasVariants || product.hasModifiers) {
+      ProductCustomizationSheet.show(
+        context: context,
+        product: product,
+        onAddToCart: ({
+          required variant,
+          required modifiers,
+          required notes,
+          required quantity,
+        }) {
+          context.read<CartBloc>().add(
+            AddToCart(
+              product,
+              selectedVariant: variant,
+              selectedModifiers: modifiers,
+              notes: notes,
+              quantity: quantity,
+            ),
+          );
+        },
+      );
+    } else {
+      context.read<CartBloc>().add(AddToCart(product));
+    }
   }
 
   String _capitalize(String s) {
@@ -256,52 +289,58 @@ class _KasirPageState extends State<KasirPage> {
 
   // 2. Full-width Search Input with Scanner Action
   Widget _buildSearchBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Container(
         height: 48,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
         ),
         child: Row(
           children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              child: Icon(Icons.search, color: Color(0xFF94A3B8), size: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Icon(
+                Icons.search,
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                size: 20,
+              ),
             ),
             Expanded(
               child: TextField(
                 controller: _searchController,
                 focusNode: _searchFocusNode,
                 onChanged: (value) => setState(() => _searchQuery = value),
-                style: const TextStyle(
-                  color: Color(0xFF0F172A),
-
+                style: TextStyle(
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                   fontSize: 13.5,
                 ),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   focusedBorder: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   fillColor: Colors.transparent,
                   hintText: 'Cari menu, SKU, atau varian...',
                   hintStyle: TextStyle(
-                    color: Color(0xFF94A3B8),
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                     fontSize: 13.5,
                   ),
                   border: InputBorder.none,
                   isDense: true,
-                  contentPadding: EdgeInsets.symmetric(vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ),
             if (_searchQuery.isNotEmpty)
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.clear,
                   size: 18,
-                  color: Color(0xFF94A3B8),
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                 ),
                 onPressed: () {
                   _searchController.clear();
@@ -324,6 +363,7 @@ class _KasirPageState extends State<KasirPage> {
 
   // 3. Category Horizontal Pills & Grid/List View Toggle
   Widget _buildCategoryAndFilterBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
       child: Row(
@@ -361,13 +401,13 @@ class _KasirPageState extends State<KasirPage> {
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? AppColors.darkCharcoal
-                                  : Colors.white,
+                                  ? (isDark ? Colors.white : AppColors.darkCharcoal)
+                                  : (isDark ? const Color(0xFF1E293B) : Colors.white),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: isSelected
-                                    ? AppColors.darkCharcoal
-                                    : const Color(0xFFE2E8F0),
+                                    ? (isDark ? Colors.white : AppColors.darkCharcoal)
+                                    : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
                               ),
                             ),
                             alignment: Alignment.center,
@@ -375,8 +415,8 @@ class _KasirPageState extends State<KasirPage> {
                               name,
                               style: TextStyle(
                                 color: isSelected
-                                    ? Colors.white
-                                    : const Color(0xFF334155),
+                                    ? (isDark ? const Color(0xFF0F172A) : Colors.white)
+                                    : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155)),
                                 fontWeight: isSelected
                                     ? FontWeight.bold
                                     : FontWeight.w500,
@@ -398,9 +438,11 @@ class _KasirPageState extends State<KasirPage> {
             height: 38,
             padding: const EdgeInsets.all(2.5),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(
+                color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              ),
             ),
             child: Row(
               children: [
@@ -428,6 +470,7 @@ class _KasirPageState extends State<KasirPage> {
     required bool isActive,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -435,7 +478,9 @@ class _KasirPageState extends State<KasirPage> {
         width: 30,
         height: 30,
         decoration: BoxDecoration(
-          color: isActive ? AppColors.bgInput : Colors.transparent,
+          color: isActive
+              ? (isDark ? const Color(0xFF334155) : AppColors.bgInput)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
@@ -549,13 +594,7 @@ class _KasirPageState extends State<KasirPage> {
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
-          onTap: () {
-            if (isOutOfStock) {
-              AppToast.showWarning(context, 'Stok ${product.name} telah habis');
-              return;
-            }
-            context.read<CartBloc>().add(AddToCart(product));
-          },
+          onTap: () => _onProductSelected(product),
           child: Opacity(
             opacity: isOutOfStock ? 0.62 : 1.0,
             child: Padding(
@@ -677,16 +716,7 @@ class _KasirPageState extends State<KasirPage> {
                         ),
                       ),
                       InkWell(
-                        onTap: () {
-                          if (isOutOfStock) {
-                            AppToast.showWarning(
-                              context,
-                              'Stok ${product.name} telah habis',
-                            );
-                            return;
-                          }
-                          context.read<CartBloc>().add(AddToCart(product));
-                        },
+                        onTap: () => _onProductSelected(product),
                         borderRadius: BorderRadius.circular(100),
                         child: Container(
                           width: 34,
@@ -699,11 +729,16 @@ class _KasirPageState extends State<KasirPage> {
                           ),
                           child: Center(
                             child: Icon(
-                              isOutOfStock ? Icons.block_rounded : Icons.add,
+                              isOutOfStock
+                                  ? Icons.block_rounded
+                                  : ((product.hasVariants ||
+                                          product.hasModifiers)
+                                      ? Icons.tune_rounded
+                                      : Icons.add),
                               color: isOutOfStock
                                   ? const Color(0xFF94A3B8)
                                   : Colors.white,
-                              size: isOutOfStock ? 16 : 20,
+                              size: isOutOfStock ? 16 : 19,
                             ),
                           ),
                         ),
@@ -733,13 +768,7 @@ class _KasirPageState extends State<KasirPage> {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          if (isOutOfStock) {
-            AppToast.showWarning(context, 'Stok ${product.name} telah habis');
-            return;
-          }
-          context.read<CartBloc>().add(AddToCart(product));
-        },
+        onTap: () => _onProductSelected(product),
         child: Opacity(
           opacity: isOutOfStock ? 0.62 : 1.0,
           child: Row(
@@ -835,16 +864,7 @@ class _KasirPageState extends State<KasirPage> {
                 ),
               ),
               InkWell(
-                onTap: () {
-                  if (isOutOfStock) {
-                    AppToast.showWarning(
-                      context,
-                      'Stok ${product.name} telah habis',
-                    );
-                    return;
-                  }
-                  context.read<CartBloc>().add(AddToCart(product));
-                },
+                onTap: () => _onProductSelected(product),
                 borderRadius: BorderRadius.circular(100),
                 child: Container(
                   width: 36,
@@ -857,7 +877,11 @@ class _KasirPageState extends State<KasirPage> {
                   ),
                   child: Center(
                     child: Icon(
-                      isOutOfStock ? Icons.block_rounded : Icons.add,
+                      isOutOfStock
+                          ? Icons.block_rounded
+                          : ((product.hasVariants || product.hasModifiers)
+                              ? Icons.tune_rounded
+                              : Icons.add),
                       color: isOutOfStock
                           ? const Color(0xFF94A3B8)
                           : Colors.white,
@@ -1065,11 +1089,7 @@ class _KasirPageState extends State<KasirPage> {
           'Produk ${product.name} ditemukan, namun stok habis',
         );
       } else {
-        context.read<CartBloc>().add(AddToCart(product));
-        AppToast.showSuccess(
-          context,
-          '1x ${product.name} ditambahkan ke keranjang',
-        );
+        _onProductSelected(product);
       }
       setState(() {
         _searchQuery = product.name;
@@ -1288,8 +1308,9 @@ class _KasirPageState extends State<KasirPage> {
   }
 
   Widget _buildTabletHeader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      color: Colors.white,
+      color: isDark ? const Color(0xFF1E293B) : Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
@@ -1311,7 +1332,11 @@ class _KasirPageState extends State<KasirPage> {
                     height: 38,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                      ),
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(9),
@@ -1319,9 +1344,11 @@ class _KasirPageState extends State<KasirPage> {
                           ? CachedNetworkImage(
                               imageUrl: logoUrl,
                               fit: BoxFit.cover,
-                              errorWidget: (context, url, error) => const Icon(
+                              errorWidget: (context, url, error) => Icon(
                                 Icons.storefront_rounded,
-                                color: Color(0xFF64748B),
+                                color: isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF64748B),
                                 size: 18,
                               ),
                             )
@@ -1337,10 +1364,12 @@ class _KasirPageState extends State<KasirPage> {
                         children: [
                           Text(
                             businessName,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF0F172A),
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF0F172A),
                             ),
                           ),
                           const SizedBox(width: 5),
@@ -1354,12 +1383,14 @@ class _KasirPageState extends State<KasirPage> {
                           ),
                         ],
                       ),
-                      const Text(
+                      Text(
                         'Mode Kasir POS',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFF64748B),
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B),
                         ),
                       ),
                     ],
@@ -1375,17 +1406,25 @@ class _KasirPageState extends State<KasirPage> {
             child: Container(
               height: 42,
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: isDark
+                    ? const Color(0xFF0F172A)
+                    : const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
+                ),
               ),
               child: Row(
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Icon(
                       Icons.search_rounded,
-                      color: Color(0xFF94A3B8),
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B),
                       size: 18,
                     ),
                   ),
@@ -1394,11 +1433,11 @@ class _KasirPageState extends State<KasirPage> {
                       controller: _searchController,
                       focusNode: _searchFocusNode,
                       onChanged: (val) => setState(() => _searchQuery = val),
-                      style: const TextStyle(
-                        color: Color(0xFF0F172A),
+                      style: TextStyle(
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                         fontSize: 13,
                       ),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         fillColor: Colors.transparent,
                         focusedBorder: InputBorder.none,
                         enabledBorder: InputBorder.none,
@@ -1406,21 +1445,27 @@ class _KasirPageState extends State<KasirPage> {
                         disabledBorder: InputBorder.none,
                         hintText: 'Cari produk atau SKU...',
                         hintStyle: TextStyle(
-                          color: Color(0xFF94A3B8),
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B),
                           fontSize: 13,
                         ),
                         border: InputBorder.none,
                         isDense: true,
-                        contentPadding: EdgeInsets.symmetric(vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                        ),
                       ),
                     ),
                   ),
                   if (_searchQuery.isNotEmpty)
                     IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.clear,
                         size: 16,
-                        color: Color(0xFF94A3B8),
+                        color: isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B),
                       ),
                       onPressed: () {
                         _searchController.clear();
@@ -1447,9 +1492,15 @@ class _KasirPageState extends State<KasirPage> {
             height: 38,
             padding: const EdgeInsets.all(2.5),
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: isDark
+                  ? const Color(0xFF0F172A)
+                  : const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              border: Border.all(
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
+              ),
             ),
             child: Row(
               children: [
@@ -1506,12 +1557,9 @@ class _KasirPageState extends State<KasirPage> {
                     itemCount: filteredProducts.length,
                     itemBuilder: (context, index) {
                       final product = filteredProducts[index];
-                      final cartItemIndex = cartState.items.indexWhere(
-                        (i) => i.productId == product.id,
-                      );
-                      final cartQty = cartItemIndex >= 0
-                          ? cartState.items[cartItemIndex].quantity
-                          : 0;
+                      final cartQty = cartState.items
+                          .where((i) => i.productId == product.id)
+                          .fold(0, (sum, i) => sum + i.quantity);
 
                       return _buildTabletGridProductCard(
                         product,
@@ -1557,13 +1605,7 @@ class _KasirPageState extends State<KasirPage> {
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: () {
-            if (isOutOfStock) {
-              AppToast.showWarning(context, 'Stok ${product.name} telah habis');
-              return;
-            }
-            context.read<CartBloc>().add(AddToCart(product));
-          },
+          onTap: () => _onProductSelected(product),
           child: Opacity(
             opacity: isOutOfStock ? 0.62 : 1.0,
             child: Column(
@@ -1688,6 +1730,26 @@ class _KasirPageState extends State<KasirPage> {
                                     color: Colors.white,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              )
+                            else if (product.hasVariants ||
+                                product.hasModifiers)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'Opsi',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
@@ -1870,7 +1932,7 @@ class _KasirPageState extends State<KasirPage> {
                             const Divider(height: 12, color: Color(0xFFF1F5F9)),
                         itemBuilder: (context, index) {
                           final item = cartState.items[index];
-                          final itemTotal = item.price * item.quantity;
+                          final itemTotal = item.subtotal;
 
                           return Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1880,7 +1942,7 @@ class _KasirPageState extends State<KasirPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      item.productName,
+                                      item.displayName,
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
@@ -1889,9 +1951,32 @@ class _KasirPageState extends State<KasirPage> {
                                         color: Color(0xFF0F172A),
                                       ),
                                     ),
+                                    if (item.selectedModifiers.isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '+ ${item.modifiersDisplay}',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                    if (item.notes != null &&
+                                        item.notes!.trim().isNotEmpty) ...[
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Catatan: ${item.notes!.trim()}',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontStyle: FontStyle.italic,
+                                          color: Color(0xFF64748B),
+                                        ),
+                                      ),
+                                    ],
                                     const SizedBox(height: 2),
                                     Text(
-                                      '${formatter.format(item.price)} x ${item.quantity}',
+                                      '${formatter.format(item.unitPrice)} x ${item.quantity}',
                                       style: const TextStyle(
                                         fontSize: 11.5,
                                         color: Color(0xFF64748B),
@@ -1929,7 +2014,7 @@ class _KasirPageState extends State<KasirPage> {
                                           onTap: () =>
                                               context.read<CartBloc>().add(
                                                 DecreaseQuantity(
-                                                  item.productId,
+                                                  item.id,
                                                 ),
                                               ),
                                           child: const Padding(
@@ -1954,7 +2039,7 @@ class _KasirPageState extends State<KasirPage> {
                                           onTap: () =>
                                               context.read<CartBloc>().add(
                                                 IncrementQuantity(
-                                                  item.productId,
+                                                  item.id,
                                                 ),
                                               ),
                                           child: const Padding(
@@ -2193,6 +2278,7 @@ class _KasirPageState extends State<KasirPage> {
 
   // Order Type Toggle Button (Dine In / Take Away)
   Widget _buildOrderTypeToggle(String type) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = _orderType == type;
     return InkWell(
       onTap: () => setState(() => _orderType = type),
@@ -2200,7 +2286,9 @@ class _KasirPageState extends State<KasirPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
+          color: isSelected
+              ? (isDark ? const Color(0xFF334155) : Colors.white)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(7),
           border: isSelected
               ? Border.all(color: AppColors.primary.withValues(alpha: 0.3))
@@ -2211,7 +2299,9 @@ class _KasirPageState extends State<KasirPage> {
           style: TextStyle(
             fontSize: 11.5,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-            color: isSelected ? AppColors.primary : const Color(0xFF64748B),
+            color: isSelected
+                ? AppColors.primary
+                : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
           ),
         ),
       ),
@@ -2220,6 +2310,7 @@ class _KasirPageState extends State<KasirPage> {
 
   // Dialog: Customer Picker
   void _showCustomerPicker(Customer? currentCustomer) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     context.read<CustomerBloc>().add(LoadCustomers());
     showModalBottomSheet(
       context: context,
@@ -2235,9 +2326,9 @@ class _KasirPageState extends State<KasirPage> {
           return StatefulBuilder(
             builder: (contextSheet, setStateSheet) {
               return Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                 ),
                 child: Column(
                   children: [
@@ -2246,7 +2337,9 @@ class _KasirPageState extends State<KasirPage> {
                       width: 36,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFCBD5E1),
+                        color: isDark
+                            ? const Color(0xFF475569)
+                            : const Color(0xFFCBD5E1),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -2255,12 +2348,12 @@ class _KasirPageState extends State<KasirPage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Pilih Pelanggan',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF0F172A),
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
                             ),
                           ),
                           TextButton(
@@ -2290,16 +2383,53 @@ class _KasirPageState extends State<KasirPage> {
                       child: TextField(
                         controller: searchCtrl,
                         onChanged: (_) => setStateSheet(() {}),
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          fontSize: 13.5,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Cari nama atau no. telepon...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
+                          hintStyle: TextStyle(
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
+                            fontSize: 13.5,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            size: 20,
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
+                          ),
+                          filled: true,
+                          fillColor: isDark
+                              ? const Color(0xFF0F172A)
+                              : const Color(0xFFF8FAFC),
                           contentPadding: const EdgeInsets.symmetric(
                             vertical: 10,
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(
+                              color: isDark
+                                  ? const Color(0xFF334155)
+                                  : const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide(
+                              color: isDark
+                                  ? const Color(0xFF334155)
+                                  : const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
                             borderSide: const BorderSide(
-                              color: Color(0xFFE2E8F0),
+                              color: AppColors.primary,
+                              width: 1.5,
                             ),
                           ),
                           isDense: true,
@@ -2311,27 +2441,34 @@ class _KasirPageState extends State<KasirPage> {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
+                          color: isDark
+                              ? const Color(0xFF0F172A)
+                              : const Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.person_off_outlined,
-                          color: Color(0xFF64748B),
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B),
                           size: 20,
                         ),
                       ),
-                      title: const Text(
+                      title: Text(
                         'Pelanggan Umum (Tanpa Nama)',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
                         ),
                       ),
-                      subtitle: const Text(
+                      subtitle: Text(
                         'Pesanan tidak dicatat atas nama tertentu',
                         style: TextStyle(
                           fontSize: 11.5,
-                          color: Color(0xFF64748B),
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B),
                         ),
                       ),
                       trailing: currentCustomer == null
@@ -2346,7 +2483,12 @@ class _KasirPageState extends State<KasirPage> {
                         Navigator.pop(contextSheet);
                       },
                     ),
-                    const Divider(height: 1),
+                    Divider(
+                      height: 1,
+                      color: isDark
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFE2E8F0),
+                    ),
                     Expanded(
                       child: BlocBuilder<CustomerBloc, CustomerState>(
                         builder: (context, state) {
@@ -2362,10 +2504,14 @@ class _KasirPageState extends State<KasirPage> {
                           }).toList();
 
                           if (customers.isEmpty) {
-                            return const Center(
+                            return Center(
                               child: Text(
                                 'Pelanggan tidak ditemukan',
-                                style: TextStyle(color: Color(0xFF64748B)),
+                                style: TextStyle(
+                                  color: isDark
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF64748B),
+                                ),
                               ),
                             );
                           }
@@ -2373,36 +2519,49 @@ class _KasirPageState extends State<KasirPage> {
                           return ListView.separated(
                             controller: scrollController,
                             itemCount: customers.length,
-                            separatorBuilder: (context, index) =>
-                                const Divider(height: 1),
+                            separatorBuilder: (context, index) => Divider(
+                              height: 1,
+                              color: isDark
+                                  ? const Color(0xFF334155)
+                                  : const Color(0xFFE2E8F0),
+                            ),
                             itemBuilder: (context, i) {
                               final cust = customers[i];
                               final isSelected = currentCustomer?.id == cust.id;
                               return ListTile(
                                 leading: CircleAvatar(
-                                  backgroundColor: const Color(0xFFE2E8F0),
+                                  backgroundColor: isDark
+                                      ? const Color(0xFF334155)
+                                      : const Color(0xFFE2E8F0),
                                   child: Text(
                                     cust.name.isNotEmpty
                                         ? cust.name[0].toUpperCase()
                                         : '?',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: Color(0xFF334155),
+                                      color: isDark
+                                          ? Colors.white
+                                          : const Color(0xFF334155),
                                     ),
                                   ),
                                 ),
                                 title: Text(
                                   cust.name,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 13,
+                                    color: isDark
+                                        ? Colors.white
+                                        : const Color(0xFF0F172A),
                                   ),
                                 ),
                                 subtitle: Text(
                                   cust.phone ?? 'Tidak ada nomor telepon',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11.5,
-                                    color: Color(0xFF64748B),
+                                    color: isDark
+                                        ? const Color(0xFF94A3B8)
+                                        : const Color(0xFF64748B),
                                   ),
                                 ),
                                 trailing: isSelected
@@ -2436,22 +2595,50 @@ class _KasirPageState extends State<KasirPage> {
 
   // Dialog: Table / Order Notes
   void _showTableDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final ctrl = TextEditingController(text: _tableNumber ?? '');
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
+        title: Text(
           'Nomor Meja / Catatan',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+          ),
         ),
         content: TextField(
           controller: ctrl,
           autofocus: true,
+          style: TextStyle(
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+            fontSize: 14,
+          ),
           decoration: InputDecoration(
             hintText: 'Misal: Meja 05 atau Area Outdoor',
+            hintStyle: TextStyle(
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              fontSize: 14,
+            ),
+            filled: true,
+            fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(
+                color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.5,
+              ),
+            ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
               vertical: 10,
@@ -2463,14 +2650,18 @@ class _KasirPageState extends State<KasirPage> {
           OutlinedButton(
             onPressed: () => Navigator.pop(ctx),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFFE2E8F0)),
+              side: BorderSide(
+                color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text(
+            child: Text(
               'Batal',
-              style: TextStyle(color: Color(0xFF64748B)),
+              style: TextStyle(
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              ),
             ),
           ),
           if (_tableNumber != null && _tableNumber!.isNotEmpty)
@@ -2525,6 +2716,7 @@ class _KasirPageState extends State<KasirPage> {
 
   // Dialog: Promo Picker
   void _showPromoPicker() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     context.read<PromoBloc>().add(LoadPromos());
     showModalBottomSheet(
       context: context,
@@ -2537,9 +2729,9 @@ class _KasirPageState extends State<KasirPage> {
         expand: false,
         builder: (ctx, scrollController) {
           return Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Column(
               children: [
@@ -2548,7 +2740,9 @@ class _KasirPageState extends State<KasirPage> {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
+                    color: isDark
+                        ? const Color(0xFF475569)
+                        : const Color(0xFFCBD5E1),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -2560,12 +2754,12 @@ class _KasirPageState extends State<KasirPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Pilih Promo & Diskon',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF0F172A),
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
                         ),
                       ),
                       if (_selectedPromo != null)
@@ -2582,7 +2776,12 @@ class _KasirPageState extends State<KasirPage> {
                     ],
                   ),
                 ),
-                const Divider(height: 1),
+                Divider(
+                  height: 1,
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
+                ),
                 Expanded(
                   child: BlocBuilder<PromoBloc, PromoState>(
                     builder: (context, state) {
@@ -2595,10 +2794,14 @@ class _KasirPageState extends State<KasirPage> {
                           .where((p) => p.isActive)
                           .toList();
                       if (promos.isEmpty) {
-                        return const Center(
+                        return Center(
                           child: Text(
                             'Belum ada promo aktif',
-                            style: TextStyle(color: Color(0xFF64748B)),
+                            style: TextStyle(
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
+                            ),
                           ),
                         );
                       }
@@ -2622,13 +2825,19 @@ class _KasirPageState extends State<KasirPage> {
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? const Color(0xFFF0FDF4)
-                                    : Colors.white,
+                                    ? (isDark
+                                        ? const Color(0xFF064E3B).withValues(alpha: 0.3)
+                                        : const Color(0xFFF0FDF4))
+                                    : (isDark
+                                        ? const Color(0xFF0F172A)
+                                        : Colors.white),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: isSelected
                                       ? AppColors.primary
-                                      : const Color(0xFFE2E8F0),
+                                      : (isDark
+                                          ? const Color(0xFF334155)
+                                          : const Color(0xFFE2E8F0)),
                                   width: isSelected ? 1.5 : 1,
                                 ),
                               ),
@@ -2640,14 +2849,18 @@ class _KasirPageState extends State<KasirPage> {
                                     decoration: BoxDecoration(
                                       color: isSelected
                                           ? AppColors.primary
-                                          : const Color(0xFFF1F5F9),
+                                          : (isDark
+                                              ? const Color(0xFF1E293B)
+                                              : const Color(0xFFF1F5F9)),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Icon(
                                       Icons.discount_outlined,
                                       color: isSelected
                                           ? Colors.white
-                                          : const Color(0xFF64748B),
+                                          : (isDark
+                                              ? const Color(0xFF94A3B8)
+                                              : const Color(0xFF64748B)),
                                       size: 20,
                                     ),
                                   ),
@@ -2659,9 +2872,12 @@ class _KasirPageState extends State<KasirPage> {
                                       children: [
                                         Text(
                                           promo.name,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 13.5,
+                                            color: isDark
+                                                ? Colors.white
+                                                : const Color(0xFF0F172A),
                                           ),
                                         ),
                                         const SizedBox(height: 3),
@@ -2669,9 +2885,11 @@ class _KasirPageState extends State<KasirPage> {
                                           promo.type == PromoType.percentage
                                               ? 'Diskon ${promo.value}%'
                                               : 'Potongan Rp ${NumberFormat('#,###').format(promo.value)}',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 12,
-                                            color: Color(0xFF64748B),
+                                            color: isDark
+                                                ? const Color(0xFF94A3B8)
+                                                : const Color(0xFF64748B),
                                           ),
                                         ),
                                       ],

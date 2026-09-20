@@ -63,9 +63,10 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
   }
 
   void _showLogoPickerSheet() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -76,34 +77,44 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Text(
                   'Ubah Logo Usaha',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
                   ),
                 ),
               ),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.camera_alt_outlined,
-                  color: Color(0xFF0F172A),
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                 ),
-                title: const Text('Ambil dari Kamera'),
+                title: Text(
+                  'Ambil dari Kamera',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
+                ),
                 onTap: () {
                   Navigator.pop(ctx);
                   _onUploadLogo(ImageSource.camera);
                 },
               ),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.photo_library_outlined,
-                  color: Color(0xFF0F172A),
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                 ),
-                title: const Text('Pilih dari Galeri'),
+                title: Text(
+                  'Pilih dari Galeri',
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
+                ),
                 onTap: () {
                   Navigator.pop(ctx);
                   _onUploadLogo(ImageSource.gallery);
@@ -196,27 +207,35 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
+          icon: Icon(
+            Icons.arrow_back,
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Profil Bisnis & QRIS',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF0F172A),
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
           ),
         ),
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
         ),
       ),
       body: BlocConsumer<BusinessBloc, BusinessState>(
@@ -253,15 +272,22 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                 children: [
                   _buildCardGroup(
                     title: 'IDENTITAS TOKO',
+                    isDark: isDark,
                     children: [
                       // Logo Toko / Usaha
-                      _buildLabel('Logo Usaha'),
+                      _buildLabel('Logo Usaha', isDark: isDark),
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
+                          color: isDark
+                              ? const Color(0xFF0F172A)
+                              : const Color(0xFFF8FAFC),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF334155)
+                                : const Color(0xFFE2E8F0),
+                          ),
                         ),
                         child: Row(
                           children: [
@@ -275,12 +301,16 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                                     width: 76,
                                     height: 76,
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: isDark
+                                          ? const Color(0xFF1E293B)
+                                          : Colors.white,
                                       borderRadius: BorderRadius.circular(14),
                                       border: Border.all(
                                         color: _isUploadingLogo
                                             ? AppColors.primary
-                                            : const Color(0xFFCBD5E1),
+                                            : (isDark
+                                                ? const Color(0xFF334155)
+                                                : const Color(0xFFCBD5E1)),
                                         width: _isUploadingLogo ? 2 : 1,
                                       ),
                                     ),
@@ -361,7 +391,9 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                                           color: AppColors.primary,
                                           shape: BoxShape.circle,
                                           border: Border.all(
-                                            color: Colors.white,
+                                            color: isDark
+                                                ? const Color(0xFF1E293B)
+                                                : Colors.white,
                                             width: 2,
                                           ),
                                         ),
@@ -384,18 +416,22 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                                     effectiveLogo.isNotEmpty
                                         ? 'Logo terpasang'
                                         : 'Belum ada logo',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xFF0F172A),
+                                      color: isDark
+                                          ? Colors.white
+                                          : const Color(0xFF0F172A),
                                     ),
                                   ),
                                   const SizedBox(height: 2),
-                                  const Text(
+                                  Text(
                                     'Format PNG/JPG. Ditampilkan pada profil toko dan aplikasi.',
                                     style: TextStyle(
                                       fontSize: 11,
-                                      color: Color(0xFF64748B),
+                                      color: isDark
+                                          ? const Color(0xFF94A3B8)
+                                          : const Color(0xFF64748B),
                                       height: 1.3,
                                     ),
                                   ),
@@ -406,33 +442,35 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _buildLabel('Nama Usaha / Toko'),
+                      _buildLabel('Nama Usaha / Toko', isDark: isDark),
                       TextFormField(
                         controller: _nameController,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Color(0xFF0F172A),
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
                         ),
                         decoration: _buildInputDecoration(
                           hint: 'Contoh: Laci Kopi & Resto',
                           prefixIcon: Icons.storefront_outlined,
+                          isDark: isDark,
                         ),
                         validator: (v) => v == null || v.trim().isEmpty
                             ? 'Nama bisnis tidak boleh kosong'
                             : null,
                       ),
                       const SizedBox(height: 16),
-                      _buildLabel('Alamat Usaha (Dicetak pada Struk)'),
+                      _buildLabel('Alamat Usaha (Dicetak pada Struk)', isDark: isDark),
                       TextFormField(
                         controller: _addressController,
                         maxLines: 3,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Color(0xFF0F172A),
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
                         ),
                         decoration: _buildInputDecoration(
                           hint: 'Jl. Pemuda No. 12, Kelurahan...',
                           prefixIcon: Icons.location_on_outlined,
+                          isDark: isDark,
                         ),
                       ),
                     ],
@@ -440,32 +478,35 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                   const SizedBox(height: 16),
                   _buildCardGroup(
                     title: 'KONTAK BISNIS',
+                    isDark: isDark,
                     children: [
-                      _buildLabel('Nomor Telepon / WhatsApp'),
+                      _buildLabel('Nomor Telepon / WhatsApp', isDark: isDark),
                       TextFormField(
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Color(0xFF0F172A),
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
                         ),
                         decoration: _buildInputDecoration(
                           hint: '0812xxxxxxxx',
                           prefixIcon: Icons.phone_outlined,
+                          isDark: isDark,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _buildLabel('Email Bisnis'),
+                      _buildLabel('Email Bisnis', isDark: isDark),
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Color(0xFF0F172A),
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
                         ),
                         decoration: _buildInputDecoration(
                           hint: 'kontak@tokoanda.com',
                           prefixIcon: Icons.email_outlined,
+                          isDark: isDark,
                         ),
                       ),
                     ],
@@ -473,12 +514,15 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                   const SizedBox(height: 16),
                   _buildCardGroup(
                     title: 'METODE PEMBAYARAN QRIS',
+                    isDark: isDark,
                     children: [
-                      const Text(
+                      Text(
                         'Unggah gambar QRIS statis Anda agar kasir dapat menampilkan barcode QRIS langsung ke pelanggan saat checkout.',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF64748B),
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B),
                           height: 1.4,
                         ),
                       ),
@@ -490,10 +534,14 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                               height: 220,
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF8FAFC),
+                                color: isDark
+                                    ? const Color(0xFF0F172A)
+                                    : const Color(0xFFF8FAFC),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: const Color(0xFFE2E8F0),
+                                  color: isDark
+                                      ? const Color(0xFF334155)
+                                      : const Color(0xFFE2E8F0),
                                 ),
                               ),
                               child: ClipRRect(
@@ -542,11 +590,22 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                                     onPressed: _isUploading
                                         ? null
                                         : _onUploadQRIS,
-                                    icon: const Icon(Icons.refresh, size: 16),
-                                    label: const Text('Ganti Gambar QRIS'),
+                                    icon: Icon(
+                                      Icons.refresh,
+                                      size: 16,
+                                      color: isDark ? Colors.white : Colors.black,
+                                    ),
+                                    label: Text(
+                                      'Ganti Gambar QRIS',
+                                      style: TextStyle(
+                                        color: isDark ? Colors.white : Colors.black,
+                                      ),
+                                    ),
                                     style: OutlinedButton.styleFrom(
-                                      side: const BorderSide(
-                                        color: Color(0xFFE2E8F0),
+                                      side: BorderSide(
+                                        color: isDark
+                                            ? const Color(0xFF334155)
+                                            : const Color(0xFFE2E8F0),
                                       ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(10),
@@ -596,7 +655,11 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFFCBD5E1)),
+                            side: BorderSide(
+                              color: isDark
+                                  ? const Color(0xFF334155)
+                                  : const Color(0xFFCBD5E1),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -639,15 +702,15 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
     );
   }
 
-  Widget _buildLabel(String text) {
+  Widget _buildLabel(String text, {bool isDark = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF475569),
+          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
         ),
       ),
     );
@@ -656,6 +719,7 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
   Widget _buildCardGroup({
     required String title,
     required List<Widget> children,
+    bool isDark = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -664,20 +728,22 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
-              color: Color(0xFF64748B),
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
             ),
           ),
         ),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -691,21 +757,30 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
   InputDecoration _buildInputDecoration({
     required String hint,
     required IconData prefixIcon,
+    bool isDark = false,
   }) {
     return InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-      prefixIcon: Icon(prefixIcon, size: 20, color: const Color(0xFF64748B)),
+      prefixIcon: Icon(
+        prefixIcon,
+        size: 20,
+        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+      ),
       filled: true,
-      fillColor: const Color(0xFFF8FAFC),
+      fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        borderSide: BorderSide(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        borderSide: BorderSide(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),

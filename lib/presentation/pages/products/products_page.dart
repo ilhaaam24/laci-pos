@@ -29,6 +29,13 @@ class _ProductsPageState extends State<ProductsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final subtextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     final currencyFormatter = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',
@@ -36,26 +43,26 @@ class _ProductsPageState extends State<ProductsPage> {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: cardColor,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
+          icon: Icon(Icons.arrow_back, color: textColor),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Kelola Produk',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF0F172A),
+            color: textColor,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.history, color: Color(0xFF0F172A)),
+            icon: Icon(Icons.history, color: textColor),
             tooltip: 'Riwayat Stok',
             onPressed: () {
               Navigator.push(
@@ -65,9 +72,9 @@ class _ProductsPageState extends State<ProductsPage> {
             },
           ),
         ],
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: borderColor),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -85,7 +92,7 @@ class _ProductsPageState extends State<ProductsPage> {
       ),
       body: Column(
         children: [
-          _buildSearchBar(),
+          _buildSearchBar(cardColor, bgColor, borderColor, textColor, subtextColor),
           Expanded(
             child: BlocConsumer<ProductBloc, ProductState>(
               listener: (context, state) {
@@ -117,7 +124,7 @@ class _ProductsPageState extends State<ProductsPage> {
                     .toList();
 
                 if (filteredProducts.isEmpty) {
-                  return _buildEmptyState();
+                  return _buildEmptyState(cardColor, borderColor, textColor, subtextColor);
                 }
 
                 return ListView.builder(
@@ -125,7 +132,7 @@ class _ProductsPageState extends State<ProductsPage> {
                   itemCount: filteredProducts.length,
                   itemBuilder: (context, index) {
                     final product = filteredProducts[index];
-                    return _buildProductCard(product, currencyFormatter);
+                    return _buildProductCard(product, currencyFormatter, isDark, cardColor, bgColor, borderColor, textColor, subtextColor);
                   },
                 );
               },
@@ -136,15 +143,21 @@ class _ProductsPageState extends State<ProductsPage> {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(
+    Color cardColor,
+    Color searchBg,
+    Color borderColor,
+    Color textColor,
+    Color subtextColor,
+  ) {
     return Container(
-      color: Colors.white,
+      color: cardColor,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
+          color: searchBg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: borderColor),
         ),
         child: TextField(
           controller: _searchController,
@@ -153,21 +166,21 @@ class _ProductsPageState extends State<ProductsPage> {
               _searchQuery = value;
             });
           },
-          style: const TextStyle(fontSize: 14, color: Color(0xFF0F172A)),
+          style: TextStyle(fontSize: 14, color: textColor),
           decoration: InputDecoration(
             hintText: 'Cari produk berdasarkan nama...',
-            hintStyle: const TextStyle(fontSize: 14, color: Color(0xFF94A3B8)),
-            prefixIcon: const Icon(
+            hintStyle: TextStyle(fontSize: 14, color: subtextColor),
+            prefixIcon: Icon(
               Icons.search,
-              color: Color(0xFF64748B),
+              color: subtextColor,
               size: 20,
             ),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.clear,
                       size: 18,
-                      color: Color(0xFF64748B),
+                      color: subtextColor,
                     ),
                     onPressed: () {
                       _searchController.clear();
@@ -185,13 +198,22 @@ class _ProductsPageState extends State<ProductsPage> {
     );
   }
 
-  Widget _buildProductCard(Product product, NumberFormat formatter) {
+  Widget _buildProductCard(
+    Product product,
+    NumberFormat formatter,
+    bool isDark,
+    Color cardColor,
+    Color bgColor,
+    Color borderColor,
+    Color textColor,
+    Color subtextColor,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: borderColor),
       ),
       child: InkWell(
         onTap: () {
@@ -207,7 +229,7 @@ class _ProductsPageState extends State<ProductsPage> {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              _buildProductImage(product),
+              _buildProductImage(product, bgColor, borderColor),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -217,19 +239,19 @@ class _ProductsPageState extends State<ProductsPage> {
                       product.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: Color(0xFF0F172A),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       formatter.format(product.price),
-                      style: const TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFF38BDF8) : AppColors.primary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -244,16 +266,58 @@ class _ProductsPageState extends State<ProductsPage> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
+                              color: bgColor,
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              border: Border.all(color: borderColor),
                             ),
                             child: Text(
                               'SKU: ${product.sku}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF64748B),
+                                color: subtextColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (product.hasVariants) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${product.variants.length} Varian',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (product.hasModifiers) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${product.modifierGroups.length} Modifier',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.white,
                               ),
                             ),
                           ),
@@ -263,7 +327,7 @@ class _ProductsPageState extends State<ProductsPage> {
                   ],
                 ),
               ),
-              _buildPopupMenu(product),
+              _buildPopupMenu(product, cardColor, borderColor, textColor),
             ],
           ),
         ),
@@ -271,14 +335,14 @@ class _ProductsPageState extends State<ProductsPage> {
     );
   }
 
-  Widget _buildProductImage(Product product) {
+  Widget _buildProductImage(Product product, Color bgColor, Color borderColor) {
     return Container(
       width: 64,
       height: 64,
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
+        color: bgColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: borderColor),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),
@@ -319,20 +383,17 @@ class _ProductsPageState extends State<ProductsPage> {
     final bool isLow = stock <= threshold && stock > 0;
     final bool isOut = stock == 0;
 
-    Color bgColor = const Color(0xFFECFDF5);
-    Color textColor = const Color(0xFF059669);
-    Color borderColor = const Color(0xFFA7F3D0);
+    Color bgColor = AppColors.primary;
+    Color textColor = AppColors.white;
     String text = 'Stok: $stock';
 
     if (isOut) {
-      bgColor = const Color(0xFFFEF2F2);
-      textColor = const Color(0xFFDC2626);
-      borderColor = const Color(0xFFFECACA);
+      bgColor = AppColors.error;
+      textColor = AppColors.white;
       text = 'Stok Habis';
     } else if (isLow) {
-      bgColor = const Color(0xFFFFFBEB);
-      textColor = const Color(0xFFD97706);
-      borderColor = const Color(0xFFFDE68A);
+      bgColor = AppColors.warning;
+      textColor = AppColors.white;
       text = 'Sisa $stock';
     }
 
@@ -341,7 +402,6 @@ class _ProductsPageState extends State<ProductsPage> {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: borderColor),
       ),
       child: Text(
         text,
@@ -354,38 +414,43 @@ class _ProductsPageState extends State<ProductsPage> {
     );
   }
 
-  Widget _buildPopupMenu(Product product) {
+  Widget _buildPopupMenu(
+    Product product,
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+  ) {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, color: Color(0xFF64748B), size: 20),
-      color: Colors.white,
+      color: cardColor,
       elevation: 3,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
+        side: BorderSide(color: borderColor),
       ),
       itemBuilder: (context) => [
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'edit',
           child: Row(
             children: [
-              Icon(Icons.edit_outlined, size: 18, color: Color(0xFF0F172A)),
-              SizedBox(width: 10),
+              Icon(Icons.edit_outlined, size: 18, color: textColor),
+              const SizedBox(width: 10),
               Text(
                 'Edit Produk',
-                style: TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
+                style: TextStyle(fontSize: 13, color: textColor),
               ),
             ],
           ),
         ),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'history',
           child: Row(
             children: [
-              Icon(Icons.history, size: 18, color: Color(0xFF0F172A)),
-              SizedBox(width: 10),
+              Icon(Icons.history, size: 18, color: textColor),
+              const SizedBox(width: 10),
               Text(
                 'Riwayat Stok',
-                style: TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
+                style: TextStyle(fontSize: 13, color: textColor),
               ),
             ],
           ),
@@ -420,13 +485,18 @@ class _ProductsPageState extends State<ProductsPage> {
             ),
           );
         } else if (value == 'delete') {
-          _showDeleteDialog(context, product);
+          _showDeleteDialog(context, product, cardColor, borderColor, textColor);
         }
       },
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+    Color subtextColor,
+  ) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -437,16 +507,14 @@ class _ProductsPageState extends State<ProductsPage> {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: cardColor,
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: borderColor),
               ),
-              child: Icon(
-                _searchQuery.isNotEmpty
-                    ? Icons.search_off_rounded
-                    : Icons.inventory_2_outlined,
+              child: const Icon(
+                Icons.inventory_2_outlined,
                 size: 34,
-                color: const Color(0xFF94A3B8),
+                color: Color(0xFF94A3B8),
               ),
             ),
             const SizedBox(height: 16),
@@ -454,8 +522,8 @@ class _ProductsPageState extends State<ProductsPage> {
               _searchQuery.isNotEmpty
                   ? 'Produk tidak ditemukan'
                   : 'Belum ada produk',
-              style: const TextStyle(
-                color: Color(0xFF0F172A),
+              style: TextStyle(
+                color: textColor,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -466,7 +534,7 @@ class _ProductsPageState extends State<ProductsPage> {
                   ? 'Coba gunakan kata kunci pencarian lainnya'
                   : 'Tambahkan produk pertama untuk mulai berjualan',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              style: TextStyle(color: subtextColor, fontSize: 13),
             ),
           ],
         ),
@@ -474,41 +542,51 @@ class _ProductsPageState extends State<ProductsPage> {
     );
   }
 
-  void _showDeleteDialog(BuildContext context, Product product) {
+  void _showDeleteDialog(
+    BuildContext context,
+    Product product,
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+  ) {
+    final subtextColor = Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: cardColor,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFE2E8F0)),
+          side: BorderSide(color: borderColor),
         ),
-        title: const Text(
+        title: Text(
           'Hapus Produk?',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF0F172A),
+            color: textColor,
           ),
         ),
         content: Text(
           'Apakah Anda yakin ingin menghapus "${product.name}"? Tindakan ini tidak dapat dibatalkan.',
-          style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+          style: TextStyle(fontSize: 14, color: subtextColor),
         ),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
           OutlinedButton(
             onPressed: () => Navigator.pop(dialogContext),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFFE2E8F0)),
+              side: BorderSide(color: borderColor),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text(
+            child: Text(
               'Batal',
-              style: TextStyle(color: Color(0xFF64748B)),
+              style: TextStyle(color: subtextColor),
             ),
           ),
           ElevatedButton(

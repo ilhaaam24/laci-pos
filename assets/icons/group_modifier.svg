@@ -1,0 +1,13 @@
+<!-- 2. GRUP MODIFIER (Modifier Groups: Topping, Extra Add-on, Custom Level) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="8" y="7" width="32" height="34" rx="4" stroke="#1E293B" stroke-width="2.5" fill="#E6F5EE"/>
+  <line x1="14" y1="13" x2="26" y2="13" stroke="#1E293B" stroke-width="2.5"/>
+  <circle cx="31" cy="13" r="2" fill="#009951"/>
+  <line x1="14" y1="21" x2="34" y2="21" stroke="#94A3B8" stroke-width="2"/>
+  <circle cx="22" cy="21" r="3.5" fill="#009951" stroke="#1E293B" stroke-width="1.8"/>
+  <rect x="14" y="28" width="6" height="6" rx="1.5" fill="#009951" stroke="#009951" stroke-width="1"/>
+  <path d="M15.5 31L17 32.5L20 29.5" stroke="#FFFFFF" stroke-width="1.5"/>
+  <line x1="24" y1="31" x2="34" y2="31" stroke="#1E293B" stroke-width="2"/>
+  <rect x="14" y="36" width="6" height="3" rx="1" stroke="#94A3B8" stroke-width="1.5"/>
+  <line x1="24" y1="37.5" x2="30" y2="37.5" stroke="#94A3B8" stroke-width="2"/>
+</svg>

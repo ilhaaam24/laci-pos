@@ -94,7 +94,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
     final itemSummary =
         txn.items
             .take(2)
-            .map((i) => '${i.quantity}x ${i.productName}')
+            .map((i) => '${i.quantity}x ${i.displayName}')
             .join(', ') +
         (txn.items.length > 2 ? ', +${txn.items.length - 2} lainnya' : '');
 
@@ -108,6 +108,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 720;
     final dialogMaxWidth = isTablet ? 560.0 : 450.0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -118,9 +119,11 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
       child: Container(
         constraints: BoxConstraints(maxWidth: dialogMaxWidth),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
         ),
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
@@ -132,7 +135,6 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 1. Success Circle Check Icon
               Container(
                 width: isTablet ? 68 : 60,
                 height: isTablet ? 68 : 60,
@@ -147,20 +149,16 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
                 ),
               ),
               SizedBox(height: isTablet ? 14 : 12),
-
-              // 2. Title
               Text(
                 'Transaksi Berhasil',
                 style: TextStyle(
                   fontSize: isTablet ? 22 : 20,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF0F172A),
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                   letterSpacing: -0.3,
                 ),
               ),
               const SizedBox(height: 6),
-
-              // 3. Printer Status Pill
               Container(
                 padding: EdgeInsets.symmetric(
                   horizontal: isTablet ? 12 : 10,
@@ -168,13 +166,21 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
                 ),
                 decoration: BoxDecoration(
                   color: isPrinterConnected
-                      ? const Color(0xFFECFDF5)
-                      : const Color(0xFFF1F5F9),
+                      ? (isDark
+                          ? const Color(0xFF064E3B).withValues(alpha: 0.3)
+                          : const Color(0xFFECFDF5))
+                      : (isDark
+                          ? const Color(0xFF0F172A)
+                          : const Color(0xFFF1F5F9)),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isPrinterConnected
-                        ? const Color(0xFFA7F3D0)
-                        : const Color(0xFFE2E8F0),
+                        ? (isDark
+                            ? const Color(0xFF059669).withValues(alpha: 0.5)
+                            : const Color(0xFFA7F3D0))
+                        : (isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0)),
                   ),
                 ),
                 child: Row(
@@ -186,8 +192,12 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
                           : Icons.print_disabled_outlined,
                       size: isTablet ? 14 : 13,
                       color: isPrinterConnected
-                          ? const Color(0xFF059669)
-                          : const Color(0xFF64748B),
+                          ? (isDark
+                              ? const Color(0xFF34D399)
+                              : const Color(0xFF059669))
+                          : (isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B)),
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -198,8 +208,12 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
                         fontSize: isTablet ? 12.5 : 11.5,
                         fontWeight: FontWeight.w600,
                         color: isPrinterConnected
-                            ? const Color(0xFF059669)
-                            : const Color(0xFF64748B),
+                            ? (isDark
+                                ? const Color(0xFF34D399)
+                                : const Color(0xFF059669))
+                            : (isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B)),
                       ),
                     ),
                   ],
@@ -207,22 +221,26 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
               ),
               SizedBox(height: isTablet ? 18 : 16),
 
-              // 4. Change Amount Card (Mint Green Card)
-              _buildChangeCard(isCash, receivedCash, txn, isTablet: isTablet),
+              _buildChangeCard(
+                isCash,
+                receivedCash,
+                txn,
+                isDark: isDark,
+                isTablet: isTablet,
+              ),
               SizedBox(height: isTablet ? 14 : 12),
 
-              // 5. Transaction Summary Card
               _buildSummaryCard(
                 txn,
                 isCash,
                 receivedCash,
                 totalQuantity,
                 itemSummary,
+                isDark: isDark,
                 isTablet: isTablet,
               ),
               SizedBox(height: isTablet ? 16 : 14),
 
-              // 6. Action Buttons (e-Receipt WA & Cetak Ulang)
               Row(
                 children: [
                   Expanded(
@@ -235,6 +253,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
                           : 'Kirim WhatsApp',
                       isLoading: _isSharingWA,
                       onTap: _isSharingWA ? null : _handleShareWhatsApp,
+                      isDark: isDark,
                       isTablet: isTablet,
                     ),
                   ),
@@ -247,14 +266,13 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
                       subtitle: 'Struk Kasir',
                       isLoading: _isPrinting,
                       onTap: _isPrinting ? null : _handleReprint,
+                      isDark: isDark,
                       isTablet: isTablet,
                     ),
                   ),
                 ],
               ),
               SizedBox(height: isTablet ? 18 : 16),
-
-              // 7. Primary Button: Mulai Transaksi Baru
               SizedBox(
                 width: double.infinity,
                 height: isTablet ? 54 : 50,
@@ -295,7 +313,9 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
                     style: TextStyle(
                       fontSize: isTablet ? 14 : 13,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF64748B),
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B),
                     ),
                   ),
                 ),
@@ -311,6 +331,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
     bool isCash,
     double receivedCash,
     TransactionEntity txn, {
+    bool isDark = false,
     bool isTablet = false,
   }) {
     final change = txn.changeAmount;
@@ -331,7 +352,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
               fontSize: isTablet ? 12 : 11,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.6,
-              color: Colors.black,
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
             ),
           ),
           SizedBox(height: isTablet ? 6 : 4),
@@ -344,7 +365,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
               style: TextStyle(
                 fontSize: isTablet ? 32 : 26,
                 fontWeight: FontWeight.w800,
-                color: Colors.black,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
                 letterSpacing: -0.5,
               ),
             ),
@@ -360,6 +381,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
     double receivedCash,
     int totalQuantity,
     String itemSummary, {
+    bool isDark = false,
     bool isTablet = false,
   }) {
     final customerName = txn.customerName;
@@ -368,9 +390,11 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
       width: double.infinity,
       padding: EdgeInsets.all(isTablet ? 18 : 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: Column(
         children: [
@@ -379,6 +403,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
             'Nomor Nota',
             '#${txn.transactionCode}',
             isBoldValue: true,
+            isDark: isDark,
             isTablet: isTablet,
           ),
           SizedBox(height: isTablet ? 10 : 8),
@@ -388,7 +413,8 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
             'Total Tagihan',
             _currencyFormatter.format(txn.totalAmount),
             isBoldValue: true,
-            valueColor: const Color(0xFF0F172A),
+            valueColor: isDark ? Colors.white : const Color(0xFF0F172A),
+            isDark: isDark,
             isTablet: isTablet,
           ),
           SizedBox(height: isTablet ? 10 : 8),
@@ -399,6 +425,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
             isCash
                 ? 'Tunai (Diterima ${_currencyFormatter.format(receivedCash).trim()})'
                 : txn.paymentMethodDisplay,
+            isDark: isDark,
             isTablet: isTablet,
           ),
 
@@ -413,7 +440,9 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
                     Icon(
                       Icons.person_outline_rounded,
                       size: isTablet ? 16 : 14,
-                      color: const Color(0xFF64748B),
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B),
                     ),
                     const SizedBox(width: 5),
                     Text(
@@ -421,7 +450,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
                       style: TextStyle(
                         fontSize: isTablet ? 13.5 : 12.5,
                         fontWeight: FontWeight.w600,
-                        color: const Color(0xFF0F172A),
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -431,15 +460,19 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3C7),
+                        color: isDark
+                            ? const Color(0xFF78350F).withValues(alpha: 0.4)
+                            : const Color(0xFFFEF3C7),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Member',
                         style: TextStyle(
                           fontSize: 9.5,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFFB45309),
+                          color: isDark
+                              ? const Color(0xFFFCD34D)
+                              : const Color(0xFFB45309),
                         ),
                       ),
                     ),
@@ -459,10 +492,12 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
 
           Padding(
             padding: EdgeInsets.symmetric(vertical: isTablet ? 12 : 10),
-            child: const Divider(
+            child: Divider(
               height: 1,
               thickness: 1,
-              color: Color(0xFFE2E8F0),
+              color: isDark
+                  ? const Color(0xFF334155)
+                  : const Color(0xFFE2E8F0),
             ),
           ),
 
@@ -472,7 +507,9 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
               Icon(
                 Icons.receipt_long_outlined,
                 size: isTablet ? 16 : 14,
-                color: const Color(0xFF64748B),
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
               ),
               const SizedBox(width: 6),
               Expanded(
@@ -482,7 +519,9 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: isTablet ? 12.5 : 11.5,
-                    color: const Color(0xFF64748B),
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -497,6 +536,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
   Widget _buildSummaryRow(
     String label,
     String value, {
+    bool isDark = false,
     bool isBoldValue = false,
     Color? valueColor,
     bool isTablet = false,
@@ -508,7 +548,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
           label,
           style: TextStyle(
             fontSize: isTablet ? 13.5 : 12.5,
-            color: const Color(0xFF64748B),
+            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
           ),
         ),
         Text(
@@ -516,7 +556,8 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
           style: TextStyle(
             fontSize: isTablet ? 14 : 12.5,
             fontWeight: isBoldValue ? FontWeight.bold : FontWeight.w500,
-            color: valueColor ?? const Color(0xFF0F172A),
+            color: valueColor ??
+                (isDark ? Colors.white : const Color(0xFF0F172A)),
           ),
         ),
       ],
@@ -530,6 +571,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
     required String subtitle,
     required bool isLoading,
     required VoidCallback? onTap,
+    bool isDark = false,
     bool isTablet = false,
   }) {
     return InkWell(
@@ -541,9 +583,11 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
           vertical: isTablet ? 14 : 11,
         ),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF0F172A) : Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
         ),
         child: Row(
           children: [
@@ -571,7 +615,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
                     style: TextStyle(
                       fontSize: isTablet ? 13 : 12,
                       fontWeight: FontWeight.bold,
-                      color: const Color(0xFF0F172A),
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -581,7 +625,9 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: isTablet ? 11.5 : 10.5,
-                      color: const Color(0xFF64748B),
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B),
                     ),
                   ),
                 ],

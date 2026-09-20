@@ -100,11 +100,26 @@ class PrinterService {
 
     for (var item in transaction.items) {
       bytes += generator.text(
-        item.productName,
+        item.displayName,
         styles: const PosStyles(bold: true),
       );
+      if (item.selectedModifiers.isNotEmpty) {
+        bytes += generator.text(
+          ' + ${item.modifiersDisplay}',
+          styles: const PosStyles(fontType: PosFontType.fontB),
+        );
+      }
+      if (item.notes != null && item.notes!.trim().isNotEmpty) {
+        bytes += generator.text(
+          ' * ${item.notes!.trim()}',
+          styles: const PosStyles(fontType: PosFontType.fontB),
+        );
+      }
       bytes += generator.row([
-        PosColumn(text: '${item.quantity} x ${item.price.toInt()}', width: 8),
+        PosColumn(
+          text: '${item.quantity} x ${item.unitPrice.toInt()}',
+          width: 8,
+        ),
         PosColumn(
           text: item.subtotal.toInt().toString(),
           width: 4,

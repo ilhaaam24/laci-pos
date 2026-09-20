@@ -27,6 +27,8 @@ class LocalProducts extends Table {
   TextColumn get businessId => text().nullable()();
   TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
   DateTimeColumn get lastSyncAt => dateTime().nullable()();
+  TextColumn get variants => text().nullable()();
+  TextColumn get modifierGroups => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -108,6 +110,9 @@ class LocalTransactionItems extends Table {
   RealColumn get discount => real().withDefault(const Constant(0))();
   RealColumn get subtotal => real()();
   TextColumn get businessId => text().nullable()();
+  TextColumn get selectedVariant => text().nullable()();
+  TextColumn get selectedModifiers => text().nullable()();
+  TextColumn get notes => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -227,7 +232,7 @@ class LocalDatabase extends _$LocalDatabase {
   LocalDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -261,6 +266,20 @@ class LocalDatabase extends _$LocalDatabase {
           await m.createTable(localStockLogs);
           await m.createTable(localPromos);
           await m.createTable(localBusinessInfo);
+        }
+        if (from < 6) {
+          // Add variant and modifier columns
+          await m.addColumn(localProducts, localProducts.variants);
+          await m.addColumn(localProducts, localProducts.modifierGroups);
+          await m.addColumn(
+            localTransactionItems,
+            localTransactionItems.selectedVariant,
+          );
+          await m.addColumn(
+            localTransactionItems,
+            localTransactionItems.selectedModifiers,
+          );
+          await m.addColumn(localTransactionItems, localTransactionItems.notes);
         }
       },
     );

@@ -23,36 +23,47 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0F172A)),
+          icon: Icon(
+            Icons.arrow_back_rounded,
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Manajemen Staf & User',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF0F172A),
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF334155)),
+            icon: Icon(
+              Icons.refresh_rounded,
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF334155),
+            ),
             onPressed: () {
               context.read<UsersBloc>().add(LoadUsers());
               AppToast.showInfo(context, 'Memuat ulang daftar staf...');
             },
           ),
         ],
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
         ),
       ),
       body: BlocConsumer<UsersBloc, UsersState>(
@@ -100,15 +111,18 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                   managerCount: managerCount,
                   adminCount: adminCount,
                   ownerCount: ownerCount,
+                  isDark: isDark,
                 ),
                 const SizedBox(height: 16),
 
                 Text(
                   'DAFTAR STAF AKTIF (${users.length})',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF64748B),
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -116,9 +130,9 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
 
                 // 3. User Cards or Empty State
                 if (users.isEmpty)
-                  _buildEmptyState()
+                  _buildEmptyState(isDark: isDark)
                 else
-                  ...users.map((user) => _buildUserCard(user)),
+                  ...users.map((user) => _buildUserCard(user, isDark: isDark)),
               ],
             ),
           );
@@ -149,13 +163,16 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
     required int managerCount,
     required int adminCount,
     required int ownerCount,
+    bool isDark = false,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,7 +181,7 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
             children: [
               SvgPicture.asset("assets/icons/staff.svg", height: 32),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -173,15 +190,17 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
                       'Kelola terminal kasir dan hak akses operasional',
                       style: TextStyle(
                         fontSize: 11.5,
-                        color: Color(0xFF64748B),
+                        color: isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B),
                       ),
                     ),
                   ],
@@ -190,7 +209,11 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
             ],
           ),
           const SizedBox(height: 14),
-          const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+          ),
           const SizedBox(height: 12),
           // Role Badges Row
           SingleChildScrollView(
@@ -249,7 +272,7 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
         children: [
           Text(
             role,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 11.5,
               fontWeight: FontWeight.w600,
               color: Colors.white,
@@ -264,7 +287,7 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
             ),
             child: Text(
               '$count',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.bold,
                 color: AppColors.primary,
@@ -277,7 +300,7 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
   }
 
   // 2. Single User Card (Flat, Modern, NO SHADOW)
-  Widget _buildUserCard(UserEntity user) {
+  Widget _buildUserCard(UserEntity user, {bool isDark = false}) {
     final displayName = user.name?.isNotEmpty == true
         ? user.name!
         : user.email.split('@').first;
@@ -291,9 +314,11 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: Row(
         children: [
@@ -327,10 +352,10 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                     Flexible(
                       child: Text(
                         displayName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14.5,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF0F172A),
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -360,9 +385,11 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                 const SizedBox(height: 3),
                 Text(
                   user.email,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF64748B),
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -378,20 +405,32 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
+                ),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.edit_outlined, size: 14, color: Color(0xFF475569)),
-                  SizedBox(width: 4),
+                  Icon(
+                    Icons.edit_outlined,
+                    size: 14,
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF475569),
+                  ),
+                  const SizedBox(width: 4),
                   Text(
                     'Ubah',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF475569),
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF475569),
                     ),
                   ),
                 ],
@@ -405,6 +444,7 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
 
   // 3. Add User Dialog (Clean, Modern, NO SHADOW)
   void _showAddUserDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
     UserRole selectedRole = UserRole.kasir;
@@ -416,24 +456,26 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
         builder: (context, setDialogState) => AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFFE2E8F0)),
+            side: BorderSide(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
           ),
-          backgroundColor: Colors.white,
+          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
           elevation: 0,
-          title: const Row(
+          title: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.person_add_alt_1_rounded,
                 color: AppColors.primary,
                 size: 22,
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
                 'Tambah Staf Baru',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                 ),
               ),
             ],
@@ -443,69 +485,99 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Email Staf',
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF334155),
+                    color: isDark
+                        ? const Color(0xFFCBD5E1)
+                        : const Color(0xFF334155),
                   ),
                 ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: emailController,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    fontSize: 13.5,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'contoh: stafkasir@gmail.com',
-                    hintStyle: const TextStyle(
+                    hintStyle: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF94A3B8),
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF94A3B8),
                     ),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.mail_outline_rounded,
                       size: 20,
-                      color: Color(0xFF94A3B8),
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF94A3B8),
                     ),
                     filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
+                    fillColor: isDark
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFFF8FAFC),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 12,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                      ),
                     ),
                   ),
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 14),
 
-                const Text(
+                Text(
                   'Password Login',
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF334155),
+                    color: isDark
+                        ? const Color(0xFFCBD5E1)
+                        : const Color(0xFF334155),
                   ),
                 ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: passwordController,
                   obscureText: obscurePassword,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    fontSize: 13.5,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Minimal 6 karakter',
-                    hintStyle: const TextStyle(
+                    hintStyle: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF94A3B8),
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF94A3B8),
                     ),
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.lock_outline_rounded,
                       size: 20,
-                      color: Color(0xFF94A3B8),
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF94A3B8),
                     ),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -513,7 +585,9 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
                         size: 20,
-                        color: const Color(0xFF64748B),
+                        color: isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B),
                       ),
                       onPressed: () {
                         setDialogState(
@@ -522,29 +596,41 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                       },
                     ),
                     filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
+                    fillColor: isDark
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFFF8FAFC),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 12,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
 
-                const Text(
+                Text(
                   'Pilih Hak Akses / Role:',
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF334155),
+                    color: isDark
+                        ? const Color(0xFFCBD5E1)
+                        : const Color(0xFF334155),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -563,12 +649,16 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                       decoration: BoxDecoration(
                         color: isSelected
                             ? AppColors.primary
-                            : const Color(0xFFF8FAFC),
+                            : (isDark
+                                ? const Color(0xFF0F172A)
+                                : const Color(0xFFF8FAFC)),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: isSelected
                               ? AppColors.primary
-                              : const Color(0xFFE2E8F0),
+                              : (isDark
+                                  ? const Color(0xFF334155)
+                                  : const Color(0xFFE2E8F0)),
                         ),
                       ),
                       child: Row(
@@ -580,7 +670,9 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                             size: 18,
                             color: isSelected
                                 ? AppColors.white
-                                : const Color(0xFF94A3B8),
+                                : (isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF94A3B8)),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -594,7 +686,9 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                                     fontWeight: FontWeight.bold,
                                     color: isSelected
                                         ? AppColors.white
-                                        : const Color(0xFF0F172A),
+                                        : (isDark
+                                            ? Colors.white
+                                            : const Color(0xFF0F172A)),
                                   ),
                                 ),
                                 Text(
@@ -603,7 +697,9 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                                     fontSize: 11,
                                     color: isSelected
                                         ? AppColors.white
-                                        : const Color(0xFF0F172A),
+                                        : (isDark
+                                            ? const Color(0xFF94A3B8)
+                                            : const Color(0xFF64748B)),
                                   ),
                                 ),
                               ],
@@ -622,14 +718,22 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
             OutlinedButton(
               onPressed: () => Navigator.pop(dialogContext),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFE2E8F0)),
+                side: BorderSide(
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 'Batal',
-                style: TextStyle(color: Color(0xFF64748B)),
+                style: TextStyle(
+                  color: isDark
+                      ? const Color(0xFF94A3B8)
+                      : const Color(0xFF64748B),
+                ),
               ),
             ),
             ElevatedButton(
@@ -673,6 +777,7 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
 
   // 4. Edit Role Dialog (Modern Selectable Cards, NO SHADOW)
   void _showEditRoleDialog(BuildContext context, UserEntity user) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     UserRole chosenRole = user.role;
 
     showDialog(
@@ -681,20 +786,22 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
         builder: (context, setDialogState) => AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xFFE2E8F0)),
+            side: BorderSide(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
           ),
-          backgroundColor: Colors.white,
+          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
           elevation: 0,
           title: Row(
             children: [
               SvgPicture.asset("assets/icons/staff.svg", height: 32),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
                 'Ubah Hak Akses',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF0F172A),
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                 ),
               ),
             ],
@@ -705,9 +812,11 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
             children: [
               Text(
                 'Pilih role baru untuk ${user.name ?? user.email}:',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12.5,
-                  color: Color(0xFF64748B),
+                  color: isDark
+                      ? const Color(0xFF94A3B8)
+                      : const Color(0xFF64748B),
                 ),
               ),
               const SizedBox(height: 12),
@@ -723,13 +832,19 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFFE6F4F2)
-                          : const Color(0xFFF8FAFC),
+                          ? (isDark
+                              ? const Color(0xFF064E3B).withValues(alpha: 0.3)
+                              : const Color(0xFFE6F4F2))
+                          : (isDark
+                              ? const Color(0xFF0F172A)
+                              : const Color(0xFFF8FAFC)),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: isSelected
                             ? AppColors.primary
-                            : const Color(0xFFE2E8F0),
+                            : (isDark
+                                ? const Color(0xFF334155)
+                                : const Color(0xFFE2E8F0)),
                       ),
                     ),
                     child: Row(
@@ -741,7 +856,9 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                           size: 18,
                           color: isSelected
                               ? AppColors.primary
-                              : const Color(0xFF94A3B8),
+                              : (isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF94A3B8)),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -755,14 +872,18 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                                   fontWeight: FontWeight.bold,
                                   color: isSelected
                                       ? AppColors.primary
-                                      : const Color(0xFF0F172A),
+                                      : (isDark
+                                          ? Colors.white
+                                          : const Color(0xFF0F172A)),
                                 ),
                               ),
                               Text(
                                 info,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: Color(0xFF64748B),
+                                  color: isDark
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF64748B),
                                 ),
                               ),
                             ],
@@ -780,14 +901,22 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
             OutlinedButton(
               onPressed: () => Navigator.pop(dialogContext),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFE2E8F0)),
+                side: BorderSide(
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 'Batal',
-                style: TextStyle(color: Color(0xFF64748B)),
+                style: TextStyle(
+                  color: isDark
+                      ? const Color(0xFF94A3B8)
+                      : const Color(0xFF64748B),
+                ),
               ),
             ),
             ElevatedButton(
@@ -819,7 +948,7 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState({bool isDark = false}) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -830,9 +959,15 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: isDark
+                    ? const Color(0xFF1E293B)
+                    : const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
+                ),
               ),
               child: const Icon(
                 Icons.people_outline_rounded,
@@ -841,18 +976,23 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Belum ada akun staf',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF0F172A),
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Tambahkan staf kasir untuk membantu operasional transaksi toko Anda.',
-              style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+              style: TextStyle(
+                fontSize: 12.5,
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
+              ),
               textAlign: TextAlign.center,
             ),
           ],

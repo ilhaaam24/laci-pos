@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as f_store;
+import '../../domain/entities/product_variant.dart';
 import '../../domain/entities/transaction_entity.dart';
 
 class TransactionItemModel extends TransactionItem {
@@ -12,6 +13,9 @@ class TransactionItemModel extends TransactionItem {
     super.discount = 0,
     required super.subtotal,
     super.businessId,
+    super.selectedVariant,
+    super.selectedModifiers = const [],
+    super.notes,
   });
 
   factory TransactionItemModel.fromMap(Map<String, dynamic> map, String id) {
@@ -25,6 +29,18 @@ class TransactionItemModel extends TransactionItem {
       discount: (map['discount'] ?? 0).toDouble(),
       subtotal: (map['subtotal'] ?? 0).toDouble(),
       businessId: map['businessId'],
+      selectedVariant: map['selectedVariant'] != null
+          ? ProductVariant.fromJson(
+              Map<String, dynamic>.from(map['selectedVariant'] as Map),
+            )
+          : null,
+      selectedModifiers: map['selectedModifiers'] != null
+          ? (map['selectedModifiers'] as List)
+              .map((e) => ModifierOption.fromJson(
+                  Map<String, dynamic>.from(e as Map)))
+              .toList()
+          : const [],
+      notes: map['notes'],
     );
   }
 
@@ -39,6 +55,9 @@ class TransactionItemModel extends TransactionItem {
       discount: entity.discount,
       subtotal: entity.subtotal,
       businessId: entity.businessId,
+      selectedVariant: entity.selectedVariant,
+      selectedModifiers: entity.selectedModifiers,
+      notes: entity.notes,
     );
   }
 
@@ -52,6 +71,9 @@ class TransactionItemModel extends TransactionItem {
       'discount': discount,
       'subtotal': subtotal,
       'businessId': businessId,
+      'selectedVariant': selectedVariant?.toJson(),
+      'selectedModifiers': selectedModifiers.map((e) => e.toJson()).toList(),
+      'notes': notes,
     };
   }
 
@@ -66,6 +88,9 @@ class TransactionItemModel extends TransactionItem {
       'discount': discount,
       'subtotal': subtotal,
       'businessId': businessId,
+      'selectedVariant': selectedVariant?.toJson(),
+      'selectedModifiers': selectedModifiers.map((e) => e.toJson()).toList(),
+      'notes': notes,
     };
   }
 
@@ -80,9 +105,22 @@ class TransactionItemModel extends TransactionItem {
       discount: (json['discount'] ?? 0).toDouble(),
       subtotal: (json['subtotal'] ?? 0).toDouble(),
       businessId: json['businessId'],
+      selectedVariant: json['selectedVariant'] != null
+          ? ProductVariant.fromJson(
+              Map<String, dynamic>.from(json['selectedVariant'] as Map),
+            )
+          : null,
+      selectedModifiers: json['selectedModifiers'] != null
+          ? (json['selectedModifiers'] as List)
+              .map((e) => ModifierOption.fromJson(
+                  Map<String, dynamic>.from(e as Map)))
+              .toList()
+          : const [],
+      notes: json['notes'],
     );
   }
 
+  @override
   TransactionItemModel copyWith({
     String? id,
     String? productId,
@@ -93,6 +131,9 @@ class TransactionItemModel extends TransactionItem {
     double? discount,
     double? subtotal,
     String? businessId,
+    ProductVariant? selectedVariant,
+    List<ModifierOption>? selectedModifiers,
+    String? notes,
   }) {
     return TransactionItemModel(
       id: id ?? this.id,
@@ -104,6 +145,9 @@ class TransactionItemModel extends TransactionItem {
       discount: discount ?? this.discount,
       subtotal: subtotal ?? this.subtotal,
       businessId: businessId ?? this.businessId,
+      selectedVariant: selectedVariant ?? this.selectedVariant,
+      selectedModifiers: selectedModifiers ?? this.selectedModifiers,
+      notes: notes ?? this.notes,
     );
   }
 
@@ -118,6 +162,9 @@ class TransactionItemModel extends TransactionItem {
       discount: discount,
       subtotal: subtotal,
       businessId: businessId,
+      selectedVariant: selectedVariant,
+      selectedModifiers: selectedModifiers,
+      notes: notes,
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'product_variant.dart';
 
 class Product extends Equatable {
   final String id;
@@ -14,6 +15,8 @@ class Product extends Equatable {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? businessId;
+  final List<ProductVariant> variants;
+  final List<ModifierGroup> modifierGroups;
 
   const Product({
     required this.id,
@@ -29,7 +32,12 @@ class Product extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     this.businessId,
+    this.variants = const [],
+    this.modifierGroups = const [],
   });
+
+  bool get hasVariants => variants.isNotEmpty;
+  bool get hasModifiers => modifierGroups.isNotEmpty;
 
   @override
   List<Object?> get props => [
@@ -46,5 +54,7 @@ class Product extends Equatable {
     createdAt,
     updatedAt,
     businessId,
+    variants,
+    modifierGroups,
   ];
 }

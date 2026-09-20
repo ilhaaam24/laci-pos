@@ -67,38 +67,44 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
   }
 
   void _showDeleteConfirm() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final subtextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: cardColor,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFE2E8F0)),
+          side: BorderSide(color: borderColor),
         ),
-        title: const Text(
+        title: Text(
           'Hapus Pelanggan?',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF0F172A),
+            color: textColor,
           ),
         ),
         content: Text(
           'Apakah Anda yakin ingin menghapus pelanggan "${widget.customer?.name}"?',
-          style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+          style: TextStyle(fontSize: 14, color: subtextColor),
         ),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
           OutlinedButton(
             onPressed: () => Navigator.pop(dialogContext),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFFE2E8F0)),
+              side: BorderSide(color: borderColor),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text('Batal', style: TextStyle(color: Color(0xFF64748B))),
+            child: Text('Batal', style: TextStyle(color: subtextColor)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -121,22 +127,28 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: cardColor,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
+          icon: Icon(Icons.arrow_back, color: textColor),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           _isEdit ? 'Ubah Pelanggan' : 'Tambah Pelanggan',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF0F172A),
+            color: textColor,
           ),
         ),
         actions: [
@@ -147,9 +159,9 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
               onPressed: _showDeleteConfirm,
             ),
         ],
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: borderColor),
         ),
       ),
       body: BlocListener<CustomerBloc, CustomerState>(
@@ -174,7 +186,7 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
                     _buildLabel('Nama Lengkap'),
                     TextFormField(
                       controller: _nameController,
-                      style: const TextStyle(fontSize: 14, color: Color(0xFF0F172A)),
+                      style: TextStyle(fontSize: 14, color: textColor),
                       decoration: _buildInputDecoration(
                         hint: 'Contoh: Ahmad Fauzi',
                         prefixIcon: Icons.person_outline,
@@ -188,7 +200,7 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
                     TextFormField(
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
-                      style: const TextStyle(fontSize: 14, color: Color(0xFF0F172A)),
+                      style: TextStyle(fontSize: 14, color: textColor),
                       decoration: _buildInputDecoration(
                         hint: '0812xxxxxxxx',
                         prefixIcon: Icons.phone_outlined,
@@ -199,7 +211,7 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      style: const TextStyle(fontSize: 14, color: Color(0xFF0F172A)),
+                      style: TextStyle(fontSize: 14, color: textColor),
                       decoration: _buildInputDecoration(
                         hint: 'pelanggan@email.com',
                         prefixIcon: Icons.email_outlined,
@@ -215,7 +227,7 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
                     TextFormField(
                       controller: _addressController,
                       maxLines: 3,
-                      style: const TextStyle(fontSize: 14, color: Color(0xFF0F172A)),
+                      style: TextStyle(fontSize: 14, color: textColor),
                       decoration: _buildInputDecoration(
                         hint: 'Jalan, nomor rumah, RT/RW, kecamatan...',
                         prefixIcon: Icons.location_on_outlined,
@@ -254,20 +266,22 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
   }
 
   Widget _buildLabel(String text) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF475569),
+          color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
         ),
       ),
     );
   }
 
   Widget _buildCardGroup({required String title, required List<Widget> children}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -275,20 +289,22 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
-              color: Color(0xFF64748B),
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
             ),
           ),
         ),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,28 +319,34 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
     required String hint,
     required IconData prefixIcon,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fillCol = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final borderCol = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final hintCol = isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
+    final iconCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-      prefixIcon: Icon(prefixIcon, size: 20, color: const Color(0xFF64748B)),
+      hintStyle: TextStyle(fontSize: 13, color: hintCol),
+      prefixIcon: Icon(prefixIcon, size: 20, color: iconCol),
       filled: true,
-      fillColor: const Color(0xFFF8FAFC),
+      fillColor: fillCol,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        borderSide: BorderSide(color: borderCol),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        borderSide: BorderSide(color: borderCol),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+      focusedBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(10)),
+        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
       ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFDC2626)),
+      errorBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(10)),
+        borderSide: BorderSide(color: Color(0xFFDC2626)),
       ),
     );
   }

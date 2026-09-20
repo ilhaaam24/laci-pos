@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:laci/data/models/transaction_model.dart';
+import 'package:laci/domain/entities/product_variant.dart';
 import 'package:laci/domain/entities/transaction_entity.dart';
 import 'local_database.dart';
 
@@ -135,6 +137,19 @@ class TransactionLocalDataSource {
                 discount: Value(item.discount),
                 subtotal: item.subtotal,
                 businessId: Value(item.businessId),
+                selectedVariant: Value(
+                  item.selectedVariant != null
+                      ? jsonEncode(item.selectedVariant!.toJson())
+                      : null,
+                ),
+                selectedModifiers: Value(
+                  item.selectedModifiers.isNotEmpty
+                      ? jsonEncode(
+                          item.selectedModifiers.map((e) => e.toJson()).toList(),
+                        )
+                      : null,
+                ),
+                notes: Value(item.notes),
               ),
             );
       }
@@ -234,6 +249,21 @@ class TransactionLocalDataSource {
                   discount: Value(item.discount),
                   subtotal: item.subtotal,
                   businessId: Value(item.businessId),
+                  selectedVariant: Value(
+                    item.selectedVariant != null
+                        ? jsonEncode(item.selectedVariant!.toJson())
+                        : null,
+                  ),
+                  selectedModifiers: Value(
+                    item.selectedModifiers.isNotEmpty
+                        ? jsonEncode(
+                            item.selectedModifiers
+                                .map((e) => e.toJson())
+                                .toList(),
+                          )
+                        : null,
+                  ),
+                  notes: Value(item.notes),
                 ),
               );
         }
@@ -305,6 +335,26 @@ class TransactionLocalDataSource {
   }
 
   TransactionItemModel _itemRowToModel(LocalTransactionItem row) {
+    ProductVariant? selectedVariant;
+    if (row.selectedVariant != null && row.selectedVariant!.isNotEmpty) {
+      try {
+        selectedVariant = ProductVariant.fromJson(
+          Map<String, dynamic>.from(jsonDecode(row.selectedVariant!) as Map),
+        );
+      } catch (_) {}
+    }
+
+    List<ModifierOption> selectedModifiers = const [];
+    if (row.selectedModifiers != null && row.selectedModifiers!.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(row.selectedModifiers!) as List;
+        selectedModifiers = decoded
+            .map((e) => ModifierOption.fromJson(
+                Map<String, dynamic>.from(e as Map)))
+            .toList();
+      } catch (_) {}
+    }
+
     return TransactionItemModel(
       id: row.id,
       productId: row.productId,
@@ -315,6 +365,9 @@ class TransactionLocalDataSource {
       discount: row.discount,
       subtotal: row.subtotal,
       businessId: row.businessId,
+      selectedVariant: selectedVariant,
+      selectedModifiers: selectedModifiers,
+      notes: row.notes,
     );
   }
 

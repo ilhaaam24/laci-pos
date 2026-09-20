@@ -32,8 +32,9 @@ class _BusinessSetupPageState extends State<BusinessSetupPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       body: BlocConsumer<BusinessBloc, BusinessState>(
         listener: (context, state) {
           if (state.isSuccess && state.message != null) {
@@ -56,22 +57,24 @@ class _BusinessSetupPageState extends State<BusinessSetupPage> {
                     height: 84,
                   ).animate().scale(duration: 600.ms, curve: Curves.bounceIn),
                   const SizedBox(height: 32),
-                  const Text(
+                  Text(
                     'Satu Langkah Lagi!',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
                     ),
                   ).animate().fadeIn(delay: 200.ms),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Beri nama bisnis Anda untuk memulai pengelolaan kasir yang lebih profesional.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
-                      color: AppColors.textSecondary,
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B),
                     ),
                   ).animate().fadeIn(delay: 400.ms),
                   const SizedBox(height: 48),
@@ -82,17 +85,49 @@ class _BusinessSetupPageState extends State<BusinessSetupPage> {
                       children: [
                         TextFormField(
                           controller: _nameController,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          ),
                           decoration: InputDecoration(
                             hintText: 'Contoh: Kedai Kopi Maju',
                             hintStyle: TextStyle(
-                              color: AppColors.textSecondary,
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF94A3B8),
                             ),
-                            prefixIcon: const Icon(Icons.edit_note_rounded),
+                            prefixIcon: Icon(
+                              Icons.edit_note_rounded,
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
+                            ),
                             filled: true,
-                            fillColor: Colors.white,
+                            fillColor: isDark
+                                ? const Color(0xFF1E293B)
+                                : Colors.white,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide.none,
+                              borderSide: BorderSide(
+                                color: isDark
+                                    ? const Color(0xFF334155)
+                                    : const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(
+                                color: isDark
+                                    ? const Color(0xFF334155)
+                                    : const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: const BorderSide(
+                                color: AppColors.primary,
+                                width: 1.5,
+                              ),
                             ),
                           ),
                           validator: (v) => v == null || v.isEmpty

@@ -64,28 +64,35 @@ class _AddEditCategoryPageState extends State<AddEditCategoryPage> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.category != null;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final subtextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final labelColor = isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: cardColor,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
+          icon: Icon(Icons.arrow_back, color: textColor),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           isEdit ? 'Edit Kategori' : 'Tambah Kategori',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF0F172A),
+            color: textColor,
           ),
         ),
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: borderColor),
         ),
       ),
       body: Form(
@@ -96,41 +103,41 @@ class _AddEditCategoryPageState extends State<AddEditCategoryPage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
-                  padding: EdgeInsets.only(left: 4, bottom: 8),
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 8),
                   child: Text(
                     'DETAIL KATEGORI',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
-                      color: Color(0xFF64748B),
+                      color: subtextColor,
                     ),
                   ),
                 ),
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: cardColor,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: borderColor),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Nama Kategori',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF475569),
+                          color: labelColor,
                         ),
                       ),
                       const SizedBox(height: 6),
                       TextFormField(
                         controller: _nameController,
                         autofocus: !isEdit,
-                        style: const TextStyle(fontSize: 14, color: Color(0xFF0F172A)),
+                        style: TextStyle(fontSize: 14, color: textColor),
                         decoration: _buildInputDecoration(
                           hint: 'Contoh: Minuman, Makanan Ringan',
                           prefixIcon: Icons.category_outlined,
@@ -140,19 +147,19 @@ class _AddEditCategoryPageState extends State<AddEditCategoryPage> {
                             : null,
                       ),
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         'Deskripsi (Opsional)',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF475569),
+                          color: labelColor,
                         ),
                       ),
                       const SizedBox(height: 6),
                       TextFormField(
                         controller: _descriptionController,
                         maxLines: 3,
-                        style: const TextStyle(fontSize: 14, color: Color(0xFF0F172A)),
+                        style: TextStyle(fontSize: 14, color: textColor),
                         decoration: _buildInputDecoration(
                           hint: 'Keterangan singkat tentang kelompok kategori ini...',
                           prefixIcon: Icons.description_outlined,
@@ -202,28 +209,34 @@ class _AddEditCategoryPageState extends State<AddEditCategoryPage> {
     required String hint,
     required IconData prefixIcon,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fillCol = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final borderCol = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final hintCol = isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
+    final iconCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-      prefixIcon: Icon(prefixIcon, size: 20, color: const Color(0xFF64748B)),
+      hintStyle: TextStyle(fontSize: 13, color: hintCol),
+      prefixIcon: Icon(prefixIcon, size: 20, color: iconCol),
       filled: true,
-      fillColor: const Color(0xFFF8FAFC),
+      fillColor: fillCol,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        borderSide: BorderSide(color: borderCol),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        borderSide: BorderSide(color: borderCol),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+      focusedBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(10)),
+        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
       ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFFDC2626)),
+      errorBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(10)),
+        borderSide: BorderSide(color: Color(0xFFDC2626)),
       ),
     );
   }

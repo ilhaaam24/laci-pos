@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:laci/data/models/product_model.dart';
+import 'package:laci/domain/entities/product_variant.dart';
 import 'local_database.dart';
 
 /// Local data source for Product operations using Drift/SQLite.
@@ -66,6 +68,18 @@ class ProductLocalDataSource {
             businessId: Value(product.businessId),
             syncStatus: Value(syncStatus),
             lastSyncAt: Value(syncStatus == 'synced' ? DateTime.now() : null),
+            variants: Value(
+              product.variants.isNotEmpty
+                  ? jsonEncode(product.variants.map((e) => e.toJson()).toList())
+                  : null,
+            ),
+            modifierGroups: Value(
+              product.modifierGroups.isNotEmpty
+                  ? jsonEncode(
+                      product.modifierGroups.map((e) => e.toJson()).toList(),
+                    )
+                  : null,
+            ),
           ),
         );
   }
@@ -104,6 +118,18 @@ class ProductLocalDataSource {
             businessId: Value(product.businessId),
             syncStatus: const Value('synced'),
             lastSyncAt: Value(DateTime.now()),
+            variants: Value(
+              product.variants.isNotEmpty
+                  ? jsonEncode(product.variants.map((e) => e.toJson()).toList())
+                  : null,
+            ),
+            modifierGroups: Value(
+              product.modifierGroups.isNotEmpty
+                  ? jsonEncode(
+                      product.modifierGroups.map((e) => e.toJson()).toList(),
+                    )
+                  : null,
+            ),
           ),
           mode: InsertMode.insertOrReplace,
         );
@@ -144,6 +170,26 @@ class ProductLocalDataSource {
 
   /// Convert a Drift row to ProductModel.
   ProductModel _rowToModel(LocalProduct row) {
+    List<ProductVariant> variants = const [];
+    if (row.variants != null && row.variants!.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(row.variants!) as List;
+        variants = decoded
+            .map((e) => ProductVariant.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      } catch (_) {}
+    }
+
+    List<ModifierGroup> modifierGroups = const [];
+    if (row.modifierGroups != null && row.modifierGroups!.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(row.modifierGroups!) as List;
+        modifierGroups = decoded
+            .map((e) => ModifierGroup.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      } catch (_) {}
+    }
+
     return ProductModel(
       id: row.id,
       categoryId: row.categoryId,
@@ -158,6 +204,8 @@ class ProductLocalDataSource {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       businessId: row.businessId,
+      variants: variants,
+      modifierGroups: modifierGroups,
     );
   }
 }

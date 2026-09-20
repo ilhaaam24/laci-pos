@@ -166,6 +166,28 @@ class $LocalProductsTable extends LocalProducts
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _variantsMeta = const VerificationMeta(
+    'variants',
+  );
+  @override
+  late final GeneratedColumn<String> variants = GeneratedColumn<String>(
+    'variants',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _modifierGroupsMeta = const VerificationMeta(
+    'modifierGroups',
+  );
+  @override
+  late final GeneratedColumn<String> modifierGroups = GeneratedColumn<String>(
+    'modifier_groups',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -183,6 +205,8 @@ class $LocalProductsTable extends LocalProducts
     businessId,
     syncStatus,
     lastSyncAt,
+    variants,
+    modifierGroups,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -308,6 +332,21 @@ class $LocalProductsTable extends LocalProducts
         ),
       );
     }
+    if (data.containsKey('variants')) {
+      context.handle(
+        _variantsMeta,
+        variants.isAcceptableOrUnknown(data['variants']!, _variantsMeta),
+      );
+    }
+    if (data.containsKey('modifier_groups')) {
+      context.handle(
+        _modifierGroupsMeta,
+        modifierGroups.isAcceptableOrUnknown(
+          data['modifier_groups']!,
+          _modifierGroupsMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -377,6 +416,14 @@ class $LocalProductsTable extends LocalProducts
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_sync_at'],
       ),
+      variants: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}variants'],
+      ),
+      modifierGroups: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}modifier_groups'],
+      ),
     );
   }
 
@@ -402,6 +449,8 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
   final String? businessId;
   final String syncStatus;
   final DateTime? lastSyncAt;
+  final String? variants;
+  final String? modifierGroups;
   const LocalProduct({
     required this.id,
     required this.categoryId,
@@ -418,6 +467,8 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
     this.businessId,
     required this.syncStatus,
     this.lastSyncAt,
+    this.variants,
+    this.modifierGroups,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -447,6 +498,12 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
     if (!nullToAbsent || lastSyncAt != null) {
       map['last_sync_at'] = Variable<DateTime>(lastSyncAt);
     }
+    if (!nullToAbsent || variants != null) {
+      map['variants'] = Variable<String>(variants);
+    }
+    if (!nullToAbsent || modifierGroups != null) {
+      map['modifier_groups'] = Variable<String>(modifierGroups);
+    }
     return map;
   }
 
@@ -475,6 +532,12 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
       lastSyncAt: lastSyncAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lastSyncAt),
+      variants: variants == null && nullToAbsent
+          ? const Value.absent()
+          : Value(variants),
+      modifierGroups: modifierGroups == null && nullToAbsent
+          ? const Value.absent()
+          : Value(modifierGroups),
     );
   }
 
@@ -499,6 +562,8 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
       businessId: serializer.fromJson<String?>(json['businessId']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       lastSyncAt: serializer.fromJson<DateTime?>(json['lastSyncAt']),
+      variants: serializer.fromJson<String?>(json['variants']),
+      modifierGroups: serializer.fromJson<String?>(json['modifierGroups']),
     );
   }
   @override
@@ -520,6 +585,8 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
       'businessId': serializer.toJson<String?>(businessId),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'lastSyncAt': serializer.toJson<DateTime?>(lastSyncAt),
+      'variants': serializer.toJson<String?>(variants),
+      'modifierGroups': serializer.toJson<String?>(modifierGroups),
     };
   }
 
@@ -539,6 +606,8 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
     Value<String?> businessId = const Value.absent(),
     String? syncStatus,
     Value<DateTime?> lastSyncAt = const Value.absent(),
+    Value<String?> variants = const Value.absent(),
+    Value<String?> modifierGroups = const Value.absent(),
   }) => LocalProduct(
     id: id ?? this.id,
     categoryId: categoryId ?? this.categoryId,
@@ -555,6 +624,10 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
     businessId: businessId.present ? businessId.value : this.businessId,
     syncStatus: syncStatus ?? this.syncStatus,
     lastSyncAt: lastSyncAt.present ? lastSyncAt.value : this.lastSyncAt,
+    variants: variants.present ? variants.value : this.variants,
+    modifierGroups: modifierGroups.present
+        ? modifierGroups.value
+        : this.modifierGroups,
   );
   LocalProduct copyWithCompanion(LocalProductsCompanion data) {
     return LocalProduct(
@@ -585,6 +658,10 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
       lastSyncAt: data.lastSyncAt.present
           ? data.lastSyncAt.value
           : this.lastSyncAt,
+      variants: data.variants.present ? data.variants.value : this.variants,
+      modifierGroups: data.modifierGroups.present
+          ? data.modifierGroups.value
+          : this.modifierGroups,
     );
   }
 
@@ -605,7 +682,9 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
           ..write('updatedAt: $updatedAt, ')
           ..write('businessId: $businessId, ')
           ..write('syncStatus: $syncStatus, ')
-          ..write('lastSyncAt: $lastSyncAt')
+          ..write('lastSyncAt: $lastSyncAt, ')
+          ..write('variants: $variants, ')
+          ..write('modifierGroups: $modifierGroups')
           ..write(')'))
         .toString();
   }
@@ -627,6 +706,8 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
     businessId,
     syncStatus,
     lastSyncAt,
+    variants,
+    modifierGroups,
   );
   @override
   bool operator ==(Object other) =>
@@ -646,7 +727,9 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
           other.updatedAt == this.updatedAt &&
           other.businessId == this.businessId &&
           other.syncStatus == this.syncStatus &&
-          other.lastSyncAt == this.lastSyncAt);
+          other.lastSyncAt == this.lastSyncAt &&
+          other.variants == this.variants &&
+          other.modifierGroups == this.modifierGroups);
 }
 
 class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
@@ -665,6 +748,8 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
   final Value<String?> businessId;
   final Value<String> syncStatus;
   final Value<DateTime?> lastSyncAt;
+  final Value<String?> variants;
+  final Value<String?> modifierGroups;
   final Value<int> rowid;
   const LocalProductsCompanion({
     this.id = const Value.absent(),
@@ -682,6 +767,8 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
     this.businessId = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.lastSyncAt = const Value.absent(),
+    this.variants = const Value.absent(),
+    this.modifierGroups = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalProductsCompanion.insert({
@@ -700,6 +787,8 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
     this.businessId = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.lastSyncAt = const Value.absent(),
+    this.variants = const Value.absent(),
+    this.modifierGroups = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        categoryId = Value(categoryId),
@@ -725,6 +814,8 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
     Expression<String>? businessId,
     Expression<String>? syncStatus,
     Expression<DateTime>? lastSyncAt,
+    Expression<String>? variants,
+    Expression<String>? modifierGroups,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -743,6 +834,8 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
       if (businessId != null) 'business_id': businessId,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (lastSyncAt != null) 'last_sync_at': lastSyncAt,
+      if (variants != null) 'variants': variants,
+      if (modifierGroups != null) 'modifier_groups': modifierGroups,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -763,6 +856,8 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
     Value<String?>? businessId,
     Value<String>? syncStatus,
     Value<DateTime?>? lastSyncAt,
+    Value<String?>? variants,
+    Value<String?>? modifierGroups,
     Value<int>? rowid,
   }) {
     return LocalProductsCompanion(
@@ -781,6 +876,8 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
       businessId: businessId ?? this.businessId,
       syncStatus: syncStatus ?? this.syncStatus,
       lastSyncAt: lastSyncAt ?? this.lastSyncAt,
+      variants: variants ?? this.variants,
+      modifierGroups: modifierGroups ?? this.modifierGroups,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -833,6 +930,12 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
     if (lastSyncAt.present) {
       map['last_sync_at'] = Variable<DateTime>(lastSyncAt.value);
     }
+    if (variants.present) {
+      map['variants'] = Variable<String>(variants.value);
+    }
+    if (modifierGroups.present) {
+      map['modifier_groups'] = Variable<String>(modifierGroups.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -857,6 +960,8 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
           ..write('businessId: $businessId, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('lastSyncAt: $lastSyncAt, ')
+          ..write('variants: $variants, ')
+          ..write('modifierGroups: $modifierGroups, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3454,6 +3559,38 @@ class $LocalTransactionItemsTable extends LocalTransactionItems
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _selectedVariantMeta = const VerificationMeta(
+    'selectedVariant',
+  );
+  @override
+  late final GeneratedColumn<String> selectedVariant = GeneratedColumn<String>(
+    'selected_variant',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _selectedModifiersMeta = const VerificationMeta(
+    'selectedModifiers',
+  );
+  @override
+  late final GeneratedColumn<String> selectedModifiers =
+      GeneratedColumn<String>(
+        'selected_modifiers',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3466,6 +3603,9 @@ class $LocalTransactionItemsTable extends LocalTransactionItems
     discount,
     subtotal,
     businessId,
+    selectedVariant,
+    selectedModifiers,
+    notes,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3558,6 +3698,30 @@ class $LocalTransactionItemsTable extends LocalTransactionItems
         businessId.isAcceptableOrUnknown(data['business_id']!, _businessIdMeta),
       );
     }
+    if (data.containsKey('selected_variant')) {
+      context.handle(
+        _selectedVariantMeta,
+        selectedVariant.isAcceptableOrUnknown(
+          data['selected_variant']!,
+          _selectedVariantMeta,
+        ),
+      );
+    }
+    if (data.containsKey('selected_modifiers')) {
+      context.handle(
+        _selectedModifiersMeta,
+        selectedModifiers.isAcceptableOrUnknown(
+          data['selected_modifiers']!,
+          _selectedModifiersMeta,
+        ),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
     return context;
   }
 
@@ -3607,6 +3771,18 @@ class $LocalTransactionItemsTable extends LocalTransactionItems
         DriftSqlType.string,
         data['${effectivePrefix}business_id'],
       ),
+      selectedVariant: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}selected_variant'],
+      ),
+      selectedModifiers: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}selected_modifiers'],
+      ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
     );
   }
 
@@ -3628,6 +3804,9 @@ class LocalTransactionItem extends DataClass
   final double discount;
   final double subtotal;
   final String? businessId;
+  final String? selectedVariant;
+  final String? selectedModifiers;
+  final String? notes;
   const LocalTransactionItem({
     required this.id,
     required this.transactionId,
@@ -3639,6 +3818,9 @@ class LocalTransactionItem extends DataClass
     required this.discount,
     required this.subtotal,
     this.businessId,
+    this.selectedVariant,
+    this.selectedModifiers,
+    this.notes,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3654,6 +3836,15 @@ class LocalTransactionItem extends DataClass
     map['subtotal'] = Variable<double>(subtotal);
     if (!nullToAbsent || businessId != null) {
       map['business_id'] = Variable<String>(businessId);
+    }
+    if (!nullToAbsent || selectedVariant != null) {
+      map['selected_variant'] = Variable<String>(selectedVariant);
+    }
+    if (!nullToAbsent || selectedModifiers != null) {
+      map['selected_modifiers'] = Variable<String>(selectedModifiers);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
     }
     return map;
   }
@@ -3672,6 +3863,15 @@ class LocalTransactionItem extends DataClass
       businessId: businessId == null && nullToAbsent
           ? const Value.absent()
           : Value(businessId),
+      selectedVariant: selectedVariant == null && nullToAbsent
+          ? const Value.absent()
+          : Value(selectedVariant),
+      selectedModifiers: selectedModifiers == null && nullToAbsent
+          ? const Value.absent()
+          : Value(selectedModifiers),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
     );
   }
 
@@ -3691,6 +3891,11 @@ class LocalTransactionItem extends DataClass
       discount: serializer.fromJson<double>(json['discount']),
       subtotal: serializer.fromJson<double>(json['subtotal']),
       businessId: serializer.fromJson<String?>(json['businessId']),
+      selectedVariant: serializer.fromJson<String?>(json['selectedVariant']),
+      selectedModifiers: serializer.fromJson<String?>(
+        json['selectedModifiers'],
+      ),
+      notes: serializer.fromJson<String?>(json['notes']),
     );
   }
   @override
@@ -3707,6 +3912,9 @@ class LocalTransactionItem extends DataClass
       'discount': serializer.toJson<double>(discount),
       'subtotal': serializer.toJson<double>(subtotal),
       'businessId': serializer.toJson<String?>(businessId),
+      'selectedVariant': serializer.toJson<String?>(selectedVariant),
+      'selectedModifiers': serializer.toJson<String?>(selectedModifiers),
+      'notes': serializer.toJson<String?>(notes),
     };
   }
 
@@ -3721,6 +3929,9 @@ class LocalTransactionItem extends DataClass
     double? discount,
     double? subtotal,
     Value<String?> businessId = const Value.absent(),
+    Value<String?> selectedVariant = const Value.absent(),
+    Value<String?> selectedModifiers = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
   }) => LocalTransactionItem(
     id: id ?? this.id,
     transactionId: transactionId ?? this.transactionId,
@@ -3732,6 +3943,13 @@ class LocalTransactionItem extends DataClass
     discount: discount ?? this.discount,
     subtotal: subtotal ?? this.subtotal,
     businessId: businessId.present ? businessId.value : this.businessId,
+    selectedVariant: selectedVariant.present
+        ? selectedVariant.value
+        : this.selectedVariant,
+    selectedModifiers: selectedModifiers.present
+        ? selectedModifiers.value
+        : this.selectedModifiers,
+    notes: notes.present ? notes.value : this.notes,
   );
   LocalTransactionItem copyWithCompanion(LocalTransactionItemsCompanion data) {
     return LocalTransactionItem(
@@ -3751,6 +3969,13 @@ class LocalTransactionItem extends DataClass
       businessId: data.businessId.present
           ? data.businessId.value
           : this.businessId,
+      selectedVariant: data.selectedVariant.present
+          ? data.selectedVariant.value
+          : this.selectedVariant,
+      selectedModifiers: data.selectedModifiers.present
+          ? data.selectedModifiers.value
+          : this.selectedModifiers,
+      notes: data.notes.present ? data.notes.value : this.notes,
     );
   }
 
@@ -3766,7 +3991,10 @@ class LocalTransactionItem extends DataClass
           ..write('costPrice: $costPrice, ')
           ..write('discount: $discount, ')
           ..write('subtotal: $subtotal, ')
-          ..write('businessId: $businessId')
+          ..write('businessId: $businessId, ')
+          ..write('selectedVariant: $selectedVariant, ')
+          ..write('selectedModifiers: $selectedModifiers, ')
+          ..write('notes: $notes')
           ..write(')'))
         .toString();
   }
@@ -3783,6 +4011,9 @@ class LocalTransactionItem extends DataClass
     discount,
     subtotal,
     businessId,
+    selectedVariant,
+    selectedModifiers,
+    notes,
   );
   @override
   bool operator ==(Object other) =>
@@ -3797,7 +4028,10 @@ class LocalTransactionItem extends DataClass
           other.costPrice == this.costPrice &&
           other.discount == this.discount &&
           other.subtotal == this.subtotal &&
-          other.businessId == this.businessId);
+          other.businessId == this.businessId &&
+          other.selectedVariant == this.selectedVariant &&
+          other.selectedModifiers == this.selectedModifiers &&
+          other.notes == this.notes);
 }
 
 class LocalTransactionItemsCompanion
@@ -3812,6 +4046,9 @@ class LocalTransactionItemsCompanion
   final Value<double> discount;
   final Value<double> subtotal;
   final Value<String?> businessId;
+  final Value<String?> selectedVariant;
+  final Value<String?> selectedModifiers;
+  final Value<String?> notes;
   final Value<int> rowid;
   const LocalTransactionItemsCompanion({
     this.id = const Value.absent(),
@@ -3824,6 +4061,9 @@ class LocalTransactionItemsCompanion
     this.discount = const Value.absent(),
     this.subtotal = const Value.absent(),
     this.businessId = const Value.absent(),
+    this.selectedVariant = const Value.absent(),
+    this.selectedModifiers = const Value.absent(),
+    this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalTransactionItemsCompanion.insert({
@@ -3837,6 +4077,9 @@ class LocalTransactionItemsCompanion
     this.discount = const Value.absent(),
     required double subtotal,
     this.businessId = const Value.absent(),
+    this.selectedVariant = const Value.absent(),
+    this.selectedModifiers = const Value.absent(),
+    this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        transactionId = Value(transactionId),
@@ -3857,6 +4100,9 @@ class LocalTransactionItemsCompanion
     Expression<double>? discount,
     Expression<double>? subtotal,
     Expression<String>? businessId,
+    Expression<String>? selectedVariant,
+    Expression<String>? selectedModifiers,
+    Expression<String>? notes,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3870,6 +4116,9 @@ class LocalTransactionItemsCompanion
       if (discount != null) 'discount': discount,
       if (subtotal != null) 'subtotal': subtotal,
       if (businessId != null) 'business_id': businessId,
+      if (selectedVariant != null) 'selected_variant': selectedVariant,
+      if (selectedModifiers != null) 'selected_modifiers': selectedModifiers,
+      if (notes != null) 'notes': notes,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3885,6 +4134,9 @@ class LocalTransactionItemsCompanion
     Value<double>? discount,
     Value<double>? subtotal,
     Value<String?>? businessId,
+    Value<String?>? selectedVariant,
+    Value<String?>? selectedModifiers,
+    Value<String?>? notes,
     Value<int>? rowid,
   }) {
     return LocalTransactionItemsCompanion(
@@ -3898,6 +4150,9 @@ class LocalTransactionItemsCompanion
       discount: discount ?? this.discount,
       subtotal: subtotal ?? this.subtotal,
       businessId: businessId ?? this.businessId,
+      selectedVariant: selectedVariant ?? this.selectedVariant,
+      selectedModifiers: selectedModifiers ?? this.selectedModifiers,
+      notes: notes ?? this.notes,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3935,6 +4190,15 @@ class LocalTransactionItemsCompanion
     if (businessId.present) {
       map['business_id'] = Variable<String>(businessId.value);
     }
+    if (selectedVariant.present) {
+      map['selected_variant'] = Variable<String>(selectedVariant.value);
+    }
+    if (selectedModifiers.present) {
+      map['selected_modifiers'] = Variable<String>(selectedModifiers.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3954,6 +4218,9 @@ class LocalTransactionItemsCompanion
           ..write('discount: $discount, ')
           ..write('subtotal: $subtotal, ')
           ..write('businessId: $businessId, ')
+          ..write('selectedVariant: $selectedVariant, ')
+          ..write('selectedModifiers: $selectedModifiers, ')
+          ..write('notes: $notes, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7051,6 +7318,8 @@ typedef $$LocalProductsTableCreateCompanionBuilder =
       Value<String?> businessId,
       Value<String> syncStatus,
       Value<DateTime?> lastSyncAt,
+      Value<String?> variants,
+      Value<String?> modifierGroups,
       Value<int> rowid,
     });
 typedef $$LocalProductsTableUpdateCompanionBuilder =
@@ -7070,6 +7339,8 @@ typedef $$LocalProductsTableUpdateCompanionBuilder =
       Value<String?> businessId,
       Value<String> syncStatus,
       Value<DateTime?> lastSyncAt,
+      Value<String?> variants,
+      Value<String?> modifierGroups,
       Value<int> rowid,
     });
 
@@ -7154,6 +7425,16 @@ class $$LocalProductsTableFilterComposer
 
   ColumnFilters<DateTime> get lastSyncAt => $composableBuilder(
     column: $table.lastSyncAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get variants => $composableBuilder(
+    column: $table.variants,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modifierGroups => $composableBuilder(
+    column: $table.modifierGroups,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -7241,6 +7522,16 @@ class $$LocalProductsTableOrderingComposer
     column: $table.lastSyncAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get variants => $composableBuilder(
+    column: $table.variants,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modifierGroups => $composableBuilder(
+    column: $table.modifierGroups,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalProductsTableAnnotationComposer
@@ -7308,6 +7599,14 @@ class $$LocalProductsTableAnnotationComposer
     column: $table.lastSyncAt,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get variants =>
+      $composableBuilder(column: $table.variants, builder: (column) => column);
+
+  GeneratedColumn<String> get modifierGroups => $composableBuilder(
+    column: $table.modifierGroups,
+    builder: (column) => column,
+  );
 }
 
 class $$LocalProductsTableTableManager
@@ -7358,6 +7657,8 @@ class $$LocalProductsTableTableManager
                 Value<String?> businessId = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<DateTime?> lastSyncAt = const Value.absent(),
+                Value<String?> variants = const Value.absent(),
+                Value<String?> modifierGroups = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalProductsCompanion(
                 id: id,
@@ -7375,6 +7676,8 @@ class $$LocalProductsTableTableManager
                 businessId: businessId,
                 syncStatus: syncStatus,
                 lastSyncAt: lastSyncAt,
+                variants: variants,
+                modifierGroups: modifierGroups,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7394,6 +7697,8 @@ class $$LocalProductsTableTableManager
                 Value<String?> businessId = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<DateTime?> lastSyncAt = const Value.absent(),
+                Value<String?> variants = const Value.absent(),
+                Value<String?> modifierGroups = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalProductsCompanion.insert(
                 id: id,
@@ -7411,6 +7716,8 @@ class $$LocalProductsTableTableManager
                 businessId: businessId,
                 syncStatus: syncStatus,
                 lastSyncAt: lastSyncAt,
+                variants: variants,
+                modifierGroups: modifierGroups,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -8634,6 +8941,9 @@ typedef $$LocalTransactionItemsTableCreateCompanionBuilder =
       Value<double> discount,
       required double subtotal,
       Value<String?> businessId,
+      Value<String?> selectedVariant,
+      Value<String?> selectedModifiers,
+      Value<String?> notes,
       Value<int> rowid,
     });
 typedef $$LocalTransactionItemsTableUpdateCompanionBuilder =
@@ -8648,6 +8958,9 @@ typedef $$LocalTransactionItemsTableUpdateCompanionBuilder =
       Value<double> discount,
       Value<double> subtotal,
       Value<String?> businessId,
+      Value<String?> selectedVariant,
+      Value<String?> selectedModifiers,
+      Value<String?> notes,
       Value<int> rowid,
     });
 
@@ -8707,6 +9020,21 @@ class $$LocalTransactionItemsTableFilterComposer
 
   ColumnFilters<String> get businessId => $composableBuilder(
     column: $table.businessId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get selectedVariant => $composableBuilder(
+    column: $table.selectedVariant,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get selectedModifiers => $composableBuilder(
+    column: $table.selectedModifiers,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -8769,6 +9097,21 @@ class $$LocalTransactionItemsTableOrderingComposer
     column: $table.businessId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get selectedVariant => $composableBuilder(
+    column: $table.selectedVariant,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get selectedModifiers => $composableBuilder(
+    column: $table.selectedModifiers,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalTransactionItemsTableAnnotationComposer
@@ -8815,6 +9158,19 @@ class $$LocalTransactionItemsTableAnnotationComposer
     column: $table.businessId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get selectedVariant => $composableBuilder(
+    column: $table.selectedVariant,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get selectedModifiers => $composableBuilder(
+    column: $table.selectedModifiers,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
 }
 
 class $$LocalTransactionItemsTableTableManager
@@ -8873,6 +9229,9 @@ class $$LocalTransactionItemsTableTableManager
                 Value<double> discount = const Value.absent(),
                 Value<double> subtotal = const Value.absent(),
                 Value<String?> businessId = const Value.absent(),
+                Value<String?> selectedVariant = const Value.absent(),
+                Value<String?> selectedModifiers = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalTransactionItemsCompanion(
                 id: id,
@@ -8885,6 +9244,9 @@ class $$LocalTransactionItemsTableTableManager
                 discount: discount,
                 subtotal: subtotal,
                 businessId: businessId,
+                selectedVariant: selectedVariant,
+                selectedModifiers: selectedModifiers,
+                notes: notes,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8899,6 +9261,9 @@ class $$LocalTransactionItemsTableTableManager
                 Value<double> discount = const Value.absent(),
                 required double subtotal,
                 Value<String?> businessId = const Value.absent(),
+                Value<String?> selectedVariant = const Value.absent(),
+                Value<String?> selectedModifiers = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalTransactionItemsCompanion.insert(
                 id: id,
@@ -8911,6 +9276,9 @@ class $$LocalTransactionItemsTableTableManager
                 discount: discount,
                 subtotal: subtotal,
                 businessId: businessId,
+                selectedVariant: selectedVariant,
+                selectedModifiers: selectedModifiers,
+                notes: notes,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

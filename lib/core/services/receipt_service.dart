@@ -172,9 +172,34 @@ class ReceiptService {
                         children: [
                           pw.Expanded(
                             flex: 3,
-                            child: pw.Text(
-                              item.productName,
-                              style: const pw.TextStyle(fontSize: 10),
+                            child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text(
+                                  item.displayName,
+                                  style: pw.TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: pw.FontWeight.bold,
+                                  ),
+                                ),
+                                if (item.selectedModifiers.isNotEmpty)
+                                  pw.Text(
+                                    '+ ${item.modifiersDisplay}',
+                                    style: const pw.TextStyle(
+                                      fontSize: 8,
+                                      color: PdfColors.grey700,
+                                    ),
+                                  ),
+                                if (item.notes != null &&
+                                    item.notes!.trim().isNotEmpty)
+                                  pw.Text(
+                                    '* ${item.notes!.trim()}',
+                                    style: const pw.TextStyle(
+                                      fontSize: 8,
+                                      color: PdfColors.grey700,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                           pw.Expanded(
@@ -187,7 +212,7 @@ class ReceiptService {
                           pw.Expanded(
                             flex: 2,
                             child: pw.Text(
-                              currencyFormatter.format(item.price),
+                              currencyFormatter.format(item.unitPrice),
                               style: const pw.TextStyle(fontSize: 10),
                               textAlign: pw.TextAlign.right,
                             ),

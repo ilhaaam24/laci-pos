@@ -228,7 +228,7 @@ class _ReportPageState extends State<ReportPage> {
                 ),
                 const SizedBox(height: 10),
                 _buildDateSelectionOption(
-                  icon: "assets/icons/rentang_tanggl.svg",
+                  icon: "assets/icons/rentang_tanggal.svg",
                   title: 'Pilih Rentang Tanggal',
                   subtitle:
                       'Tampilkan laporan transaksi dari tanggal mulai s/d selesai',
@@ -527,40 +527,34 @@ class _ReportPageState extends State<ReportPage> {
                   ),
                 ),
               ),
-              Row(
-                children: [
-                  SvgPicture.asset("assets/icons/rekap_laporan.svg"),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Unduh Rekap Laporan',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Periode: $_periodLabel',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF64748B),
-                          ),
-                        ),
-                      ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Unduh Rekap Laporan',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0F172A),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 2),
+                    Text(
+                      'Periode: $_periodLabel',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 18),
               const Divider(height: 1, color: Color(0xFFE2E8F0)),
               const SizedBox(height: 14),
               _buildExportOptionTile(
-                icon: Icons.visibility_outlined,
+                icon: "assets/icons/download_pdf.svg",
                 title: 'Lihat & Simpan PDF',
                 subtitle: 'Pratinjau, simpan ke memori perangkat, atau cetak',
                 onTap: () {
@@ -577,7 +571,7 @@ class _ReportPageState extends State<ReportPage> {
               ),
               const SizedBox(height: 10),
               _buildExportOptionTile(
-                icon: Icons.share_outlined,
+                icon: "assets/icons/share_pdf.svg",
                 title: 'Bagikan File PDF',
                 subtitle:
                     'Kirim dokumen via WhatsApp, Telegram, Email, atau Drive',
@@ -601,7 +595,7 @@ class _ReportPageState extends State<ReportPage> {
   }
 
   Widget _buildExportOptionTile({
-    required IconData icon,
+    required String icon,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
@@ -618,15 +612,7 @@ class _ReportPageState extends State<ReportPage> {
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(9),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Icon(icon, color: AppColors.primary, size: 20),
-            ),
+            SvgPicture.asset(icon, height: 32),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -1060,7 +1046,7 @@ class _ReportPageState extends State<ReportPage> {
   // 2. Status Line: • Update: 20:45 WIB  |  Kasir #01
   Widget _buildStatusBar() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Row(
           children: [
@@ -1083,20 +1069,6 @@ class _ReportPageState extends State<ReportPage> {
             ),
           ],
         ),
-        const Row(
-          children: [
-            Icon(Icons.storefront_outlined, size: 15, color: Color(0xFF334155)),
-            SizedBox(width: 4),
-            Text(
-              'Kasir #01',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF334155),
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
@@ -1104,12 +1076,14 @@ class _ReportPageState extends State<ReportPage> {
   // 3. Period Segmented Control (Flat, NO SHADOW)
   Widget _buildPeriodSegment() {
     return Container(
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
       ),
       child: Row(
+        spacing: 2,
         children: [
           _buildSegmentItem(
             ReportPeriod.today,
@@ -1178,11 +1152,8 @@ class _ReportPageState extends State<ReportPage> {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
+            color: isSelected ? AppColors.darkBackground : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
-            border: isSelected
-                ? Border.all(color: const Color(0xFFE2E8F0))
-                : null,
           ),
           child: Center(
             child: Text(
@@ -1190,7 +1161,7 @@ class _ReportPageState extends State<ReportPage> {
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? AppColors.primary : const Color(0xFF64748B),
+                color: isSelected ? AppColors.white : const Color(0xFF64748B),
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -1978,7 +1949,7 @@ class _ReportPageState extends State<ReportPage> {
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+                  color: AppColors.black,
                 ),
               ),
             ],

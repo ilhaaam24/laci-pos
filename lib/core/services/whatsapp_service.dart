@@ -34,9 +34,15 @@ class WhatsappService {
     message += '------------------------------------------\n';
 
     for (var item in transaction.items) {
-      message += '${item.productName}\n';
+      message += '*${item.displayName}*\n';
+      if (item.selectedModifiers.isNotEmpty) {
+        message += '  _(${item.modifiersDisplay})_\n';
+      }
+      if (item.notes != null && item.notes!.trim().isNotEmpty) {
+        message += '  _Catatan: ${item.notes!.trim()}_\n';
+      }
       message +=
-          '${item.quantity} x ${currencyFormatter.format(item.price)} = ${currencyFormatter.format(item.subtotal)}\n';
+          '  ${item.quantity} x ${currencyFormatter.format(item.unitPrice)} = ${currencyFormatter.format(item.subtotal)}\n';
     }
 
     message += '------------------------------------------\n';

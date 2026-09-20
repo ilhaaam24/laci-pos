@@ -49,7 +49,7 @@ class TransactionService {
         for (final item in transaction.items) {
           final product = await _productLocal.getProductById(item.productId);
           if (product == null) {
-            throw Exception('Produk ${item.productName} tidak ditemukan');
+            throw Exception('Produk ${item.displayName} tidak ditemukan');
           }
 
           final currentStock = product.stock;
@@ -57,12 +57,31 @@ class TransactionService {
 
           if (newStock < 0) {
             throw Exception(
-              'Stok tidak cukup untuk ${item.productName}. Tersedia: $currentStock',
+              'Stok tidak cukup untuk ${item.displayName}. Tersedia: $currentStock',
             );
           }
 
+          var updatedVariants = product.variants;
+          if (item.selectedVariant != null && product.variants.isNotEmpty) {
+            updatedVariants = product.variants.map((v) {
+              if (v.id == item.selectedVariant!.id) {
+                final vNewStock = v.stock - item.quantity;
+                return v.copyWith(stock: vNewStock < 0 ? 0 : vNewStock);
+              }
+              return v;
+            }).toList();
+          }
+
+          final updatedProduct = product.copyWith(
+            stock: newStock,
+            variants: updatedVariants,
+          );
+
           // Update local stock
-          await _productLocal.updateStock(item.productId, newStock);
+          await _productLocal.upsertProduct(
+            updatedProduct,
+            syncStatus: 'pendingUpload',
+          );
 
           // Create local stock log
           final logModel = StockLogModel(
@@ -70,7 +89,7 @@ class TransactionService {
                 DateTime.now().millisecondsSinceEpoch.toString() +
                 item.productId,
             productId: item.productId,
-            productName: item.productName,
+            productName: item.displayName,
             type: StockLogType.sale,
             quantity: -item.quantity,
             previousStock: currentStock,
@@ -87,7 +106,7 @@ class TransactionService {
           // Check for low stock alert
           if (newStock <= product.stockThreshold) {
             _notificationService.showStockAlert(
-              productName: item.productName,
+              productName: item.displayName,
               currentStock: newStock,
             );
           }
@@ -98,7 +117,7 @@ class TransactionService {
             documentId: item.productId,
             operation: 'update',
             businessId: _businessId,
-            data: jsonEncode(product.copyWith(stock: newStock).toJson()),
+            data: jsonEncode(updatedProduct.toJson()),
           );
 
           // Add to sync queue for stock log
