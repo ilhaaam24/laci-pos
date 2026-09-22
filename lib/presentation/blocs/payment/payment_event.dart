@@ -10,15 +10,22 @@ class CalculatePayment extends PaymentEvent {
   final double subtotal;
   final double taxPercent;
   final double discountAmount;
+  final double serviceChargePercent;
 
   CalculatePayment({
     required this.subtotal,
     this.taxPercent = 0,
     this.discountAmount = 0,
+    this.serviceChargePercent = 0,
   });
 
   @override
-  List<Object?> get props => [subtotal, taxPercent, discountAmount];
+  List<Object?> get props => [
+    subtotal,
+    taxPercent,
+    discountAmount,
+    serviceChargePercent,
+  ];
 }
 
 class SetAmountPaid extends PaymentEvent {

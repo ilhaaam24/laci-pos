@@ -13,6 +13,7 @@ import 'package:laci/data/datasources/local/product_local_datasource.dart';
 import 'package:laci/data/datasources/local/promo_local_datasource.dart';
 import 'package:laci/data/datasources/local/stock_log_local_datasource.dart';
 import 'package:laci/data/datasources/local/transaction_local_datasource.dart';
+import 'package:laci/data/datasources/local/shift_local_datasource.dart';
 
 // Data Sources
 import '../../data/datasources/firebase/product_firebase_datasource.dart';
@@ -33,6 +34,7 @@ import '../../data/repositories/business_repository_impl.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../data/repositories/promo_repository_impl.dart';
 import '../../data/repositories/user_repository_impl.dart';
+import '../../data/repositories/shift_repository_impl.dart';
 
 import '../../domain/repositories/product_repository.dart';
 import '../../domain/repositories/category_repository.dart';
@@ -42,6 +44,7 @@ import '../../domain/repositories/business_repository.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/repositories/promo_repository.dart';
 import '../../domain/repositories/user_repository.dart';
+import '../../domain/repositories/shift_repository.dart';
 
 // BLoCs
 import '../../presentation/blocs/product/product_bloc.dart';
@@ -53,6 +56,7 @@ import '../../presentation/blocs/auth/auth_bloc.dart';
 import '../../presentation/blocs/report/report_bloc.dart';
 import '../../presentation/blocs/promo/promo_bloc.dart';
 import '../../presentation/blocs/users/users_bloc.dart';
+import '../../presentation/blocs/shift/shift_bloc.dart';
 
 // Services
 import '../services/image_upload_service.dart';
@@ -114,6 +118,9 @@ Future<void> initializeDependencies() async {
   );
   getIt.registerLazySingleton<StockLogLocalDataSource>(
     () => StockLogLocalDataSource(getIt()),
+  );
+  getIt.registerLazySingleton<ShiftLocalDataSource>(
+    () => ShiftLocalDataSource(getIt()),
   );
 
   // Firebase Data Sources
@@ -278,6 +285,15 @@ Future<void> initializeDependencies() async {
     () => UserRepositoryImpl(dataSource: getIt(), sessionService: getIt()),
   );
 
+  getIt.registerLazySingleton<ShiftRepository>(
+    () => ShiftRepositoryImpl(
+      localDataSource: getIt(),
+      transactionLocalDataSource: getIt(),
+      localDatabase: getIt(),
+      sessionService: getIt(),
+    ),
+  );
+
   // BLoCs
   getIt.registerFactory(() => ProductBloc(repository: getIt()));
 
@@ -304,4 +320,6 @@ Future<void> initializeDependencies() async {
   getIt.registerFactory(() => PromoBloc(repository: getIt()));
 
   getIt.registerFactory(() => UsersBloc(repository: getIt()));
+
+  getIt.registerFactory(() => ShiftBloc(repository: getIt()));
 }

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,11 +10,11 @@ import '../../../../core/services/printer_service.dart';
 import '../../../../core/style/app_colors.dart';
 import '../../../../domain/entities/customer_entity.dart';
 import '../../../../domain/entities/transaction_entity.dart';
-import '../../../blocs/auth/auth_bloc.dart';
 import '../../../blocs/business/business_bloc.dart';
 import '../../../blocs/payment/payment_bloc.dart';
 import '../../../blocs/payment/payment_event.dart';
 import '../../../blocs/payment/payment_state.dart';
+import '../../settings/business_info_page.dart';
 
 class PaymentDialog extends StatefulWidget {
   final String orderCode;
@@ -20,6 +22,8 @@ class PaymentDialog extends StatefulWidget {
   final int itemCount;
   final double subtotal;
   final double taxPercent;
+  final String taxName;
+  final double serviceChargeRate;
   final double discountAmount;
   final Customer? customer;
   final VoidCallback? onHoldOrder;
@@ -39,6 +43,8 @@ class PaymentDialog extends StatefulWidget {
     this.itemCount = 1,
     required this.subtotal,
     this.taxPercent = 0,
+    this.taxName = 'Pajak',
+    this.serviceChargeRate = 0,
     this.discountAmount = 0,
     this.customer,
     this.onHoldOrder,
@@ -66,35 +72,65 @@ class _PaymentDialogState extends State<PaymentDialog> {
   String _selectedBank = 'BCA';
   final _refCodeController = TextEditingController();
 
+  // Split payment state
+  bool _isSplitMode = false;
+  List<PaymentDetail> _splitPayments = [];
+  PaymentType _splitCurrentType = PaymentType.cash;
+  double _splitInputAmount = 0.0;
+  String _splitSelectedBank = 'BCA';
+  final _splitRefCodeController = TextEditingController();
+
+  double get _totalSplitPaid =>
+      _splitPayments.fold(0.0, (sum, p) => sum + p.amount);
+
+  double _getSplitRemaining(double grandTotal) {
+    final rem = grandTotal - _totalSplitPaid;
+    return rem > 0 ? rem : 0.0;
+  }
+
+  double _getSplitChange(double grandTotal) {
+    if (_totalSplitPaid > grandTotal) {
+      return _totalSplitPaid - grandTotal;
+    }
+    return 0.0;
+  }
+
   @override
   void initState() {
     super.initState();
     _autoPrint = PrinterService().isConnected;
     _sendWa = widget.customer?.phone?.isNotEmpty == true;
 
+    context.read<BusinessBloc>().add(LoadBusinessInfo());
+
     context.read<PaymentBloc>().add(
       CalculatePayment(
         subtotal: widget.subtotal,
         taxPercent: widget.taxPercent,
         discountAmount: widget.discountAmount,
+        serviceChargePercent: widget.serviceChargeRate,
       ),
     );
 
     final total = _calculateGrandTotal();
     _receivedAmount = _getInitialReceivedAmount(total);
+    _splitInputAmount = total;
   }
 
   @override
   void dispose() {
     _refCodeController.dispose();
+    _splitRefCodeController.dispose();
     super.dispose();
   }
 
   double _calculateGrandTotal() {
-    final tax = (widget.subtotal - widget.discountAmount > 0)
-        ? (widget.subtotal - widget.discountAmount) * (widget.taxPercent / 100)
+    final net = (widget.subtotal - widget.discountAmount > 0)
+        ? (widget.subtotal - widget.discountAmount)
         : 0.0;
-    return widget.subtotal - widget.discountAmount + tax;
+    final tax = net * (widget.taxPercent / 100);
+    final service = net * (widget.serviceChargeRate / 100);
+    return widget.subtotal - widget.discountAmount + tax + service;
   }
 
   double _getInitialReceivedAmount(double total) {
@@ -180,8 +216,13 @@ class _PaymentDialogState extends State<PaymentDialog> {
     });
   }
 
-  void _showNumericKeypad(double total) {
+  void _showNumericKeypad({
+    double? initialAmount,
+    ValueChanged<double>? onAmountChanged,
+    String title = 'Input Nominal Pembayaran',
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentVal = initialAmount ?? _receivedAmount;
 
     showModalBottomSheet(
       context: context,
@@ -190,12 +231,18 @@ class _PaymentDialogState extends State<PaymentDialog> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetContext) {
-        String inputStr = _receivedAmount > 0
-            ? _receivedAmount.toInt().toString()
-            : '';
+        String inputStr = currentVal > 0 ? currentVal.toInt().toString() : '';
 
         return StatefulBuilder(
           builder: (context, setSheetState) {
+            void updateValue(double val) {
+              if (onAmountChanged != null) {
+                onAmountChanged(val);
+              } else {
+                setState(() => _receivedAmount = val);
+              }
+            }
+
             void appendDigit(String digit) {
               setSheetState(() {
                 if (inputStr == '0') inputStr = '';
@@ -205,9 +252,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                   inputStr += digit;
                 }
               });
-              setState(() {
-                _receivedAmount = double.tryParse(inputStr) ?? 0;
-              });
+              updateValue(double.tryParse(inputStr) ?? 0);
             }
 
             void deleteDigit() {
@@ -216,14 +261,12 @@ class _PaymentDialogState extends State<PaymentDialog> {
                   inputStr = inputStr.substring(0, inputStr.length - 1);
                 }
               });
-              setState(() {
-                _receivedAmount = double.tryParse(inputStr) ?? 0;
-              });
+              updateValue(double.tryParse(inputStr) ?? 0);
             }
 
             void clearAll() {
               setSheetState(() => inputStr = '');
-              setState(() => _receivedAmount = 0);
+              updateValue(0);
             }
 
             final displayVal = double.tryParse(inputStr) ?? 0;
@@ -238,10 +281,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color:
-                            isDark
-                                ? const Color(0xFF334155)
-                                : const Color(0xFFCBD5E1),
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFCBD5E1),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -250,14 +292,13 @@ class _PaymentDialogState extends State<PaymentDialog> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Input Nominal Pembayaran',
+                          title,
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            color:
-                                isDark
-                                    ? Colors.white
-                                    : const Color(0xFF0F172A),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
                           ),
                         ),
                         InkWell(
@@ -280,16 +321,14 @@ class _PaymentDialogState extends State<PaymentDialog> {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color:
-                            isDark
-                                ? const Color(0xFF0F172A)
-                                : const Color(0xFFF8FAFC),
+                        color: isDark
+                            ? const Color(0xFF0F172A)
+                            : const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color:
-                              isDark
-                                  ? const Color(0xFF334155)
-                                  : const Color(0xFFE2E8F0),
+                          color: isDark
+                              ? const Color(0xFF334155)
+                              : const Color(0xFFE2E8F0),
                         ),
                       ),
                       child: Row(
@@ -299,10 +338,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color:
-                                  isDark
-                                      ? const Color(0xFF94A3B8)
-                                      : const Color(0xFF475569),
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF475569),
                             ),
                           ),
                           Expanded(
@@ -314,10 +352,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                               style: TextStyle(
                                 fontSize: 26,
                                 fontWeight: FontWeight.w900,
-                                color:
-                                    isDark
-                                        ? Colors.white
-                                        : const Color(0xFF0F172A),
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0F172A),
                               ),
                             ),
                           ),
@@ -325,10 +362,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                             icon: Icon(
                               Icons.backspace_outlined,
                               size: 20,
-                              color:
-                                  isDark
-                                      ? const Color(0xFF94A3B8)
-                                      : const Color(0xFF475569),
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF475569),
                             ),
                             onPressed: deleteDigit,
                           ),
@@ -363,16 +399,14 @@ class _PaymentDialogState extends State<PaymentDialog> {
                             borderRadius: BorderRadius.circular(10),
                             child: Container(
                               decoration: BoxDecoration(
-                                color:
-                                    isDark
-                                        ? const Color(0xFF0F172A)
-                                        : const Color(0xFFF1F5F9),
+                                color: isDark
+                                    ? const Color(0xFF0F172A)
+                                    : const Color(0xFFF1F5F9),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color:
-                                      isDark
-                                          ? const Color(0xFF334155)
-                                          : const Color(0xFFE2E8F0),
+                                  color: isDark
+                                      ? const Color(0xFF334155)
+                                      : const Color(0xFFE2E8F0),
                                 ),
                               ),
                               child: Center(
@@ -381,10 +415,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                    color:
-                                        isDark
-                                            ? Colors.white
-                                            : const Color(0xFF0F172A),
+                                    color: isDark
+                                        ? Colors.white
+                                        : const Color(0xFF0F172A),
                                   ),
                                 ),
                               ),
@@ -426,7 +459,11 @@ class _PaymentDialogState extends State<PaymentDialog> {
     double changeAmount = 0.0;
     List<PaymentDetail> payments = [];
 
-    if (_selectedType == PaymentType.cash) {
+    if (_isSplitMode) {
+      if (_totalSplitPaid < total) return;
+      changeAmount = _getSplitChange(total);
+      payments = List<PaymentDetail>.from(_splitPayments);
+    } else if (_selectedType == PaymentType.cash) {
       if (_receivedAmount < total) return;
       changeAmount = _receivedAmount - total;
       payments = [
@@ -458,8 +495,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark
+          ? const Color(0xFF0F172A)
+          : const Color(0xFFF8FAFC),
       body: SafeArea(
         child: BlocBuilder<PaymentBloc, PaymentState>(
           builder: (context, state) {
@@ -487,8 +525,10 @@ class _PaymentDialogState extends State<PaymentDialog> {
                       _buildPaymentMethodSelector(isDark),
                       const SizedBox(height: 18),
 
-                      // 4. Content based on selected payment method
-                      if (_selectedType == PaymentType.cash) ...[
+                      // 4. Content based on selected payment method or Split Mode
+                      if (_isSplitMode) ...[
+                        _buildSplitPaymentSection(grandTotal, isDark),
+                      ] else if (_selectedType == PaymentType.cash) ...[
                         _buildCashPaymentSection(
                           grandTotal,
                           changeAmount,
@@ -553,10 +593,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                     color: isDark ? const Color(0xFF1E293B) : Colors.white,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color:
-                          isDark
-                              ? const Color(0xFF334155)
-                              : const Color(0xFFE2E8F0),
+                      color: isDark
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFE2E8F0),
                     ),
                   ),
                   child: ClipRRect(
@@ -574,10 +613,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                       errorWidget: (context, url, error) => Center(
                         child: Icon(
                           Icons.storefront_rounded,
-                          color:
-                              isDark
-                                  ? const Color(0xFF94A3B8)
-                                  : const Color(0xFF64748B),
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B),
                           size: 20,
                         ),
                       ),
@@ -602,31 +640,12 @@ class _PaymentDialogState extends State<PaymentDialog> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color:
-                          isDark
-                              ? const Color(0xFF94A3B8)
-                              : const Color(0xFF64748B),
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B),
                     ),
                   ),
                 ],
-              ),
-
-              const Spacer(),
-              BlocBuilder<AuthBloc, AuthState>(
-                builder: (context, state) {
-                  if (state is Authenticated && state.user.photoUrl != null) {
-                    return CircleAvatar(
-                      radius: 17,
-                      backgroundColor: const Color(0xFF004D40),
-                      backgroundImage: NetworkImage(state.user.photoUrl!),
-                    );
-                  }
-                  return const CircleAvatar(
-                    radius: 17,
-                    backgroundColor: Color(0xFF004D40),
-                    child: Icon(Icons.person, color: Colors.white, size: 18),
-                  );
-                },
               ),
             ],
           );
@@ -669,10 +688,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color:
-                      isDark
-                          ? const Color(0xFF34D399)
-                          : const Color(0xFF065F46),
+                  color: isDark
+                      ? const Color(0xFF34D399)
+                      : const Color(0xFF065F46),
                 ),
               ),
             ],
@@ -741,8 +759,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
               Icon(
                 Icons.storefront_outlined,
                 size: 14,
-                color:
-                    isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
               ),
               const SizedBox(width: 5),
               Text(
@@ -750,10 +769,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color:
-                      isDark
-                          ? const Color(0xFFCBD5E1)
-                          : const Color(0xFF475569),
+                  color: isDark
+                      ? const Color(0xFFCBD5E1)
+                      : const Color(0xFF475569),
                 ),
               ),
             ],
@@ -795,7 +813,94 @@ class _PaymentDialogState extends State<PaymentDialog> {
             icon: Icons.account_balance_outlined,
             isDark: isDark,
           ),
+          const SizedBox(width: 8),
+          _buildSplitPill(isDark: isDark),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSplitPill({required bool isDark}) {
+    final isSelected = _isSplitMode;
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _isSplitMode = true;
+          final total = _calculateGrandTotal();
+          final rem = _getSplitRemaining(total);
+          if (_splitInputAmount <= 0 || _splitInputAmount > rem) {
+            _splitInputAmount = rem;
+          }
+        });
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark ? AppColors.primary : const Color(0xFF1E293B))
+              : (isDark ? const Color(0xFF1E293B) : Colors.white),
+          borderRadius: BorderRadius.circular(12),
+          border: isSelected
+              ? null
+              : Border.all(
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
+                ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.call_split_rounded,
+              size: 18,
+              color: isSelected
+                  ? Colors.white
+                  : (isDark
+                        ? const Color(0xFFCBD5E1)
+                        : const Color(0xFF334155)),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Bagi Bayar (Split)',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                color: isSelected
+                    ? Colors.white
+                    : (isDark
+                          ? const Color(0xFFCBD5E1)
+                          : const Color(0xFF334155)),
+              ),
+            ),
+            if (_splitPayments.isNotEmpty) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 1.5,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.25)
+                      : AppColors.primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${_splitPayments.length}',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -806,29 +911,29 @@ class _PaymentDialogState extends State<PaymentDialog> {
     required IconData icon,
     required bool isDark,
   }) {
-    final isSelected = _selectedType == type;
+    final isSelected = !_isSplitMode && _selectedType == type;
 
     return InkWell(
-      onTap: () => setState(() => _selectedType = type),
+      onTap: () => setState(() {
+        _isSplitMode = false;
+        _selectedType = type;
+      }),
       borderRadius: BorderRadius.circular(12),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color:
-              isSelected
-                  ? (isDark ? AppColors.primary : const Color(0xFF1E293B))
-                  : (isDark ? const Color(0xFF1E293B) : Colors.white),
+          color: isSelected
+              ? (isDark ? AppColors.primary : const Color(0xFF1E293B))
+              : (isDark ? const Color(0xFF1E293B) : Colors.white),
           borderRadius: BorderRadius.circular(12),
-          border:
-              isSelected
-                  ? null
-                  : Border.all(
-                    color:
-                        isDark
-                            ? const Color(0xFF334155)
-                            : const Color(0xFFE2E8F0),
-                  ),
+          border: isSelected
+              ? null
+              : Border.all(
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
+                ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -836,12 +941,11 @@ class _PaymentDialogState extends State<PaymentDialog> {
             Icon(
               icon,
               size: 18,
-              color:
-                  isSelected
-                      ? Colors.white
-                      : (isDark
-                          ? const Color(0xFFCBD5E1)
-                          : const Color(0xFF334155)),
+              color: isSelected
+                  ? Colors.white
+                  : (isDark
+                        ? const Color(0xFFCBD5E1)
+                        : const Color(0xFF334155)),
             ),
             const SizedBox(width: 6),
             Text(
@@ -849,12 +953,11 @@ class _PaymentDialogState extends State<PaymentDialog> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                color:
-                    isSelected
-                        ? Colors.white
-                        : (isDark
-                            ? const Color(0xFFCBD5E1)
-                            : const Color(0xFF334155)),
+                color: isSelected
+                    ? Colors.white
+                    : (isDark
+                          ? const Color(0xFFCBD5E1)
+                          : const Color(0xFF334155)),
               ),
             ),
           ],
@@ -901,7 +1004,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
               ),
               const SizedBox(height: 10),
               InkWell(
-                onTap: () => _showNumericKeypad(grandTotal),
+                onTap: () => _showNumericKeypad(),
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -909,16 +1012,14 @@ class _PaymentDialogState extends State<PaymentDialog> {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color:
-                        isDark
-                            ? const Color(0xFF0F172A)
-                            : const Color(0xFFF8FAFC),
+                    color: isDark
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color:
-                          isDark
-                              ? const Color(0xFF334155)
-                              : const Color(0xFFE2E8F0),
+                      color: isDark
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFE2E8F0),
                     ),
                   ),
                   child: Row(
@@ -928,10 +1029,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color:
-                              isDark
-                                  ? const Color(0xFF94A3B8)
-                                  : const Color(0xFF475569),
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF475569),
                         ),
                       ),
                       Expanded(
@@ -943,8 +1043,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w900,
-                            color:
-                                isDark ? Colors.white : const Color(0xFF0F172A),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
                             letterSpacing: -0.5,
                           ),
                         ),
@@ -954,25 +1055,22 @@ class _PaymentDialogState extends State<PaymentDialog> {
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color:
-                                isDark
-                                    ? const Color(0xFF1E293B)
-                                    : Colors.white,
+                            color: isDark
+                                ? const Color(0xFF1E293B)
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color:
-                                  isDark
-                                      ? const Color(0xFF334155)
-                                      : const Color(0xFFCBD5E1),
+                              color: isDark
+                                  ? const Color(0xFF334155)
+                                  : const Color(0xFFCBD5E1),
                             ),
                           ),
                           child: Icon(
                             Icons.backspace_outlined,
                             size: 18,
-                            color:
-                                isDark
-                                    ? const Color(0xFF94A3B8)
-                                    : const Color(0xFF475569),
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF475569),
                           ),
                         ),
                       ),
@@ -980,6 +1078,99 @@ class _PaymentDialogState extends State<PaymentDialog> {
                   ),
                 ),
               ),
+              // Shortcut banner when cash received is less than grand total
+              if (_receivedAmount > 0 && _receivedAmount < grandTotal) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF1E3A8A).withValues(alpha: 0.25)
+                        : const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF3B82F6).withValues(alpha: 0.3)
+                          : const Color(0xFFBFDBFE),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.call_split_rounded,
+                        color: AppColors.primary,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Kurang ${_currencyFormatter.format(grandTotal - _receivedAmount)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF1E3A8A),
+                              ),
+                            ),
+                            Text(
+                              'Gunakan Bagi Bayar untuk sisa via QRIS/Transfer',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                color: isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF3B82F6),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _splitPayments = [
+                              PaymentDetail(
+                                type: PaymentType.cash,
+                                amount: _receivedAmount,
+                                timestamp: DateTime.now(),
+                              ),
+                            ];
+                            _isSplitMode = true;
+                            final rem = grandTotal - _receivedAmount;
+                            _splitInputAmount = rem > 0 ? rem : 0.0;
+                            _splitCurrentType = PaymentType.qris;
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                        child: const Text(
+                          'Bagi Bayar',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -1019,22 +1210,18 @@ class _PaymentDialogState extends State<PaymentDialog> {
                         vertical: vPadding,
                       ),
                       decoration: BoxDecoration(
-                        color:
-                            isSelected
-                                ? (isDark
-                                    ? AppColors.primary
-                                    : const Color(0xFF1E293B))
-                                : (isDark
-                                    ? const Color(0xFF1E293B)
-                                    : Colors.white),
+                        color: isSelected
+                            ? (isDark
+                                  ? AppColors.primary
+                                  : const Color(0xFF1E293B))
+                            : (isDark ? const Color(0xFF1E293B) : Colors.white),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color:
-                              isSelected
-                                  ? Colors.transparent
-                                  : (isDark
-                                      ? const Color(0xFF334155)
-                                      : const Color(0xFFE2E8F0)),
+                          color: isSelected
+                              ? Colors.transparent
+                              : (isDark
+                                    ? const Color(0xFF334155)
+                                    : const Color(0xFFE2E8F0)),
                         ),
                       ),
                       child: Column(
@@ -1054,8 +1241,8 @@ class _PaymentDialogState extends State<PaymentDialog> {
                                     : (isExact
                                           ? AppColors.primary
                                           : (isDark
-                                              ? const Color(0xFF94A3B8)
-                                              : const Color(0xFF64748B))),
+                                                ? const Color(0xFF94A3B8)
+                                                : const Color(0xFF64748B))),
                               ),
                             ),
                           ),
@@ -1075,8 +1262,8 @@ class _PaymentDialogState extends State<PaymentDialog> {
                                       : (isExact
                                             ? AppColors.primary
                                             : (isDark
-                                                ? Colors.white
-                                                : const Color(0xFF64748B))),
+                                                  ? Colors.white
+                                                  : const Color(0xFF64748B))),
                                 ),
                               ),
                             ),
@@ -1095,14 +1282,12 @@ class _PaymentDialogState extends State<PaymentDialog> {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color:
-                isDark
-                    ? const Color(0xFF064E3B).withValues(alpha: 0.3)
-                    : const Color(0xFFECFDF5),
+            color: isDark
+                ? const Color(0xFF064E3B).withValues(alpha: 0.3)
+                : const Color(0xFFECFDF5),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color:
-                  isDark ? const Color(0xFF047857) : const Color(0xFFA7F3D0),
+              color: isDark ? const Color(0xFF047857) : const Color(0xFFA7F3D0),
             ),
           ),
           child: Column(
@@ -1117,10 +1302,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
-                      color:
-                          isDark
-                              ? const Color(0xFF6EE7B7)
-                              : const Color(0xFF065F46),
+                      color: isDark
+                          ? const Color(0xFF6EE7B7)
+                          : const Color(0xFF065F46),
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -1136,10 +1320,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color:
-                          isDark
-                              ? const Color(0xFF6EE7B7)
-                              : const Color(0xFF065F46),
+                      color: isDark
+                          ? const Color(0xFF6EE7B7)
+                          : const Color(0xFF065F46),
                     ),
                   ),
                   Text(
@@ -1150,10 +1333,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w900,
-                      color:
-                          isDark
-                              ? Colors.white
-                              : const Color(0xFF042F2C),
+                      color: isDark ? Colors.white : const Color(0xFF042F2C),
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -1165,10 +1345,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color:
-                      isDark
-                          ? const Color(0xFF94A3B8)
-                          : const Color(0xFF047857),
+                  color: isDark
+                      ? const Color(0xFF94A3B8)
+                      : const Color(0xFF047857),
                 ),
               ),
             ],
@@ -1176,6 +1355,1071 @@ class _PaymentDialogState extends State<PaymentDialog> {
         ),
       ],
     );
+  }
+
+  // 4b. Split Payment Section: Multi-Tender Breakdown & Builder
+  Widget _buildSplitPaymentSection(double grandTotal, bool isDark) {
+    final remaining = _getSplitRemaining(grandTotal);
+    final change = _getSplitChange(grandTotal);
+    final isSettled = remaining <= 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // A. Real-time Status Card (Total, Sudah Dibayar, Sisa / Lunas, Kembalian)
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSettled
+                  ? (isDark ? const Color(0xFF047857) : const Color(0xFFA7F3D0))
+                  : (isDark
+                        ? const Color(0xFF334155)
+                        : const Color(0xFFE2E8F0)),
+            ),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSplitStat(
+                      label: 'Total Tagihan',
+                      value: _currencyFormatter.format(grandTotal),
+                      isDark: isDark,
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 38,
+                    color: isDark
+                        ? const Color(0xFF334155)
+                        : const Color(0xFFE2E8F0),
+                  ),
+                  Expanded(
+                    child: _buildSplitStat(
+                      label: 'Sudah Dibayar',
+                      value: _currencyFormatter.format(_totalSplitPaid),
+                      isDark: isDark,
+                      valueColor: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(height: 1),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isSettled ? 'Status Pembayaran' : 'Sisa Tagihan',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        if (isSettled)
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? const Color(0xFF064E3B)
+                                      : const Color(0xFFECFDF5),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: isDark
+                                        ? const Color(0xFF047857)
+                                        : const Color(0xFFA7F3D0),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle_rounded,
+                                      size: 14,
+                                      color: isDark
+                                          ? const Color(0xFF6EE7B7)
+                                          : const Color(0xFF059669),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'LUNAS',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w900,
+                                        color: isDark
+                                            ? const Color(0xFF6EE7B7)
+                                            : const Color(0xFF059669),
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          Text(
+                            _currencyFormatter.format(remaining),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFFDC2626),
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (change > 0) ...[
+                    Container(
+                      width: 1,
+                      height: 38,
+                      color: isDark
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFE2E8F0),
+                    ),
+                    Expanded(
+                      child: _buildSplitStat(
+                        label: 'Kembalian Tunai',
+                        value: _currencyFormatter.format(change),
+                        isDark: isDark,
+                        valueColor: const Color(0xFF059669),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // B. List of Added Payments (Daftar Pembayaran)
+        if (_splitPayments.isNotEmpty) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Pembayaran Diterima (${_splitPayments.length})',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _splitPayments.clear();
+                    _splitInputAmount = grandTotal;
+                  });
+                },
+                child: const Text(
+                  'Reset Semua',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFDC2626),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _splitPayments.length,
+              separatorBuilder: (context, idx) => Divider(
+                height: 1,
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFF1F5F9),
+              ),
+              itemBuilder: (context, idx) {
+                final payment = _splitPayments[idx];
+                final iconData = _getMethodIcon(payment.type);
+                final color = _getMethodColor(payment.type);
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(iconData, size: 18, color: color),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              payment.typeName,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0F172A),
+                              ),
+                            ),
+                            if (payment.reference != null &&
+                                payment.reference!.isNotEmpty)
+                              Text(
+                                payment.reference!,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: isDark
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF64748B),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        _currencyFormatter.format(payment.amount),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            _splitPayments.removeAt(idx);
+                            final rem = _getSplitRemaining(grandTotal);
+                            _splitInputAmount = rem > 0 ? rem : 0.0;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(6),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 18,
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
+
+        // C. Form Tambah Pembayaran
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Tambah Pembayaran',
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Tender Selector Row
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSplitTenderOption(
+                      PaymentType.cash,
+                      'Tunai',
+                      Icons.payments_outlined,
+                      isDark,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildSplitTenderOption(
+                      PaymentType.qris,
+                      'QRIS',
+                      Icons.qr_code_scanner_rounded,
+                      isDark,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildSplitTenderOption(
+                      PaymentType.debit,
+                      'Debit',
+                      Icons.credit_card_rounded,
+                      isDark,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildSplitTenderOption(
+                      PaymentType.transfer,
+                      'Transfer',
+                      Icons.account_balance_rounded,
+                      isDark,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // Nominal Input Box (Tappable for Keypad)
+              InkWell(
+                onTap: () {
+                  _showNumericKeypad(
+                    initialAmount: _splitInputAmount,
+                    onAmountChanged: (v) =>
+                        setState(() => _splitInputAmount = v),
+                    title: 'Nominal ${_getMethodTitle(_splitCurrentType)}',
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Rp ',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF475569),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          _currencyFormatter
+                              .format(_splitInputAmount)
+                              .replaceAll('Rp', '')
+                              .trim(),
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            final currentStr = _splitInputAmount
+                                .toInt()
+                                .toString();
+                            if (currentStr.length <= 1) {
+                              _splitInputAmount = 0;
+                            } else {
+                              final newStr = currentStr.substring(
+                                0,
+                                currentStr.length - 1,
+                              );
+                              _splitInputAmount = double.tryParse(newStr) ?? 0;
+                            }
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF1E293B)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isDark
+                                  ? const Color(0xFF334155)
+                                  : const Color(0xFFCBD5E1),
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.backspace_outlined,
+                            size: 16,
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF475569),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Quick Chips (Sisa Pas, +10k, +20k, +50k, +100k)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    if (remaining > 0) ...[
+                      _buildQuickSplitChip(
+                        label: 'Sisa Pas (${_formatK(remaining)})',
+                        isPrimary: true,
+                        isDark: isDark,
+                        onTap: () =>
+                            setState(() => _splitInputAmount = remaining),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    _buildQuickSplitChip(
+                      label: '+10rb',
+                      isDark: isDark,
+                      onTap: () => setState(() => _splitInputAmount += 10000),
+                    ),
+                    const SizedBox(width: 6),
+                    _buildQuickSplitChip(
+                      label: '+20rb',
+                      isDark: isDark,
+                      onTap: () => setState(() => _splitInputAmount += 20000),
+                    ),
+                    const SizedBox(width: 6),
+                    _buildQuickSplitChip(
+                      label: '+50rb',
+                      isDark: isDark,
+                      onTap: () => setState(() => _splitInputAmount += 50000),
+                    ),
+                    const SizedBox(width: 6),
+                    _buildQuickSplitChip(
+                      label: '+100rb',
+                      isDark: isDark,
+                      onTap: () => setState(() => _splitInputAmount += 100000),
+                    ),
+                  ],
+                ),
+              ),
+
+              // A. QRIS Preview & Scan Container
+              if (_splitCurrentType == PaymentType.qris) ...[
+                const SizedBox(height: 12),
+                BlocBuilder<BusinessBloc, BusinessState>(
+                  builder: (context, bState) {
+                    final qrisUrl = bState.businessInfo?.qrisUrl;
+
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF0F172A)
+                            : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark
+                              ? const Color(0xFF334155)
+                              : const Color(0xFFE2E8F0),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.qr_code_scanner_rounded,
+                                size: 18,
+                                color: isDark
+                                    ? const Color(0xFF60A5FA)
+                                    : const Color(0xFF2563EB),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Tampilkan QRIS ke pelanggan sebesar ${_currencyFormatter.format(_splitInputAmount)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark
+                                        ? Colors.white
+                                        : const Color(0xFF0F172A),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Center(
+                            child: _buildQrisImageWidget(
+                              qrisUrl: qrisUrl,
+                              isDark: isDark,
+                              size: 170,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Pelanggan dapat scan via GoPay, OVO, Dana, ShopeePay, BCA, dll.',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+
+              // B. Debit Card EDC Instructions & Fields
+              if (_splitCurrentType == PaymentType.debit) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF7C3AED).withValues(alpha: 0.15)
+                        : const Color(0xFFF5F3FF),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.credit_card_rounded,
+                        size: 16,
+                        color: Color(0xFF7C3AED),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Gesek / Dip kartu di Mesin EDC sebesar ${_currencyFormatter.format(_splitInputAmount)}',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? const Color(0xFFDDD6FE)
+                                : const Color(0xFF6D28D9),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _buildSplitBankSelector(isDark),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _splitRefCodeController,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    hintText: 'Nomor Kartu / Approval Code (Opsional)',
+                    hintStyle: TextStyle(
+                      fontSize: 12,
+                      color: isDark
+                          ? const Color(0xFF64748B)
+                          : const Color(0xFF94A3B8),
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFFF8FAFC),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: AppColors.primary,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+
+              // C. Bank Transfer Instructions & Fields
+              if (_splitCurrentType == PaymentType.transfer) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFFD97706).withValues(alpha: 0.15)
+                        : const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.account_balance_rounded,
+                        size: 16,
+                        color: Color(0xFFD97706),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Minta transfer ${_currencyFormatter.format(_splitInputAmount)} ke rekening toko',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? const Color(0xFFFDE68A)
+                                : const Color(0xFFB45309),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _buildSplitBankSelector(isDark),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _splitRefCodeController,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    hintText: 'Nama Pengirim / No Ref Transfer (Opsional)',
+                    hintStyle: TextStyle(
+                      fontSize: 12,
+                      color: isDark
+                          ? const Color(0xFF64748B)
+                          : const Color(0xFF94A3B8),
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFFF8FAFC),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                        color: AppColors.primary,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 14),
+
+              // Button "+ Tambahkan Pembayaran"
+              SizedBox(
+                width: double.infinity,
+                height: 42,
+                child: ElevatedButton.icon(
+                  onPressed: _splitInputAmount > 0
+                      ? () {
+                          // Validation: non-cash overpayment check
+                          if (_splitCurrentType != PaymentType.cash &&
+                              remaining > 0 &&
+                              _splitInputAmount > remaining) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Pembayaran non-tunai tidak boleh melebihi sisa tagihan.',
+                                ),
+                                backgroundColor: Color(0xFFDC2626),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                            return;
+                          }
+
+                          String? ref;
+                          if (_splitCurrentType == PaymentType.debit ||
+                              _splitCurrentType == PaymentType.transfer) {
+                            final refText = _splitRefCodeController.text.trim();
+                            if (refText.isNotEmpty) {
+                              ref = '$_splitSelectedBank - $refText';
+                            } else {
+                              ref = _splitSelectedBank;
+                            }
+                          }
+
+                          setState(() {
+                            _splitPayments.add(
+                              PaymentDetail(
+                                type: _splitCurrentType,
+                                amount: _splitInputAmount,
+                                reference: ref,
+                                timestamp: DateTime.now(),
+                              ),
+                            );
+                            _splitRefCodeController.clear();
+                            final newRem = _getSplitRemaining(grandTotal);
+                            _splitInputAmount = newRem > 0 ? newRem : 0.0;
+                          });
+                        }
+                      : null,
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: Text(
+                    'Tambahkan ${_getMethodTitle(_splitCurrentType)} (${_currencyFormatter.format(_splitInputAmount)})',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: isDark
+                        ? const Color(0xFF334155)
+                        : const Color(0xFFE2E8F0),
+                    disabledForegroundColor: isDark
+                        ? const Color(0xFF64748B)
+                        : const Color(0xFF94A3B8),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSplitStat({
+    required String label,
+    required String value,
+    required bool isDark,
+    Color? valueColor,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color:
+                valueColor ?? (isDark ? Colors.white : const Color(0xFF0F172A)),
+            letterSpacing: -0.3,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSplitTenderOption(
+    PaymentType type,
+    String label,
+    IconData icon,
+    bool isDark,
+  ) {
+    final isSelected = _splitCurrentType == type;
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _splitCurrentType = type;
+        });
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary
+              : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9)),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected
+                  ? Colors.white
+                  : (isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                color: isSelected
+                    ? Colors.white
+                    : (isDark
+                          ? const Color(0xFFCBD5E1)
+                          : const Color(0xFF334155)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickSplitChip({
+    required String label,
+    required VoidCallback onTap,
+    required bool isDark,
+    bool isPrimary = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isPrimary
+              ? (isDark
+                    ? AppColors.primary.withValues(alpha: 0.25)
+                    : const Color(0xFFEFF6FF))
+              : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9)),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isPrimary
+                ? AppColors.primary
+                : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: isPrimary ? FontWeight.bold : FontWeight.w600,
+            color: isPrimary
+                ? (isDark ? const Color(0xFF93C5FD) : AppColors.primary)
+                : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSplitBankSelector(bool isDark) {
+    final banks = ['BCA', 'Mandiri', 'BRI', 'BNI', 'Lainnya'];
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: banks.map((bank) {
+          final isSelected = _splitSelectedBank == bank;
+          return Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: InkWell(
+              onTap: () => setState(() => _splitSelectedBank = bank),
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.primary
+                      : (isDark
+                            ? const Color(0xFF0F172A)
+                            : const Color(0xFFF1F5F9)),
+                  borderRadius: BorderRadius.circular(6),
+                  border: isSelected
+                      ? null
+                      : Border.all(
+                          color: isDark
+                              ? const Color(0xFF334155)
+                              : const Color(0xFFE2E8F0),
+                        ),
+                ),
+                child: Text(
+                  bank,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark
+                              ? const Color(0xFFCBD5E1)
+                              : const Color(0xFF334155)),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  String _formatK(double amount) {
+    if (amount >= 1000000) {
+      return 'Rp ${(amount / 1000000).toStringAsFixed(amount % 1000000 == 0 ? 0 : 1)}jt';
+    }
+    if (amount >= 1000) {
+      return 'Rp ${(amount / 1000).toStringAsFixed(amount % 1000 == 0 ? 0 : 0)}rb';
+    }
+    return 'Rp ${amount.toInt()}';
+  }
+
+  String _getMethodTitle(PaymentType type) {
+    switch (type) {
+      case PaymentType.cash:
+        return 'Tunai';
+      case PaymentType.qris:
+        return 'QRIS';
+      case PaymentType.debit:
+        return 'Debit';
+      case PaymentType.transfer:
+        return 'Transfer';
+    }
+  }
+
+  IconData _getMethodIcon(PaymentType type) {
+    switch (type) {
+      case PaymentType.cash:
+        return Icons.payments_outlined;
+      case PaymentType.qris:
+        return Icons.qr_code_scanner_rounded;
+      case PaymentType.debit:
+        return Icons.credit_card_rounded;
+      case PaymentType.transfer:
+        return Icons.account_balance_rounded;
+    }
+  }
+
+  Color _getMethodColor(PaymentType type) {
+    switch (type) {
+      case PaymentType.cash:
+        return const Color(0xFF10B981);
+      case PaymentType.qris:
+        return const Color(0xFF3B82F6);
+      case PaymentType.debit:
+        return const Color(0xFF8B5CF6);
+      case PaymentType.transfer:
+        return const Color(0xFFF59E0B);
+    }
   }
 
   // QRIS Section
@@ -1208,30 +2452,20 @@ class _PaymentDialogState extends State<PaymentDialog> {
                 'Dapat dipindai via GoPay, OVO, Dana, ShopeePay, BCA, dll.',
                 style: TextStyle(
                   fontSize: 12,
-                  color:
-                      isDark
-                          ? const Color(0xFF94A3B8)
-                          : const Color(0xFF64748B),
+                  color: isDark
+                      ? const Color(0xFF94A3B8)
+                      : const Color(0xFF64748B),
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 14),
-              if (qrisUrl != null && qrisUrl.isNotEmpty)
-                CachedNetworkImage(
-                  imageUrl: qrisUrl,
-                  height: 240,
-                  fit: BoxFit.contain,
-                  placeholder: (context, url) => const SizedBox(
-                    height: 240,
-                    child: Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                  errorWidget: (context, url, error) =>
-                      _buildFallbackQrisPlaceholder(isDark),
-                )
-              else
-                _buildFallbackQrisPlaceholder(isDark),
+              Center(
+                child: _buildQrisImageWidget(
+                  qrisUrl: qrisUrl,
+                  isDark: isDark,
+                  size: 220,
+                ),
+              ),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -1254,10 +2488,58 @@ class _PaymentDialogState extends State<PaymentDialog> {
     );
   }
 
-  Widget _buildFallbackQrisPlaceholder(bool isDark) {
+  Widget _buildQrisImageWidget({
+    required String? qrisUrl,
+    required bool isDark,
+    double size = 180,
+  }) {
+    if (qrisUrl != null && qrisUrl.trim().isNotEmpty) {
+      final cleanUrl = qrisUrl.trim();
+      if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: CachedNetworkImage(
+            imageUrl: cleanUrl,
+            height: size,
+            width: size,
+            fit: BoxFit.contain,
+            placeholder: (context, url) => SizedBox(
+              height: size,
+              width: size,
+              child: const Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+            errorWidget: (context, url, error) =>
+                _buildFallbackQrisPlaceholder(isDark, isError: true),
+          ),
+        );
+      } else {
+        try {
+          final file = File(cleanUrl);
+          if (file.existsSync()) {
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.file(
+                file,
+                height: size,
+                width: size,
+                fit: BoxFit.contain,
+              ),
+            );
+          }
+        } catch (_) {}
+      }
+    }
+
+    return _buildFallbackQrisPlaceholder(isDark, isError: false);
+  }
+
+  Widget _buildFallbackQrisPlaceholder(bool isDark, {bool isError = false}) {
     return Container(
-      width: 170,
-      height: 170,
+      width: double.infinity,
+      constraints: const BoxConstraints(maxWidth: 320),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(12),
@@ -1266,21 +2548,74 @@ class _PaymentDialogState extends State<PaymentDialog> {
         ),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.qr_code_2_rounded,
-            size: 90,
-            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF1E293B),
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isError ? Icons.broken_image_rounded : Icons.qr_code_2_rounded,
+              size: 26,
+              color: isError
+                  ? const Color(0xFFEF4444)
+                  : (isDark
+                        ? const Color(0xFF60A5FA)
+                        : const Color(0xFF2563EB)),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isError
+                ? 'Gagal Memuat Gambar QRIS'
+                : 'Barcode QRIS Belum Diunggah',
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
+            ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
           Text(
-            'QRIS Standar POS',
+            isError
+                ? 'Pastikan koneksi internet aktif atau unggah ulang gambar QRIS.'
+                : 'Unggah foto barcode QRIS toko Anda agar muncul di sini saat pembayaran.',
             style: TextStyle(
               fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color:
-                  isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BusinessInfoPage()),
+              );
+              if (mounted) {
+                context.read<BusinessBloc>().add(LoadBusinessInfo());
+              }
+            },
+            icon: const Icon(Icons.settings_outlined, size: 14),
+            label: const Text(
+              'Atur QRIS Toko',
+              style: TextStyle(fontSize: 11.5),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
         ],
@@ -1328,34 +2663,30 @@ class _PaymentDialogState extends State<PaymentDialog> {
                         vertical: 7,
                       ),
                       decoration: BoxDecoration(
-                        color:
-                            isSelected
-                                ? AppColors.primary
-                                : (isDark
-                                    ? const Color(0xFF0F172A)
-                                    : const Color(0xFFF1F5F9)),
+                        color: isSelected
+                            ? AppColors.primary
+                            : (isDark
+                                  ? const Color(0xFF0F172A)
+                                  : const Color(0xFFF1F5F9)),
                         borderRadius: BorderRadius.circular(8),
-                        border:
-                            isSelected
-                                ? null
-                                : Border.all(
-                                  color:
-                                      isDark
-                                          ? const Color(0xFF334155)
-                                          : const Color(0xFFE2E8F0),
-                                ),
+                        border: isSelected
+                            ? null
+                            : Border.all(
+                                color: isDark
+                                    ? const Color(0xFF334155)
+                                    : const Color(0xFFE2E8F0),
+                              ),
                       ),
                       child: Text(
                         bank,
                         style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.bold,
-                          color:
-                              isSelected
-                                  ? Colors.white
-                                  : (isDark
-                                      ? const Color(0xFFCBD5E1)
-                                      : const Color(0xFF334155)),
+                          color: isSelected
+                              ? Colors.white
+                              : (isDark
+                                    ? const Color(0xFFCBD5E1)
+                                    : const Color(0xFF334155)),
                         ),
                       ),
                     ),
@@ -1375,33 +2706,34 @@ class _PaymentDialogState extends State<PaymentDialog> {
               hintText: 'Contoh: 1234-5678-XXXX',
               labelStyle: TextStyle(
                 fontSize: 13,
-                color:
-                    isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
               ),
               hintStyle: TextStyle(
                 fontSize: 13,
-                color:
-                    isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                color: isDark
+                    ? const Color(0xFF64748B)
+                    : const Color(0xFF94A3B8),
               ),
               filled: true,
-              fillColor:
-                  isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+              fillColor: isDark
+                  ? const Color(0xFF0F172A)
+                  : const Color(0xFFF8FAFC),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide(
-                  color:
-                      isDark
-                          ? const Color(0xFF334155)
-                          : const Color(0xFFE2E8F0),
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide(
-                  color:
-                      isDark
-                          ? const Color(0xFF334155)
-                          : const Color(0xFFE2E8F0),
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
                 ),
               ),
               focusedBorder: OutlineInputBorder(
@@ -1443,12 +2775,12 @@ class _PaymentDialogState extends State<PaymentDialog> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color:
-                  isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color:
-                    isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
               ),
             ),
             child: Row(
@@ -1458,10 +2790,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                   'Nominal Transfer',
                   style: TextStyle(
                     fontSize: 13,
-                    color:
-                        isDark
-                            ? const Color(0xFF94A3B8)
-                            : const Color(0xFF64748B),
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
                   ),
                 ),
                 Text(
@@ -1486,33 +2817,34 @@ class _PaymentDialogState extends State<PaymentDialog> {
               hintText: 'Contoh: BCA Bpk. Aditya',
               labelStyle: TextStyle(
                 fontSize: 13,
-                color:
-                    isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
               ),
               hintStyle: TextStyle(
                 fontSize: 13,
-                color:
-                    isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                color: isDark
+                    ? const Color(0xFF64748B)
+                    : const Color(0xFF94A3B8),
               ),
               filled: true,
-              fillColor:
-                  isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+              fillColor: isDark
+                  ? const Color(0xFF0F172A)
+                  : const Color(0xFFF8FAFC),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide(
-                  color:
-                      isDark
-                          ? const Color(0xFF334155)
-                          : const Color(0xFFE2E8F0),
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide(
-                  color:
-                      isDark
-                          ? const Color(0xFF334155)
-                          : const Color(0xFFE2E8F0),
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
                 ),
               ),
               focusedBorder: OutlineInputBorder(
@@ -1538,8 +2870,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
             color: isDark ? const Color(0xFF1E293B) : Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color:
-                  isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
             ),
           ),
           child: Row(
@@ -1555,8 +2886,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                       style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.bold,
-                        color:
-                            isDark ? Colors.white : const Color(0xFF0F172A),
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
                     ),
                     Text(
@@ -1564,10 +2894,9 @@ class _PaymentDialogState extends State<PaymentDialog> {
                           'Cetak via Bluetooth 58mm',
                       style: TextStyle(
                         fontSize: 11.5,
-                        color:
-                            isDark
-                                ? const Color(0xFF94A3B8)
-                                : const Color(0xFF64748B),
+                        color: isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B),
                       ),
                     ),
                   ],
@@ -1589,8 +2918,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
             color: isDark ? const Color(0xFF1E293B) : Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color:
-                  isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
             ),
           ),
           child: Row(
@@ -1606,18 +2934,16 @@ class _PaymentDialogState extends State<PaymentDialog> {
                       style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.bold,
-                        color:
-                            isDark ? Colors.white : const Color(0xFF0F172A),
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
                     ),
                     Text(
                       'Kirim link struk digital',
                       style: TextStyle(
                         fontSize: 11.5,
-                        color:
-                            isDark
-                                ? const Color(0xFF94A3B8)
-                                : const Color(0xFF64748B),
+                        color: isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B),
                       ),
                     ),
                   ],
@@ -1637,8 +2963,28 @@ class _PaymentDialogState extends State<PaymentDialog> {
 
   // 6. Action Button (Selesaikan & Cetak Struk) (Flat, NO SHADOW)
   Widget _buildSubmitButton(double grandTotal) {
-    final bool canSubmit =
-        (_selectedType != PaymentType.cash) || (_receivedAmount >= grandTotal);
+    final remaining = _getSplitRemaining(grandTotal);
+    final bool canSubmit = _isSplitMode
+        ? (_splitPayments.isNotEmpty && remaining <= 0)
+        : ((_selectedType != PaymentType.cash) ||
+              (_receivedAmount >= grandTotal));
+
+    String buttonText;
+    if (_isSplitMode) {
+      if (_splitPayments.isEmpty) {
+        buttonText = 'Tambahkan Pembayaran';
+      } else if (remaining > 0) {
+        buttonText = 'Sisa: ${_currencyFormatter.format(remaining)}';
+      } else {
+        buttonText = _autoPrint
+            ? 'Selesaikan & Cetak Struk'
+            : 'Selesaikan Pembayaran';
+      }
+    } else {
+      buttonText = canSubmit
+          ? (_autoPrint ? 'Selesaikan & Cetak Struk' : 'Selesaikan Pembayaran')
+          : 'Uang Pembayaran Belum Cukup';
+    }
 
     return InkWell(
       onTap: canSubmit ? () => _submitTransaction(grandTotal) : null,
@@ -1652,11 +2998,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
         ),
         child: Center(
           child: Text(
-            canSubmit
-                ? (_autoPrint
-                      ? 'Selesaikan & Cetak Struk'
-                      : 'Selesaikan Pembayaran')
-                : 'Uang Pembayaran Belum Cukup',
+            buttonText,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 15,

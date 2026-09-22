@@ -11,6 +11,9 @@ import 'kasir/kasir_page.dart';
 import 'checkout/checkout_page.dart';
 import 'report/report_page.dart';
 import 'settings/settings_page.dart';
+import '../blocs/shift/shift_bloc.dart';
+import 'kasir/widgets/open_shift_dialog.dart';
+import 'kasir/widgets/shift_control_sheet.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -103,11 +106,12 @@ class _MainPageState extends State<MainPage> {
         }
 
         final isTablet = MediaQuery.of(context).size.width >= 720;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return Scaffold(
           key: MainPage.scaffoldKey,
           drawer: isTablet
-              ? _buildTabletDrawer(context, state.user, filteredPages)
+              ? _buildTabletDrawer(context, state.user, filteredPages, isDark)
               : null,
           body: IndexedStack(
             index: _currentIndex,
@@ -116,10 +120,15 @@ class _MainPageState extends State<MainPage> {
           bottomNavigationBar: isTablet
               ? null
               : Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
                     border: Border(
-                      top: BorderSide(color: Color(0xFFF1F5F9), width: 1.0),
+                      top: BorderSide(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFF1F5F9),
+                        width: 1.0,
+                      ),
                     ),
                   ),
                   child: BottomNavigationBar(
@@ -130,10 +139,14 @@ class _MainPageState extends State<MainPage> {
                       });
                     },
                     type: BottomNavigationBarType.fixed,
-                    backgroundColor: Colors.white,
+                    backgroundColor: isDark
+                        ? const Color(0xFF1E293B)
+                        : Colors.white,
                     elevation: 0,
                     selectedItemColor: AppColors.primary,
-                    unselectedItemColor: const Color(0xFF64748B),
+                    unselectedItemColor: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
                     showSelectedLabels: true,
                     showUnselectedLabels: true,
                     selectedLabelStyle: const TextStyle(
@@ -218,9 +231,10 @@ class _MainPageState extends State<MainPage> {
     BuildContext context,
     UserEntity user,
     List<(_PageItem, Widget)> filteredPages,
+    bool isDark,
   ) {
     return Drawer(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
       elevation: 0,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.horizontal(right: Radius.circular(16)),
@@ -242,9 +256,14 @@ class _MainPageState extends State<MainPage> {
 
                 return Container(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1.0),
+                      bottom: BorderSide(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFF1F5F9),
+                        width: 1.0,
+                      ),
                     ),
                   ),
                   child: Row(
@@ -254,10 +273,16 @@ class _MainPageState extends State<MainPage> {
                         height: 44,
                         decoration: BoxDecoration(
                           color: hasLogo
-                              ? const Color(0xFFF1F5F9)
+                              ? (isDark
+                                    ? const Color(0xFF0F172A)
+                                    : const Color(0xFFF1F5F9))
                               : AppColors.primary,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF334155)
+                                : const Color(0xFFE2E8F0),
+                          ),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(11),
@@ -265,12 +290,13 @@ class _MainPageState extends State<MainPage> {
                               ? CachedNetworkImage(
                                   imageUrl: logoUrl,
                                   fit: BoxFit.cover,
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(
-                                        Icons.storefront_rounded,
-                                        color: Color(0xFF64748B),
-                                        size: 22,
-                                      ),
+                                  errorWidget: (context, url, error) => Icon(
+                                    Icons.storefront_rounded,
+                                    color: isDark
+                                        ? const Color(0xFF94A3B8)
+                                        : const Color(0xFF64748B),
+                                    size: 22,
+                                  ),
                                 )
                               : SvgPicture.asset("assets/icons/logo.svg"),
                         ),
@@ -283,10 +309,12 @@ class _MainPageState extends State<MainPage> {
                           children: [
                             Text(
                               businessName,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFF0F172A),
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0F172A),
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -303,12 +331,14 @@ class _MainPageState extends State<MainPage> {
                                   ),
                                 ),
                                 const SizedBox(width: 5),
-                                const Text(
+                                Text(
                                   'Sistem Kasir POS',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
-                                    color: Color(0xFF64748B),
+                                    color: isDark
+                                        ? const Color(0xFF94A3B8)
+                                        : const Color(0xFF64748B),
                                   ),
                                 ),
                               ],
@@ -355,7 +385,9 @@ class _MainPageState extends State<MainPage> {
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? Colors.grey.shade100
+                              ? (isDark
+                                    ? const Color(0xFF334155)
+                                    : const Color(0xFFF1F5F9))
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -396,15 +428,21 @@ class _MainPageState extends State<MainPage> {
                                       ? FontWeight.bold
                                       : FontWeight.w600,
                                   color: isSelected
-                                      ? AppColors.textPrimary
-                                      : const Color(0xFF334155),
+                                      ? (isDark
+                                            ? Colors.white
+                                            : AppColors.textPrimary)
+                                      : (isDark
+                                            ? const Color(0xFF94A3B8)
+                                            : const Color(0xFF334155)),
                                 ),
                               ),
                             ),
                             if (isSelected)
-                              const Icon(
+                              Icon(
                                 Icons.chevron_right_rounded,
-                                color: AppColors.textPrimary,
+                                color: isDark
+                                    ? Colors.white
+                                    : AppColors.textPrimary,
                                 size: 20,
                               ),
                           ],
@@ -416,6 +454,144 @@ class _MainPageState extends State<MainPage> {
               ),
             ),
 
+            // Shift Quick Access in Drawer
+            BlocBuilder<ShiftBloc, ShiftState>(
+              builder: (context, shiftState) {
+                final isOpen = shiftState.hasActiveShift;
+                final shift = shiftState.activeShift;
+                return Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isOpen
+                        ? (isDark
+                              ? const Color(0xFF064E3B).withValues(alpha: 0.4)
+                              : const Color(0xFFECFDF5))
+                        : (isDark
+                              ? const Color(0xFF78350F).withValues(alpha: 0.4)
+                              : const Color(0xFFFFFBEB)),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isOpen
+                          ? (isDark
+                                ? const Color(0xFF059669)
+                                : const Color(
+                                    0xFF10B981,
+                                  ).withValues(alpha: 0.3))
+                          : (isDark
+                                ? const Color(0xFFD97706)
+                                : const Color(
+                                    0xFFF59E0B,
+                                  ).withValues(alpha: 0.3)),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: isOpen
+                              ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                              : const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          isOpen
+                              ? Icons.lock_open_rounded
+                              : Icons.lock_clock_rounded,
+                          color: isOpen
+                              ? (isDark
+                                    ? const Color(0xFF34D399)
+                                    : const Color(0xFF059669))
+                              : (isDark
+                                    ? const Color(0xFFFBBF24)
+                                    : const Color(0xFFD97706)),
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isOpen
+                                  ? 'Shift Kasir Aktif'
+                                  : 'Shift Belum Dibuka',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: isOpen
+                                    ? (isDark
+                                          ? const Color(0xFF6EE7B7)
+                                          : const Color(0xFF065F46))
+                                    : (isDark
+                                          ? const Color(0xFFFCD34D)
+                                          : const Color(0xFF92400E)),
+                              ),
+                            ),
+                            Text(
+                              isOpen
+                                  ? 'Kasir: ${shift?.userName ?? 'Kasir'}'
+                                  : 'Buka shift untuk catat laci',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isOpen
+                                    ? (isDark
+                                          ? const Color(0xFFA7F3D0)
+                                          : const Color(0xFF047857))
+                                    : (isDark
+                                          ? const Color(0xFFFDE68A)
+                                          : const Color(0xFFB45309)),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          if (isOpen) {
+                            ShiftControlSheet.show(context);
+                          } else {
+                            OpenShiftDialog.show(context);
+                          }
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          isOpen ? 'Kelola' : 'Buka',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: isOpen
+                                ? (isDark
+                                      ? const Color(0xFF34D399)
+                                      : const Color(0xFF059669))
+                                : (isDark
+                                      ? const Color(0xFFFBBF24)
+                                      : AppColors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
             // 3. User Profile Footer
             Builder(
               builder: (context) {
@@ -425,9 +601,14 @@ class _MainPageState extends State<MainPage> {
 
                 return Container(
                   padding: const EdgeInsets.all(14),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     border: Border(
-                      top: BorderSide(color: Color(0xFFF1F5F9), width: 1.0),
+                      top: BorderSide(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFF1F5F9),
+                        width: 1.0,
+                      ),
                     ),
                   ),
                   child: Row(
@@ -459,20 +640,24 @@ class _MainPageState extends State<MainPage> {
                           children: [
                             Text(
                               displayName,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF0F172A),
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0F172A),
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
                               user.role.name.toUpperCase(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF64748B),
+                                color: isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF64748B),
                               ),
                             ),
                           ],

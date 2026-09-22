@@ -13,6 +13,7 @@ class StockHistoryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final stockService = getIt<StockService>();
     DateFormat dateFormat;
     try {
@@ -22,26 +23,35 @@ class StockHistoryPage extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: isDark
+          ? const Color(0xFF0F172A)
+          : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
+          icon: Icon(
+            Icons.arrow_back,
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           product == null ? 'Riwayat Stok' : 'Stok: ${product!.name}',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF0F172A),
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
           ),
         ),
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
         ),
       ),
       body: StreamBuilder<List<StockLog>>(
@@ -69,7 +79,7 @@ class StockHistoryPage extends StatelessWidget {
           final logs = snapshot.data ?? [];
 
           if (logs.isEmpty) {
-            return _buildEmptyState();
+            return _buildEmptyState(isDark);
           }
 
           return ListView.builder(
@@ -77,7 +87,7 @@ class StockHistoryPage extends StatelessWidget {
             itemCount: logs.length,
             itemBuilder: (context, index) {
               final log = logs[index];
-              return _buildLogCard(log, dateFormat);
+              return _buildLogCard(log, dateFormat, isDark);
             },
           );
         },
@@ -85,7 +95,7 @@ class StockHistoryPage extends StatelessWidget {
     );
   }
 
-  Widget _buildLogCard(StockLog log, DateFormat dateFormat) {
+  Widget _buildLogCard(StockLog log, DateFormat dateFormat, bool isDark) {
     Color typeColor;
     Color typeBg;
     IconData icon;
@@ -93,26 +103,34 @@ class StockHistoryPage extends StatelessWidget {
 
     switch (log.type) {
       case StockLogType.stockIn:
-        typeColor = const Color(0xFF059669);
-        typeBg = const Color(0xFFECFDF5);
+        typeColor = isDark ? const Color(0xFF34D399) : const Color(0xFF059669);
+        typeBg = isDark
+            ? const Color(0xFF064E3B).withValues(alpha: 0.4)
+            : const Color(0xFFECFDF5);
         icon = Icons.add_circle_outline;
         typeLabel = 'Stok Masuk';
         break;
       case StockLogType.stockOut:
-        typeColor = const Color(0xFFDC2626);
-        typeBg = const Color(0xFFFEF2F2);
+        typeColor = isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626);
+        typeBg = isDark
+            ? const Color(0xFF7F1D1D).withValues(alpha: 0.3)
+            : const Color(0xFFFEF2F2);
         icon = Icons.remove_circle_outline;
         typeLabel = 'Stok Keluar';
         break;
       case StockLogType.sale:
-        typeColor = const Color(0xFF2563EB);
-        typeBg = const Color(0xFFEFF6FF);
+        typeColor = isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB);
+        typeBg = isDark
+            ? const Color(0xFF1E3A8A).withValues(alpha: 0.4)
+            : const Color(0xFFEFF6FF);
         icon = Icons.shopping_cart_outlined;
         typeLabel = 'Penjualan';
         break;
       case StockLogType.adjustment:
-        typeColor = const Color(0xFFD97706);
-        typeBg = const Color(0xFFFFFBEB);
+        typeColor = isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706);
+        typeBg = isDark
+            ? const Color(0xFF78350F).withValues(alpha: 0.3)
+            : const Color(0xFFFFFBEB);
         icon = Icons.settings_backup_restore;
         typeLabel = 'Penyesuaian';
         break;
@@ -122,9 +140,11 @@ class StockHistoryPage extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,10 +167,10 @@ class StockHistoryPage extends StatelessWidget {
                   children: [
                     Text(
                       log.productName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
-                        color: Color(0xFF0F172A),
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -179,9 +199,9 @@ class StockHistoryPage extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     'Sisa: ${log.newStock}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: Color(0xFF64748B),
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -194,24 +214,26 @@ class StockHistoryPage extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.info_outline,
                     size: 14,
-                    color: Color(0xFF64748B),
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                   ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       log.reason!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF475569),
+                        color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
                       ),
                     ),
                   ),
@@ -223,17 +245,17 @@ class StockHistoryPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              const Icon(
+              Icon(
                 Icons.access_time,
                 size: 12,
-                color: Color(0xFF94A3B8),
+                color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
               ),
               const SizedBox(width: 4),
               Text(
                 dateFormat.format(log.createdAt),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
-                  color: Color(0xFF94A3B8),
+                  color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
                 ),
               ),
             ],
@@ -243,7 +265,7 @@ class StockHistoryPage extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool isDark) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -254,31 +276,33 @@ class StockHistoryPage extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.history_toggle_off_rounded,
                 size: 34,
-                color: Color(0xFF94A3B8),
+                color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Belum ada riwayat stok',
               style: TextStyle(
-                color: Color(0xFF0F172A),
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Perubahan stok dari penjualan atau penyesuaian akan muncul di sini',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Color(0xFF64748B),
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                 fontSize: 13,
               ),
             ),

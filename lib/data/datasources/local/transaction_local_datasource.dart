@@ -86,6 +86,21 @@ class TransactionLocalDataSource {
     return _rowToModel(row, items, payments);
   }
 
+  /// Get all transactions for a specific shift.
+  Future<List<TransactionModel>> getTransactionsByShift(String shiftId) async {
+    final query = _db.select(_db.localTransactions)
+      ..where((t) => t.shiftId.equals(shiftId))
+      ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]);
+    final rows = await query.get();
+    final List<TransactionModel> transactions = [];
+    for (final row in rows) {
+      final items = await _getItemsForTransaction(row.id);
+      final payments = await _getPaymentsForTransaction(row.id);
+      transactions.add(_rowToModel(row, items, payments));
+    }
+    return transactions;
+  }
+
   /// Create a transaction locally with all items (atomic).
   /// This is the core offline transaction capability.
   Future<String> createTransaction(
@@ -116,6 +131,7 @@ class TransactionLocalDataSource {
               completedAt: Value(transaction.completedAt),
               createdBy: transaction.createdBy,
               businessId: Value(transaction.businessId),
+              shiftId: Value(transaction.shiftId),
               syncStatus: Value(syncStatus),
               lastSyncAt: Value(syncStatus == 'synced' ? DateTime.now() : null),
             ),
@@ -331,6 +347,7 @@ class TransactionLocalDataSource {
       items: items.map((i) => i.toEntity()).toList(),
       createdBy: row.createdBy,
       businessId: row.businessId,
+      shiftId: row.shiftId,
     );
   }
 

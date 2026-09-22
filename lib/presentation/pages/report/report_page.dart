@@ -2352,7 +2352,10 @@ class _ReportPageState extends State<ReportPage> {
                     ],
                   ),
                   const SizedBox(height: 3),
-                  Row(
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 3,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
                         dateFormatted,
@@ -2372,7 +2375,7 @@ class _ReportPageState extends State<ReportPage> {
                           color: Color(0xFF64748B),
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 2),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 5,
@@ -2385,6 +2388,8 @@ class _ReportPageState extends State<ReportPage> {
                         ),
                         child: Text(
                           payText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
@@ -2403,12 +2408,15 @@ class _ReportPageState extends State<ReportPage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  _currencyFormatter.format(txn.totalAmount).trim(),
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    _currencyFormatter.format(txn.totalAmount).trim(),
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 2),

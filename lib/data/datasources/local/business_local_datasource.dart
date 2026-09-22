@@ -32,6 +32,12 @@ class BusinessLocalDataSource {
       qrisUrl: result.qrisUrl,
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
+      isTaxEnabled: result.isTaxEnabled,
+      taxRate: result.taxRate,
+      taxName: result.taxName,
+      isServiceChargeEnabled: result.isServiceChargeEnabled,
+      serviceChargeRate: result.serviceChargeRate,
+      isPriceInclusiveTax: result.isPriceInclusiveTax,
     );
   }
 
@@ -49,6 +55,12 @@ class BusinessLocalDataSource {
             qrisUrl: Value(business.qrisUrl),
             createdAt: business.createdAt,
             updatedAt: business.updatedAt,
+            isTaxEnabled: Value(business.isTaxEnabled),
+            taxRate: Value(business.taxRate),
+            taxName: Value(business.taxName),
+            isServiceChargeEnabled: Value(business.isServiceChargeEnabled),
+            serviceChargeRate: Value(business.serviceChargeRate),
+            isPriceInclusiveTax: Value(business.isPriceInclusiveTax),
             syncStatus: const Value('synced'),
             lastSyncAt: Value(DateTime.now()),
           ),

@@ -39,6 +39,13 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
 
   bool _isPrinting = false;
   bool _isSharingWA = false;
+  String? _customerPhone;
+
+  @override
+  void initState() {
+    super.initState();
+    _customerPhone = widget.customerPhone;
+  }
 
   Future<void> _handleReprint() async {
     setState(() => _isPrinting = true);
@@ -69,17 +76,348 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
   }
 
   Future<void> _handleShareWhatsApp() async {
+    await _showShareReceiptOptions();
+  }
+
+  Future<void> _shareReceiptAsJpg() async {
     setState(() => _isSharingWA = true);
     try {
-      await WhatsappService.shareReceipt(
+      await WhatsappService.shareReceiptAsImage(
         transaction: widget.transaction,
         businessInfo: widget.businessInfo,
-        phoneNumber: widget.customerPhone,
+        context: context,
       );
+    } catch (e, stack) {
+      debugPrint('Error sharing receipt as image: $e\n$stack');
+      if (mounted) {
+        AppToast.showWarning(
+          context,
+          'Gagal mengirim gambar struk. Mengalihkan ke teks WhatsApp...',
+        );
+        if (_customerPhone == null || _customerPhone!.trim().isEmpty) {
+          _showPhoneInputDialog();
+        } else {
+          _sendReceiptToPhone(_customerPhone);
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isSharingWA = false);
+    }
+  }
+
+  Future<void> _showShareReceiptOptions() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (bottomSheetCtx) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF475569)
+                        : const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Kirim Struk Digital',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Pilih format pengiriman struk untuk pelanggan:',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: isDark
+                      ? const Color(0xFF94A3B8)
+                      : const Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Opsi 1: Gambar Struk JPG
+              InkWell(
+                onTap: () {
+                  Navigator.pop(bottomSheetCtx);
+                  _shareReceiptAsJpg();
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      SvgPicture.asset("assets/icons/gambar.svg", height: 32),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Gambar Struk',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0F172A),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Struk foto resmi berkualitas tinggi langsung ke WhatsApp',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: isDark
+                            ? const Color(0xFF64748B)
+                            : const Color(0xFF94A3B8),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // Opsi 2: Pesan Teks WhatsApp
+              InkWell(
+                onTap: () {
+                  Navigator.pop(bottomSheetCtx);
+                  if (_customerPhone == null ||
+                      _customerPhone!.trim().isEmpty) {
+                    _showPhoneInputDialog();
+                  } else {
+                    _sendReceiptToPhone(_customerPhone);
+                  }
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFE2E8F0),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      SvgPicture.asset("assets/icons/whatsapp.svg", height: 32),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Pesan Teks WhatsApp',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0F172A),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _customerPhone?.isNotEmpty == true
+                                  ? 'Kirim teks langsung ke $_customerPhone'
+                                  : 'Ketik nomor pelanggan untuk kirim teks',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: isDark
+                            ? const Color(0xFF64748B)
+                            : const Color(0xFF94A3B8),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _sendReceiptToPhone(String? phone) async {
+    setState(() => _isSharingWA = true);
+    try {
+      await WhatsappService.shareReceiptAsText(
+        transaction: widget.transaction,
+        businessInfo: widget.businessInfo,
+        phoneNumber: phone,
+      );
+      if (mounted && phone != null && phone.isNotEmpty) {
+        setState(() => _customerPhone = phone);
+      }
     } catch (e) {
       if (mounted) AppToast.showError(context, 'Gagal kirim WhatsApp: $e');
     } finally {
       if (mounted) setState(() => _isSharingWA = false);
+    }
+  }
+
+  Future<void> _showPhoneInputDialog() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final phoneController = TextEditingController(text: _customerPhone ?? '');
+
+    final result = await showDialog<String?>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            SvgPicture.asset("assets/icons/whatsapp.svg", height: 32),
+            const SizedBox(width: 10),
+            const Text(
+              'Kirim Struk via WA',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Masukkan nomor WhatsApp pelanggan:',
+              style: TextStyle(fontSize: 12.5),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: phoneController,
+              keyboardType: TextInputType.phone,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: '081234567890',
+                prefixIcon: const Icon(Icons.phone_rounded, size: 20),
+                filled: true,
+                fillColor: isDark
+                    ? const Color(0xFF0F172A)
+                    : const Color(0xFFF1F5F9),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tips: Jika nomor dikosongkan, Anda dapat memilih kontak langsung di dalam WhatsApp.',
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(dialogCtx, null),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              'Batal',
+              style: TextStyle(
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogCtx, phoneController.text.trim());
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Buka WhatsApp'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      if (result.isNotEmpty) {
+        setState(() => _customerPhone = result);
+      }
+      await _sendReceiptToPhone(result.isNotEmpty ? result : null);
     }
   }
 
@@ -167,20 +505,20 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
                 decoration: BoxDecoration(
                   color: isPrinterConnected
                       ? (isDark
-                          ? const Color(0xFF064E3B).withValues(alpha: 0.3)
-                          : const Color(0xFFECFDF5))
+                            ? const Color(0xFF064E3B).withValues(alpha: 0.3)
+                            : const Color(0xFFECFDF5))
                       : (isDark
-                          ? const Color(0xFF0F172A)
-                          : const Color(0xFFF1F5F9)),
+                            ? const Color(0xFF0F172A)
+                            : const Color(0xFFF1F5F9)),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isPrinterConnected
                         ? (isDark
-                            ? const Color(0xFF059669).withValues(alpha: 0.5)
-                            : const Color(0xFFA7F3D0))
+                              ? const Color(0xFF059669).withValues(alpha: 0.5)
+                              : const Color(0xFFA7F3D0))
                         : (isDark
-                            ? const Color(0xFF334155)
-                            : const Color(0xFFE2E8F0)),
+                              ? const Color(0xFF334155)
+                              : const Color(0xFFE2E8F0)),
                   ),
                 ),
                 child: Row(
@@ -193,11 +531,11 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
                       size: isTablet ? 14 : 13,
                       color: isPrinterConnected
                           ? (isDark
-                              ? const Color(0xFF34D399)
-                              : const Color(0xFF059669))
+                                ? const Color(0xFF34D399)
+                                : const Color(0xFF059669))
                           : (isDark
-                              ? const Color(0xFF94A3B8)
-                              : const Color(0xFF64748B)),
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B)),
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -209,11 +547,11 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
                         fontWeight: FontWeight.w600,
                         color: isPrinterConnected
                             ? (isDark
-                                ? const Color(0xFF34D399)
-                                : const Color(0xFF059669))
+                                  ? const Color(0xFF34D399)
+                                  : const Color(0xFF059669))
                             : (isDark
-                                ? const Color(0xFF94A3B8)
-                                : const Color(0xFF64748B)),
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B)),
                       ),
                     ),
                   ],
@@ -248,11 +586,12 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
                       icon: "assets/icons/e-receipt.svg",
                       iconColor: const Color(0xFF059669),
                       title: 'e-Receipt WA',
-                      subtitle: widget.customerPhone?.isNotEmpty == true
-                          ? widget.customerPhone!
-                          : 'Kirim WhatsApp',
+                      subtitle: _customerPhone?.isNotEmpty == true
+                          ? 'WA: $_customerPhone'
+                          : 'Format JPG / Teks',
                       isLoading: _isSharingWA,
                       onTap: _isSharingWA ? null : _handleShareWhatsApp,
+                      onLongPress: _isSharingWA ? null : _showPhoneInputDialog,
                       isDark: isDark,
                       isTablet: isTablet,
                     ),
@@ -335,6 +674,23 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
     bool isTablet = false,
   }) {
     final change = txn.changeAmount;
+    final isSplit = txn.payments.length > 1;
+
+    String cardTitle;
+    String cardValue;
+    if (change > 0) {
+      cardTitle = 'UANG KEMBALIAN';
+      cardValue = _currencyFormatter.format(change);
+    } else if (isSplit) {
+      cardTitle = 'PEMBAYARAN LUNAS';
+      cardValue = _currencyFormatter.format(txn.totalAmount);
+    } else if (isCash) {
+      cardTitle = 'UANG KEMBALIAN';
+      cardValue = _currencyFormatter.format(change);
+    } else {
+      cardTitle = 'TOTAL DIBAYAR';
+      cardValue = _currencyFormatter.format(txn.totalAmount);
+    }
 
     return Container(
       width: double.infinity,
@@ -342,12 +698,11 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
         horizontal: isTablet ? 20 : 16,
         vertical: isTablet ? 18 : 14,
       ),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            isCash ? 'UANG KEMBALIAN' : 'TOTAL DIBAYAR',
+            cardTitle,
             style: TextStyle(
               fontSize: isTablet ? 12 : 11,
               fontWeight: FontWeight.bold,
@@ -359,9 +714,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
-              isCash
-                  ? _currencyFormatter.format(change)
-                  : _currencyFormatter.format(txn.totalAmount),
+              cardValue,
               style: TextStyle(
                 fontSize: isTablet ? 32 : 26,
                 fontWeight: FontWeight.w800,
@@ -385,6 +738,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
     bool isTablet = false,
   }) {
     final customerName = txn.customerName;
+    final isSplit = txn.payments.length > 1;
 
     return Container(
       width: double.infinity,
@@ -422,12 +776,60 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
           // Row 3: Metode Bayar
           _buildSummaryRow(
             'Metode Bayar',
-            isCash
+            (isCash && !isSplit)
                 ? 'Tunai (Diterima ${_currencyFormatter.format(receivedCash).trim()})'
                 : txn.paymentMethodDisplay,
             isDark: isDark,
             isTablet: isTablet,
           ),
+
+          // Multi-tender Breakdown
+          if (isSplit) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
+                ),
+              ),
+              child: Column(
+                children: txn.payments.map((p) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.5),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '• ${p.typeName}${p.reference != null ? " (${p.reference})" : ""}',
+                          style: TextStyle(
+                            fontSize: isTablet ? 12 : 11,
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
+                          ),
+                        ),
+                        Text(
+                          _currencyFormatter.format(p.amount),
+                          style: TextStyle(
+                            fontSize: isTablet ? 12 : 11,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
 
           // Row 4: Pelanggan (jika ada)
           if (customerName != null && customerName.isNotEmpty) ...[
@@ -495,9 +897,7 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
             child: Divider(
               height: 1,
               thickness: 1,
-              color: isDark
-                  ? const Color(0xFF334155)
-                  : const Color(0xFFE2E8F0),
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
             ),
           ),
 
@@ -556,8 +956,8 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
           style: TextStyle(
             fontSize: isTablet ? 14 : 12.5,
             fontWeight: isBoldValue ? FontWeight.bold : FontWeight.w500,
-            color: valueColor ??
-                (isDark ? Colors.white : const Color(0xFF0F172A)),
+            color:
+                valueColor ?? (isDark ? Colors.white : const Color(0xFF0F172A)),
           ),
         ),
       ],
@@ -571,11 +971,13 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
     required String subtitle,
     required bool isLoading,
     required VoidCallback? onTap,
+    VoidCallback? onLongPress,
     bool isDark = false,
     bool isTablet = false,
   }) {
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       borderRadius: BorderRadius.circular(14),
       child: Container(
         padding: EdgeInsets.symmetric(

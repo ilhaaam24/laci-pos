@@ -65,17 +65,7 @@ class BusinessRepositoryImpl implements BusinessRepository {
     BusinessInfo businessInfo,
   ) async {
     try {
-      final model = BusinessInfoModel(
-        id: businessInfo.id,
-        businessName: businessInfo.businessName,
-        address: businessInfo.address,
-        phone: businessInfo.phone,
-        email: businessInfo.email,
-        logoUrl: businessInfo.logoUrl,
-        qrisUrl: businessInfo.qrisUrl,
-        createdAt: businessInfo.createdAt,
-        updatedAt: businessInfo.updatedAt,
-      );
+      final model = BusinessInfoModel.fromEntity(businessInfo);
 
       // 1. Update local
       await localDataSource.upsertBusinessInfo(model);

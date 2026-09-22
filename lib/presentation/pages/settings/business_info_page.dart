@@ -22,6 +22,13 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
   late TextEditingController _addressController;
   late TextEditingController _phoneController;
   late TextEditingController _emailController;
+  late TextEditingController _taxNameController;
+  late TextEditingController _taxRateController;
+  late TextEditingController _serviceRateController;
+
+  bool _isTaxEnabled = false;
+  bool _isServiceChargeEnabled = false;
+  bool _isPriceInclusiveTax = false;
 
   String? _logoUrl;
   bool _isUploadingLogo = false;
@@ -35,6 +42,9 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
     _addressController = TextEditingController();
     _phoneController = TextEditingController();
     _emailController = TextEditingController();
+    _taxNameController = TextEditingController(text: 'Pajak');
+    _taxRateController = TextEditingController(text: '10');
+    _serviceRateController = TextEditingController(text: '5');
 
     final state = context.read<BusinessBloc>().state;
     if (state.businessInfo != null) {
@@ -51,6 +61,20 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
     _emailController.text = info.email ?? '';
     _logoUrl = info.logoUrl;
     _qrisUrl = info.qrisUrl;
+    _isTaxEnabled = info.isTaxEnabled;
+    _taxNameController.text = info.taxName.isNotEmpty ? info.taxName : 'Pajak';
+    _taxRateController.text = info.taxRate > 0
+        ? (info.taxRate % 1 == 0
+            ? info.taxRate.toInt().toString()
+            : info.taxRate.toString())
+        : '10';
+    _isServiceChargeEnabled = info.isServiceChargeEnabled;
+    _serviceRateController.text = info.serviceChargeRate > 0
+        ? (info.serviceChargeRate % 1 == 0
+            ? info.serviceChargeRate.toInt().toString()
+            : info.serviceChargeRate.toString())
+        : '5';
+    _isPriceInclusiveTax = info.isPriceInclusiveTax;
   }
 
   @override
@@ -59,6 +83,9 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
     _addressController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
+    _taxNameController.dispose();
+    _taxRateController.dispose();
+    _serviceRateController.dispose();
     super.dispose();
   }
 
@@ -189,6 +216,12 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
     }
 
     if (_formKey.currentState!.validate()) {
+      final taxRate =
+          double.tryParse(_taxRateController.text.replaceAll(',', '.')) ?? 0.0;
+      final serviceRate =
+          double.tryParse(_serviceRateController.text.replaceAll(',', '.')) ??
+              0.0;
+
       final updatedInfo = BusinessInfo(
         id: currentInfo.id,
         businessName: _nameController.text.trim(),
@@ -199,6 +232,14 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
         qrisUrl: _qrisUrl != null && _qrisUrl!.isNotEmpty ? _qrisUrl : null,
         createdAt: currentInfo.createdAt,
         updatedAt: DateTime.now(),
+        isTaxEnabled: _isTaxEnabled,
+        taxRate: _isTaxEnabled ? taxRate : 0.0,
+        taxName: _taxNameController.text.trim().isNotEmpty
+            ? _taxNameController.text.trim()
+            : 'Pajak',
+        isServiceChargeEnabled: _isServiceChargeEnabled,
+        serviceChargeRate: _isServiceChargeEnabled ? serviceRate : 0.0,
+        isPriceInclusiveTax: _isPriceInclusiveTax,
       );
 
       context.read<BusinessBloc>().add(UpdateBusinessInfo(updatedInfo));
@@ -509,6 +550,237 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                           isDark: isDark,
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildCardGroup(
+                    title: 'PAJAK & BIAYA LAYANAN (SERVICE CHARGE)',
+                    isDark: isDark,
+                    children: [
+                      // Pajak Switch Row
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Aktifkan Pajak',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? Colors.white
+                                        : const Color(0xFF0F172A),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Terapkan persentase pajak (PPN/PB1/Resto) pada pesanan',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: isDark
+                                        ? const Color(0xFF94A3B8)
+                                        : const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: _isTaxEnabled,
+                            activeThumbColor: AppColors.primary,
+                            onChanged: (v) => setState(() => _isTaxEnabled = v),
+                          ),
+                        ],
+                      ),
+                      if (_isTaxEnabled) ...[
+                        const SizedBox(height: 14),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildLabel('Nama Pajak', isDark: isDark),
+                                  TextFormField(
+                                    controller: _taxNameController,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: isDark
+                                          ? Colors.white
+                                          : const Color(0xFF0F172A),
+                                    ),
+                                    decoration: _buildInputDecoration(
+                                      hint: 'PPN / PB1 / Pajak',
+                                      prefixIcon: Icons.receipt_long_outlined,
+                                      isDark: isDark,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 2,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildLabel('Tarif (%)', isDark: isDark),
+                                  TextFormField(
+                                    controller: _taxRateController,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: isDark
+                                          ? Colors.white
+                                          : const Color(0xFF0F172A),
+                                    ),
+                                    decoration: _buildInputDecoration(
+                                      hint: '10',
+                                      prefixIcon: Icons.percent,
+                                      isDark: isDark,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF0F172A)
+                                : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Harga Termasuk Pajak (Tax Inclusive)',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark
+                                            ? Colors.white
+                                            : const Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                    Text(
+                                      'Harga produk di kasir sudah termasuk nilai pajak',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: isDark
+                                            ? const Color(0xFF94A3B8)
+                                            : const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch(
+                                value: _isPriceInclusiveTax,
+                                activeThumbColor: AppColors.primary,
+                                onChanged: (v) =>
+                                    setState(() => _isPriceInclusiveTax = v),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                      ),
+                      const SizedBox(height: 16),
+                      // Service Charge Switch Row
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Biaya Layanan (Service Charge)',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? Colors.white
+                                        : const Color(0xFF0F172A),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Biaya servis kafe/resto yang ditambahkan ke pesanan',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: isDark
+                                        ? const Color(0xFF94A3B8)
+                                        : const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: _isServiceChargeEnabled,
+                            activeThumbColor: AppColors.primary,
+                            onChanged: (v) =>
+                                setState(() => _isServiceChargeEnabled = v),
+                          ),
+                        ],
+                      ),
+                      if (_isServiceChargeEnabled) ...[
+                        const SizedBox(height: 14),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildLabel(
+                              'Tarif Biaya Layanan (%)',
+                              isDark: isDark,
+                            ),
+                            TextFormField(
+                              controller: _serviceRateController,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0F172A),
+                              ),
+                              decoration: _buildInputDecoration(
+                                hint: 'Contoh: 5',
+                                prefixIcon: Icons.room_service_outlined,
+                                isDark: isDark,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 16),

@@ -29,6 +29,7 @@ class LocalProducts extends Table {
   DateTimeColumn get lastSyncAt => dateTime().nullable()();
   TextColumn get variants => text().nullable()();
   TextColumn get modifierGroups => text().nullable()();
+  BoolColumn get trackStock => boolean().withDefault(const Constant(true))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -93,6 +94,7 @@ class LocalTransactions extends Table {
   TextColumn get businessId => text().nullable()();
   TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
   DateTimeColumn get lastSyncAt => dateTime().nullable()();
+  TextColumn get shiftId => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -181,6 +183,61 @@ class LocalBusinessInfo extends Table {
   DateTimeColumn get updatedAt => dateTime()();
   TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
   DateTimeColumn get lastSyncAt => dateTime().nullable()();
+  BoolColumn get isTaxEnabled => boolean().withDefault(const Constant(false))();
+  RealColumn get taxRate => real().withDefault(const Constant(0.0))();
+  TextColumn get taxName => text().withDefault(const Constant('Pajak'))();
+  BoolColumn get isServiceChargeEnabled =>
+      boolean().withDefault(const Constant(false))();
+  RealColumn get serviceChargeRate =>
+      real().withDefault(const Constant(0.0))();
+  BoolColumn get isPriceInclusiveTax =>
+      boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Local mirror of Firebase 'shifts' collection.
+class LocalShifts extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get userName => text()();
+  TextColumn get userEmail => text().nullable()();
+  TextColumn get businessId => text().nullable()();
+  DateTimeColumn get startTime => dateTime()();
+  DateTimeColumn get endTime => dateTime().nullable()();
+  RealColumn get startCash => real()();
+  RealColumn get endCashExpected => real().nullable()();
+  RealColumn get endCashActual => real().nullable()();
+  RealColumn get cashDifference => real().nullable()();
+  RealColumn get totalCashSales => real().withDefault(const Constant(0))();
+  RealColumn get totalNonCashSales => real().withDefault(const Constant(0))();
+  RealColumn get totalSales => real().withDefault(const Constant(0))();
+  IntColumn get totalTransactions => integer().withDefault(const Constant(0))();
+  TextColumn get status => text().withDefault(const Constant('open'))();
+  TextColumn get notes => text().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
+  DateTimeColumn get lastSyncAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Local mirror of Firebase 'cash_movements' collection.
+class LocalCashMovements extends Table {
+  TextColumn get id => text()();
+  TextColumn get shiftId => text()();
+  TextColumn get businessId => text().nullable()();
+  TextColumn get userId => text()();
+  TextColumn get userName => text()();
+  TextColumn get type => text()(); // 'cashIn', 'cashOut'
+  RealColumn get amount => real()();
+  TextColumn get reason => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
+  DateTimeColumn get lastSyncAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -223,6 +280,8 @@ class SyncQueueEntries extends Table {
     LocalStockLogs,
     LocalBusinessInfo,
     SyncQueueEntries,
+    LocalShifts,
+    LocalCashMovements,
   ],
 )
 class LocalDatabase extends _$LocalDatabase {
@@ -232,7 +291,7 @@ class LocalDatabase extends _$LocalDatabase {
   LocalDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration {
@@ -280,6 +339,32 @@ class LocalDatabase extends _$LocalDatabase {
             localTransactionItems.selectedModifiers,
           );
           await m.addColumn(localTransactionItems, localTransactionItems.notes);
+        }
+        if (from < 7) {
+          // Create shift and cash movement tables, add shiftId to transactions
+          await m.createTable(localShifts);
+          await m.createTable(localCashMovements);
+          await m.addColumn(localTransactions, localTransactions.shiftId);
+        }
+        if (from < 8) {
+          // Add tax & service charge columns to LocalBusinessInfo
+          await m.addColumn(localBusinessInfo, localBusinessInfo.isTaxEnabled);
+          await m.addColumn(localBusinessInfo, localBusinessInfo.taxRate);
+          await m.addColumn(localBusinessInfo, localBusinessInfo.taxName);
+          await m.addColumn(
+            localBusinessInfo,
+            localBusinessInfo.isServiceChargeEnabled,
+          );
+          await m.addColumn(
+            localBusinessInfo,
+            localBusinessInfo.serviceChargeRate,
+          );
+          await m.addColumn(
+            localBusinessInfo,
+            localBusinessInfo.isPriceInclusiveTax,
+          );
+          // Add trackStock column to LocalProducts
+          await m.addColumn(localProducts, localProducts.trackStock);
         }
       },
     );
@@ -369,6 +454,8 @@ class LocalDatabase extends _$LocalDatabase {
       await delete(localPromos).go();
       await delete(localStockLogs).go();
       await delete(localBusinessInfo).go();
+      await delete(localShifts).go();
+      await delete(localCashMovements).go();
       // NOTE: We do NOT clear syncQueueEntries here to prevent losing offline changes
       // that haven't been synced yet.
     });

@@ -10,6 +10,12 @@ class BusinessInfo extends Equatable {
   final String? qrisUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool isTaxEnabled;
+  final double taxRate;
+  final String taxName;
+  final bool isServiceChargeEnabled;
+  final double serviceChargeRate;
+  final bool isPriceInclusiveTax;
 
   const BusinessInfo({
     required this.id,
@@ -21,6 +27,12 @@ class BusinessInfo extends Equatable {
     this.qrisUrl,
     required this.createdAt,
     required this.updatedAt,
+    this.isTaxEnabled = false,
+    this.taxRate = 0.0,
+    this.taxName = 'Pajak',
+    this.isServiceChargeEnabled = false,
+    this.serviceChargeRate = 0.0,
+    this.isPriceInclusiveTax = false,
   });
 
   BusinessInfo copyWith({
@@ -33,6 +45,12 @@ class BusinessInfo extends Equatable {
     String? qrisUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isTaxEnabled,
+    double? taxRate,
+    String? taxName,
+    bool? isServiceChargeEnabled,
+    double? serviceChargeRate,
+    bool? isPriceInclusiveTax,
   }) {
     return BusinessInfo(
       id: id ?? this.id,
@@ -44,6 +62,13 @@ class BusinessInfo extends Equatable {
       qrisUrl: qrisUrl ?? this.qrisUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isTaxEnabled: isTaxEnabled ?? this.isTaxEnabled,
+      taxRate: taxRate ?? this.taxRate,
+      taxName: taxName ?? this.taxName,
+      isServiceChargeEnabled:
+          isServiceChargeEnabled ?? this.isServiceChargeEnabled,
+      serviceChargeRate: serviceChargeRate ?? this.serviceChargeRate,
+      isPriceInclusiveTax: isPriceInclusiveTax ?? this.isPriceInclusiveTax,
     );
   }
 
@@ -58,5 +83,11 @@ class BusinessInfo extends Equatable {
     qrisUrl,
     createdAt,
     updatedAt,
+    isTaxEnabled,
+    taxRate,
+    taxName,
+    isServiceChargeEnabled,
+    serviceChargeRate,
+    isPriceInclusiveTax,
   ];
 }

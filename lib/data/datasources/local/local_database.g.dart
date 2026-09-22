@@ -188,6 +188,21 @@ class $LocalProductsTable extends LocalProducts
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _trackStockMeta = const VerificationMeta(
+    'trackStock',
+  );
+  @override
+  late final GeneratedColumn<bool> trackStock = GeneratedColumn<bool>(
+    'track_stock',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("track_stock" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -207,6 +222,7 @@ class $LocalProductsTable extends LocalProducts
     lastSyncAt,
     variants,
     modifierGroups,
+    trackStock,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -347,6 +363,12 @@ class $LocalProductsTable extends LocalProducts
         ),
       );
     }
+    if (data.containsKey('track_stock')) {
+      context.handle(
+        _trackStockMeta,
+        trackStock.isAcceptableOrUnknown(data['track_stock']!, _trackStockMeta),
+      );
+    }
     return context;
   }
 
@@ -424,6 +446,10 @@ class $LocalProductsTable extends LocalProducts
         DriftSqlType.string,
         data['${effectivePrefix}modifier_groups'],
       ),
+      trackStock: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}track_stock'],
+      )!,
     );
   }
 
@@ -451,6 +477,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
   final DateTime? lastSyncAt;
   final String? variants;
   final String? modifierGroups;
+  final bool trackStock;
   const LocalProduct({
     required this.id,
     required this.categoryId,
@@ -469,6 +496,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
     this.lastSyncAt,
     this.variants,
     this.modifierGroups,
+    required this.trackStock,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -504,6 +532,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
     if (!nullToAbsent || modifierGroups != null) {
       map['modifier_groups'] = Variable<String>(modifierGroups);
     }
+    map['track_stock'] = Variable<bool>(trackStock);
     return map;
   }
 
@@ -538,6 +567,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
       modifierGroups: modifierGroups == null && nullToAbsent
           ? const Value.absent()
           : Value(modifierGroups),
+      trackStock: Value(trackStock),
     );
   }
 
@@ -564,6 +594,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
       lastSyncAt: serializer.fromJson<DateTime?>(json['lastSyncAt']),
       variants: serializer.fromJson<String?>(json['variants']),
       modifierGroups: serializer.fromJson<String?>(json['modifierGroups']),
+      trackStock: serializer.fromJson<bool>(json['trackStock']),
     );
   }
   @override
@@ -587,6 +618,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
       'lastSyncAt': serializer.toJson<DateTime?>(lastSyncAt),
       'variants': serializer.toJson<String?>(variants),
       'modifierGroups': serializer.toJson<String?>(modifierGroups),
+      'trackStock': serializer.toJson<bool>(trackStock),
     };
   }
 
@@ -608,6 +640,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
     Value<DateTime?> lastSyncAt = const Value.absent(),
     Value<String?> variants = const Value.absent(),
     Value<String?> modifierGroups = const Value.absent(),
+    bool? trackStock,
   }) => LocalProduct(
     id: id ?? this.id,
     categoryId: categoryId ?? this.categoryId,
@@ -628,6 +661,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
     modifierGroups: modifierGroups.present
         ? modifierGroups.value
         : this.modifierGroups,
+    trackStock: trackStock ?? this.trackStock,
   );
   LocalProduct copyWithCompanion(LocalProductsCompanion data) {
     return LocalProduct(
@@ -662,6 +696,9 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
       modifierGroups: data.modifierGroups.present
           ? data.modifierGroups.value
           : this.modifierGroups,
+      trackStock: data.trackStock.present
+          ? data.trackStock.value
+          : this.trackStock,
     );
   }
 
@@ -684,7 +721,8 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
           ..write('syncStatus: $syncStatus, ')
           ..write('lastSyncAt: $lastSyncAt, ')
           ..write('variants: $variants, ')
-          ..write('modifierGroups: $modifierGroups')
+          ..write('modifierGroups: $modifierGroups, ')
+          ..write('trackStock: $trackStock')
           ..write(')'))
         .toString();
   }
@@ -708,6 +746,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
     lastSyncAt,
     variants,
     modifierGroups,
+    trackStock,
   );
   @override
   bool operator ==(Object other) =>
@@ -729,7 +768,8 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
           other.syncStatus == this.syncStatus &&
           other.lastSyncAt == this.lastSyncAt &&
           other.variants == this.variants &&
-          other.modifierGroups == this.modifierGroups);
+          other.modifierGroups == this.modifierGroups &&
+          other.trackStock == this.trackStock);
 }
 
 class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
@@ -750,6 +790,7 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
   final Value<DateTime?> lastSyncAt;
   final Value<String?> variants;
   final Value<String?> modifierGroups;
+  final Value<bool> trackStock;
   final Value<int> rowid;
   const LocalProductsCompanion({
     this.id = const Value.absent(),
@@ -769,6 +810,7 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
     this.lastSyncAt = const Value.absent(),
     this.variants = const Value.absent(),
     this.modifierGroups = const Value.absent(),
+    this.trackStock = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalProductsCompanion.insert({
@@ -789,6 +831,7 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
     this.lastSyncAt = const Value.absent(),
     this.variants = const Value.absent(),
     this.modifierGroups = const Value.absent(),
+    this.trackStock = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        categoryId = Value(categoryId),
@@ -816,6 +859,7 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
     Expression<DateTime>? lastSyncAt,
     Expression<String>? variants,
     Expression<String>? modifierGroups,
+    Expression<bool>? trackStock,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -836,6 +880,7 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
       if (lastSyncAt != null) 'last_sync_at': lastSyncAt,
       if (variants != null) 'variants': variants,
       if (modifierGroups != null) 'modifier_groups': modifierGroups,
+      if (trackStock != null) 'track_stock': trackStock,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -858,6 +903,7 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
     Value<DateTime?>? lastSyncAt,
     Value<String?>? variants,
     Value<String?>? modifierGroups,
+    Value<bool>? trackStock,
     Value<int>? rowid,
   }) {
     return LocalProductsCompanion(
@@ -878,6 +924,7 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
       lastSyncAt: lastSyncAt ?? this.lastSyncAt,
       variants: variants ?? this.variants,
       modifierGroups: modifierGroups ?? this.modifierGroups,
+      trackStock: trackStock ?? this.trackStock,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -936,6 +983,9 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
     if (modifierGroups.present) {
       map['modifier_groups'] = Variable<String>(modifierGroups.value);
     }
+    if (trackStock.present) {
+      map['track_stock'] = Variable<bool>(trackStock.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -962,6 +1012,7 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
           ..write('lastSyncAt: $lastSyncAt, ')
           ..write('variants: $variants, ')
           ..write('modifierGroups: $modifierGroups, ')
+          ..write('trackStock: $trackStock, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2543,6 +2594,17 @@ class $LocalTransactionsTable extends LocalTransactions
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _shiftIdMeta = const VerificationMeta(
+    'shiftId',
+  );
+  @override
+  late final GeneratedColumn<String> shiftId = GeneratedColumn<String>(
+    'shift_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2565,6 +2627,7 @@ class $LocalTransactionsTable extends LocalTransactions
     businessId,
     syncStatus,
     lastSyncAt,
+    shiftId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2736,6 +2799,12 @@ class $LocalTransactionsTable extends LocalTransactions
         ),
       );
     }
+    if (data.containsKey('shift_id')) {
+      context.handle(
+        _shiftIdMeta,
+        shiftId.isAcceptableOrUnknown(data['shift_id']!, _shiftIdMeta),
+      );
+    }
     return context;
   }
 
@@ -2825,6 +2894,10 @@ class $LocalTransactionsTable extends LocalTransactions
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_sync_at'],
       ),
+      shiftId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}shift_id'],
+      ),
     );
   }
 
@@ -2856,6 +2929,7 @@ class LocalTransaction extends DataClass
   final String? businessId;
   final String syncStatus;
   final DateTime? lastSyncAt;
+  final String? shiftId;
   const LocalTransaction({
     required this.id,
     required this.transactionCode,
@@ -2877,6 +2951,7 @@ class LocalTransaction extends DataClass
     this.businessId,
     required this.syncStatus,
     this.lastSyncAt,
+    this.shiftId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2912,6 +2987,9 @@ class LocalTransaction extends DataClass
     map['sync_status'] = Variable<String>(syncStatus);
     if (!nullToAbsent || lastSyncAt != null) {
       map['last_sync_at'] = Variable<DateTime>(lastSyncAt);
+    }
+    if (!nullToAbsent || shiftId != null) {
+      map['shift_id'] = Variable<String>(shiftId);
     }
     return map;
   }
@@ -2950,6 +3028,9 @@ class LocalTransaction extends DataClass
       lastSyncAt: lastSyncAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lastSyncAt),
+      shiftId: shiftId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shiftId),
     );
   }
 
@@ -2979,6 +3060,7 @@ class LocalTransaction extends DataClass
       businessId: serializer.fromJson<String?>(json['businessId']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       lastSyncAt: serializer.fromJson<DateTime?>(json['lastSyncAt']),
+      shiftId: serializer.fromJson<String?>(json['shiftId']),
     );
   }
   @override
@@ -3005,6 +3087,7 @@ class LocalTransaction extends DataClass
       'businessId': serializer.toJson<String?>(businessId),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'lastSyncAt': serializer.toJson<DateTime?>(lastSyncAt),
+      'shiftId': serializer.toJson<String?>(shiftId),
     };
   }
 
@@ -3029,6 +3112,7 @@ class LocalTransaction extends DataClass
     Value<String?> businessId = const Value.absent(),
     String? syncStatus,
     Value<DateTime?> lastSyncAt = const Value.absent(),
+    Value<String?> shiftId = const Value.absent(),
   }) => LocalTransaction(
     id: id ?? this.id,
     transactionCode: transactionCode ?? this.transactionCode,
@@ -3050,6 +3134,7 @@ class LocalTransaction extends DataClass
     businessId: businessId.present ? businessId.value : this.businessId,
     syncStatus: syncStatus ?? this.syncStatus,
     lastSyncAt: lastSyncAt.present ? lastSyncAt.value : this.lastSyncAt,
+    shiftId: shiftId.present ? shiftId.value : this.shiftId,
   );
   LocalTransaction copyWithCompanion(LocalTransactionsCompanion data) {
     return LocalTransaction(
@@ -3099,6 +3184,7 @@ class LocalTransaction extends DataClass
       lastSyncAt: data.lastSyncAt.present
           ? data.lastSyncAt.value
           : this.lastSyncAt,
+      shiftId: data.shiftId.present ? data.shiftId.value : this.shiftId,
     );
   }
 
@@ -3124,13 +3210,14 @@ class LocalTransaction extends DataClass
           ..write('createdBy: $createdBy, ')
           ..write('businessId: $businessId, ')
           ..write('syncStatus: $syncStatus, ')
-          ..write('lastSyncAt: $lastSyncAt')
+          ..write('lastSyncAt: $lastSyncAt, ')
+          ..write('shiftId: $shiftId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     transactionCode,
     customerId,
@@ -3151,7 +3238,8 @@ class LocalTransaction extends DataClass
     businessId,
     syncStatus,
     lastSyncAt,
-  );
+    shiftId,
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3175,7 +3263,8 @@ class LocalTransaction extends DataClass
           other.createdBy == this.createdBy &&
           other.businessId == this.businessId &&
           other.syncStatus == this.syncStatus &&
-          other.lastSyncAt == this.lastSyncAt);
+          other.lastSyncAt == this.lastSyncAt &&
+          other.shiftId == this.shiftId);
 }
 
 class LocalTransactionsCompanion extends UpdateCompanion<LocalTransaction> {
@@ -3199,6 +3288,7 @@ class LocalTransactionsCompanion extends UpdateCompanion<LocalTransaction> {
   final Value<String?> businessId;
   final Value<String> syncStatus;
   final Value<DateTime?> lastSyncAt;
+  final Value<String?> shiftId;
   final Value<int> rowid;
   const LocalTransactionsCompanion({
     this.id = const Value.absent(),
@@ -3221,6 +3311,7 @@ class LocalTransactionsCompanion extends UpdateCompanion<LocalTransaction> {
     this.businessId = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.lastSyncAt = const Value.absent(),
+    this.shiftId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalTransactionsCompanion.insert({
@@ -3244,6 +3335,7 @@ class LocalTransactionsCompanion extends UpdateCompanion<LocalTransaction> {
     this.businessId = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.lastSyncAt = const Value.absent(),
+    this.shiftId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        transactionCode = Value(transactionCode),
@@ -3273,6 +3365,7 @@ class LocalTransactionsCompanion extends UpdateCompanion<LocalTransaction> {
     Expression<String>? businessId,
     Expression<String>? syncStatus,
     Expression<DateTime>? lastSyncAt,
+    Expression<String>? shiftId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3296,6 +3389,7 @@ class LocalTransactionsCompanion extends UpdateCompanion<LocalTransaction> {
       if (businessId != null) 'business_id': businessId,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (lastSyncAt != null) 'last_sync_at': lastSyncAt,
+      if (shiftId != null) 'shift_id': shiftId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3321,6 +3415,7 @@ class LocalTransactionsCompanion extends UpdateCompanion<LocalTransaction> {
     Value<String?>? businessId,
     Value<String>? syncStatus,
     Value<DateTime?>? lastSyncAt,
+    Value<String?>? shiftId,
     Value<int>? rowid,
   }) {
     return LocalTransactionsCompanion(
@@ -3344,6 +3439,7 @@ class LocalTransactionsCompanion extends UpdateCompanion<LocalTransaction> {
       businessId: businessId ?? this.businessId,
       syncStatus: syncStatus ?? this.syncStatus,
       lastSyncAt: lastSyncAt ?? this.lastSyncAt,
+      shiftId: shiftId ?? this.shiftId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3411,6 +3507,9 @@ class LocalTransactionsCompanion extends UpdateCompanion<LocalTransaction> {
     if (lastSyncAt.present) {
       map['last_sync_at'] = Variable<DateTime>(lastSyncAt.value);
     }
+    if (shiftId.present) {
+      map['shift_id'] = Variable<String>(shiftId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3440,6 +3539,7 @@ class LocalTransactionsCompanion extends UpdateCompanion<LocalTransaction> {
           ..write('businessId: $businessId, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('lastSyncAt: $lastSyncAt, ')
+          ..write('shiftId: $shiftId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -6153,6 +6253,87 @@ class $LocalBusinessInfoTable extends LocalBusinessInfo
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isTaxEnabledMeta = const VerificationMeta(
+    'isTaxEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> isTaxEnabled = GeneratedColumn<bool>(
+    'is_tax_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_tax_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _taxRateMeta = const VerificationMeta(
+    'taxRate',
+  );
+  @override
+  late final GeneratedColumn<double> taxRate = GeneratedColumn<double>(
+    'tax_rate',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _taxNameMeta = const VerificationMeta(
+    'taxName',
+  );
+  @override
+  late final GeneratedColumn<String> taxName = GeneratedColumn<String>(
+    'tax_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('Pajak'),
+  );
+  static const VerificationMeta _isServiceChargeEnabledMeta =
+      const VerificationMeta('isServiceChargeEnabled');
+  @override
+  late final GeneratedColumn<bool> isServiceChargeEnabled =
+      GeneratedColumn<bool>(
+        'is_service_charge_enabled',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_service_charge_enabled" IN (0, 1))',
+        ),
+        defaultValue: const Constant(false),
+      );
+  static const VerificationMeta _serviceChargeRateMeta = const VerificationMeta(
+    'serviceChargeRate',
+  );
+  @override
+  late final GeneratedColumn<double> serviceChargeRate =
+      GeneratedColumn<double>(
+        'service_charge_rate',
+        aliasedName,
+        false,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
+  static const VerificationMeta _isPriceInclusiveTaxMeta =
+      const VerificationMeta('isPriceInclusiveTax');
+  @override
+  late final GeneratedColumn<bool> isPriceInclusiveTax = GeneratedColumn<bool>(
+    'is_price_inclusive_tax',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_price_inclusive_tax" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -6166,6 +6347,12 @@ class $LocalBusinessInfoTable extends LocalBusinessInfo
     updatedAt,
     syncStatus,
     lastSyncAt,
+    isTaxEnabled,
+    taxRate,
+    taxName,
+    isServiceChargeEnabled,
+    serviceChargeRate,
+    isPriceInclusiveTax,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6256,6 +6443,54 @@ class $LocalBusinessInfoTable extends LocalBusinessInfo
         ),
       );
     }
+    if (data.containsKey('is_tax_enabled')) {
+      context.handle(
+        _isTaxEnabledMeta,
+        isTaxEnabled.isAcceptableOrUnknown(
+          data['is_tax_enabled']!,
+          _isTaxEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('tax_rate')) {
+      context.handle(
+        _taxRateMeta,
+        taxRate.isAcceptableOrUnknown(data['tax_rate']!, _taxRateMeta),
+      );
+    }
+    if (data.containsKey('tax_name')) {
+      context.handle(
+        _taxNameMeta,
+        taxName.isAcceptableOrUnknown(data['tax_name']!, _taxNameMeta),
+      );
+    }
+    if (data.containsKey('is_service_charge_enabled')) {
+      context.handle(
+        _isServiceChargeEnabledMeta,
+        isServiceChargeEnabled.isAcceptableOrUnknown(
+          data['is_service_charge_enabled']!,
+          _isServiceChargeEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('service_charge_rate')) {
+      context.handle(
+        _serviceChargeRateMeta,
+        serviceChargeRate.isAcceptableOrUnknown(
+          data['service_charge_rate']!,
+          _serviceChargeRateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_price_inclusive_tax')) {
+      context.handle(
+        _isPriceInclusiveTaxMeta,
+        isPriceInclusiveTax.isAcceptableOrUnknown(
+          data['is_price_inclusive_tax']!,
+          _isPriceInclusiveTaxMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -6309,6 +6544,30 @@ class $LocalBusinessInfoTable extends LocalBusinessInfo
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_sync_at'],
       ),
+      isTaxEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_tax_enabled'],
+      )!,
+      taxRate: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}tax_rate'],
+      )!,
+      taxName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tax_name'],
+      )!,
+      isServiceChargeEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_service_charge_enabled'],
+      )!,
+      serviceChargeRate: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}service_charge_rate'],
+      )!,
+      isPriceInclusiveTax: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_price_inclusive_tax'],
+      )!,
     );
   }
 
@@ -6331,6 +6590,12 @@ class LocalBusinessInfoData extends DataClass
   final DateTime updatedAt;
   final String syncStatus;
   final DateTime? lastSyncAt;
+  final bool isTaxEnabled;
+  final double taxRate;
+  final String taxName;
+  final bool isServiceChargeEnabled;
+  final double serviceChargeRate;
+  final bool isPriceInclusiveTax;
   const LocalBusinessInfoData({
     required this.id,
     required this.businessName,
@@ -6343,6 +6608,12 @@ class LocalBusinessInfoData extends DataClass
     required this.updatedAt,
     required this.syncStatus,
     this.lastSyncAt,
+    required this.isTaxEnabled,
+    required this.taxRate,
+    required this.taxName,
+    required this.isServiceChargeEnabled,
+    required this.serviceChargeRate,
+    required this.isPriceInclusiveTax,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -6370,6 +6641,12 @@ class LocalBusinessInfoData extends DataClass
     if (!nullToAbsent || lastSyncAt != null) {
       map['last_sync_at'] = Variable<DateTime>(lastSyncAt);
     }
+    map['is_tax_enabled'] = Variable<bool>(isTaxEnabled);
+    map['tax_rate'] = Variable<double>(taxRate);
+    map['tax_name'] = Variable<String>(taxName);
+    map['is_service_charge_enabled'] = Variable<bool>(isServiceChargeEnabled);
+    map['service_charge_rate'] = Variable<double>(serviceChargeRate);
+    map['is_price_inclusive_tax'] = Variable<bool>(isPriceInclusiveTax);
     return map;
   }
 
@@ -6398,6 +6675,12 @@ class LocalBusinessInfoData extends DataClass
       lastSyncAt: lastSyncAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lastSyncAt),
+      isTaxEnabled: Value(isTaxEnabled),
+      taxRate: Value(taxRate),
+      taxName: Value(taxName),
+      isServiceChargeEnabled: Value(isServiceChargeEnabled),
+      serviceChargeRate: Value(serviceChargeRate),
+      isPriceInclusiveTax: Value(isPriceInclusiveTax),
     );
   }
 
@@ -6418,6 +6701,16 @@ class LocalBusinessInfoData extends DataClass
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       lastSyncAt: serializer.fromJson<DateTime?>(json['lastSyncAt']),
+      isTaxEnabled: serializer.fromJson<bool>(json['isTaxEnabled']),
+      taxRate: serializer.fromJson<double>(json['taxRate']),
+      taxName: serializer.fromJson<String>(json['taxName']),
+      isServiceChargeEnabled: serializer.fromJson<bool>(
+        json['isServiceChargeEnabled'],
+      ),
+      serviceChargeRate: serializer.fromJson<double>(json['serviceChargeRate']),
+      isPriceInclusiveTax: serializer.fromJson<bool>(
+        json['isPriceInclusiveTax'],
+      ),
     );
   }
   @override
@@ -6435,6 +6728,12 @@ class LocalBusinessInfoData extends DataClass
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'lastSyncAt': serializer.toJson<DateTime?>(lastSyncAt),
+      'isTaxEnabled': serializer.toJson<bool>(isTaxEnabled),
+      'taxRate': serializer.toJson<double>(taxRate),
+      'taxName': serializer.toJson<String>(taxName),
+      'isServiceChargeEnabled': serializer.toJson<bool>(isServiceChargeEnabled),
+      'serviceChargeRate': serializer.toJson<double>(serviceChargeRate),
+      'isPriceInclusiveTax': serializer.toJson<bool>(isPriceInclusiveTax),
     };
   }
 
@@ -6450,6 +6749,12 @@ class LocalBusinessInfoData extends DataClass
     DateTime? updatedAt,
     String? syncStatus,
     Value<DateTime?> lastSyncAt = const Value.absent(),
+    bool? isTaxEnabled,
+    double? taxRate,
+    String? taxName,
+    bool? isServiceChargeEnabled,
+    double? serviceChargeRate,
+    bool? isPriceInclusiveTax,
   }) => LocalBusinessInfoData(
     id: id ?? this.id,
     businessName: businessName ?? this.businessName,
@@ -6462,6 +6767,13 @@ class LocalBusinessInfoData extends DataClass
     updatedAt: updatedAt ?? this.updatedAt,
     syncStatus: syncStatus ?? this.syncStatus,
     lastSyncAt: lastSyncAt.present ? lastSyncAt.value : this.lastSyncAt,
+    isTaxEnabled: isTaxEnabled ?? this.isTaxEnabled,
+    taxRate: taxRate ?? this.taxRate,
+    taxName: taxName ?? this.taxName,
+    isServiceChargeEnabled:
+        isServiceChargeEnabled ?? this.isServiceChargeEnabled,
+    serviceChargeRate: serviceChargeRate ?? this.serviceChargeRate,
+    isPriceInclusiveTax: isPriceInclusiveTax ?? this.isPriceInclusiveTax,
   );
   LocalBusinessInfoData copyWithCompanion(LocalBusinessInfoCompanion data) {
     return LocalBusinessInfoData(
@@ -6482,6 +6794,20 @@ class LocalBusinessInfoData extends DataClass
       lastSyncAt: data.lastSyncAt.present
           ? data.lastSyncAt.value
           : this.lastSyncAt,
+      isTaxEnabled: data.isTaxEnabled.present
+          ? data.isTaxEnabled.value
+          : this.isTaxEnabled,
+      taxRate: data.taxRate.present ? data.taxRate.value : this.taxRate,
+      taxName: data.taxName.present ? data.taxName.value : this.taxName,
+      isServiceChargeEnabled: data.isServiceChargeEnabled.present
+          ? data.isServiceChargeEnabled.value
+          : this.isServiceChargeEnabled,
+      serviceChargeRate: data.serviceChargeRate.present
+          ? data.serviceChargeRate.value
+          : this.serviceChargeRate,
+      isPriceInclusiveTax: data.isPriceInclusiveTax.present
+          ? data.isPriceInclusiveTax.value
+          : this.isPriceInclusiveTax,
     );
   }
 
@@ -6498,7 +6824,13 @@ class LocalBusinessInfoData extends DataClass
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncStatus: $syncStatus, ')
-          ..write('lastSyncAt: $lastSyncAt')
+          ..write('lastSyncAt: $lastSyncAt, ')
+          ..write('isTaxEnabled: $isTaxEnabled, ')
+          ..write('taxRate: $taxRate, ')
+          ..write('taxName: $taxName, ')
+          ..write('isServiceChargeEnabled: $isServiceChargeEnabled, ')
+          ..write('serviceChargeRate: $serviceChargeRate, ')
+          ..write('isPriceInclusiveTax: $isPriceInclusiveTax')
           ..write(')'))
         .toString();
   }
@@ -6516,6 +6848,12 @@ class LocalBusinessInfoData extends DataClass
     updatedAt,
     syncStatus,
     lastSyncAt,
+    isTaxEnabled,
+    taxRate,
+    taxName,
+    isServiceChargeEnabled,
+    serviceChargeRate,
+    isPriceInclusiveTax,
   );
   @override
   bool operator ==(Object other) =>
@@ -6531,7 +6869,13 @@ class LocalBusinessInfoData extends DataClass
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.syncStatus == this.syncStatus &&
-          other.lastSyncAt == this.lastSyncAt);
+          other.lastSyncAt == this.lastSyncAt &&
+          other.isTaxEnabled == this.isTaxEnabled &&
+          other.taxRate == this.taxRate &&
+          other.taxName == this.taxName &&
+          other.isServiceChargeEnabled == this.isServiceChargeEnabled &&
+          other.serviceChargeRate == this.serviceChargeRate &&
+          other.isPriceInclusiveTax == this.isPriceInclusiveTax);
 }
 
 class LocalBusinessInfoCompanion
@@ -6547,6 +6891,12 @@ class LocalBusinessInfoCompanion
   final Value<DateTime> updatedAt;
   final Value<String> syncStatus;
   final Value<DateTime?> lastSyncAt;
+  final Value<bool> isTaxEnabled;
+  final Value<double> taxRate;
+  final Value<String> taxName;
+  final Value<bool> isServiceChargeEnabled;
+  final Value<double> serviceChargeRate;
+  final Value<bool> isPriceInclusiveTax;
   final Value<int> rowid;
   const LocalBusinessInfoCompanion({
     this.id = const Value.absent(),
@@ -6560,6 +6910,12 @@ class LocalBusinessInfoCompanion
     this.updatedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.lastSyncAt = const Value.absent(),
+    this.isTaxEnabled = const Value.absent(),
+    this.taxRate = const Value.absent(),
+    this.taxName = const Value.absent(),
+    this.isServiceChargeEnabled = const Value.absent(),
+    this.serviceChargeRate = const Value.absent(),
+    this.isPriceInclusiveTax = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalBusinessInfoCompanion.insert({
@@ -6574,6 +6930,12 @@ class LocalBusinessInfoCompanion
     required DateTime updatedAt,
     this.syncStatus = const Value.absent(),
     this.lastSyncAt = const Value.absent(),
+    this.isTaxEnabled = const Value.absent(),
+    this.taxRate = const Value.absent(),
+    this.taxName = const Value.absent(),
+    this.isServiceChargeEnabled = const Value.absent(),
+    this.serviceChargeRate = const Value.absent(),
+    this.isPriceInclusiveTax = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        businessName = Value(businessName),
@@ -6591,6 +6953,12 @@ class LocalBusinessInfoCompanion
     Expression<DateTime>? updatedAt,
     Expression<String>? syncStatus,
     Expression<DateTime>? lastSyncAt,
+    Expression<bool>? isTaxEnabled,
+    Expression<double>? taxRate,
+    Expression<String>? taxName,
+    Expression<bool>? isServiceChargeEnabled,
+    Expression<double>? serviceChargeRate,
+    Expression<bool>? isPriceInclusiveTax,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -6605,6 +6973,14 @@ class LocalBusinessInfoCompanion
       if (updatedAt != null) 'updated_at': updatedAt,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (lastSyncAt != null) 'last_sync_at': lastSyncAt,
+      if (isTaxEnabled != null) 'is_tax_enabled': isTaxEnabled,
+      if (taxRate != null) 'tax_rate': taxRate,
+      if (taxName != null) 'tax_name': taxName,
+      if (isServiceChargeEnabled != null)
+        'is_service_charge_enabled': isServiceChargeEnabled,
+      if (serviceChargeRate != null) 'service_charge_rate': serviceChargeRate,
+      if (isPriceInclusiveTax != null)
+        'is_price_inclusive_tax': isPriceInclusiveTax,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -6621,6 +6997,12 @@ class LocalBusinessInfoCompanion
     Value<DateTime>? updatedAt,
     Value<String>? syncStatus,
     Value<DateTime?>? lastSyncAt,
+    Value<bool>? isTaxEnabled,
+    Value<double>? taxRate,
+    Value<String>? taxName,
+    Value<bool>? isServiceChargeEnabled,
+    Value<double>? serviceChargeRate,
+    Value<bool>? isPriceInclusiveTax,
     Value<int>? rowid,
   }) {
     return LocalBusinessInfoCompanion(
@@ -6635,6 +7017,13 @@ class LocalBusinessInfoCompanion
       updatedAt: updatedAt ?? this.updatedAt,
       syncStatus: syncStatus ?? this.syncStatus,
       lastSyncAt: lastSyncAt ?? this.lastSyncAt,
+      isTaxEnabled: isTaxEnabled ?? this.isTaxEnabled,
+      taxRate: taxRate ?? this.taxRate,
+      taxName: taxName ?? this.taxName,
+      isServiceChargeEnabled:
+          isServiceChargeEnabled ?? this.isServiceChargeEnabled,
+      serviceChargeRate: serviceChargeRate ?? this.serviceChargeRate,
+      isPriceInclusiveTax: isPriceInclusiveTax ?? this.isPriceInclusiveTax,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -6675,6 +7064,26 @@ class LocalBusinessInfoCompanion
     if (lastSyncAt.present) {
       map['last_sync_at'] = Variable<DateTime>(lastSyncAt.value);
     }
+    if (isTaxEnabled.present) {
+      map['is_tax_enabled'] = Variable<bool>(isTaxEnabled.value);
+    }
+    if (taxRate.present) {
+      map['tax_rate'] = Variable<double>(taxRate.value);
+    }
+    if (taxName.present) {
+      map['tax_name'] = Variable<String>(taxName.value);
+    }
+    if (isServiceChargeEnabled.present) {
+      map['is_service_charge_enabled'] = Variable<bool>(
+        isServiceChargeEnabled.value,
+      );
+    }
+    if (serviceChargeRate.present) {
+      map['service_charge_rate'] = Variable<double>(serviceChargeRate.value);
+    }
+    if (isPriceInclusiveTax.present) {
+      map['is_price_inclusive_tax'] = Variable<bool>(isPriceInclusiveTax.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -6695,6 +7104,12 @@ class LocalBusinessInfoCompanion
           ..write('updatedAt: $updatedAt, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('lastSyncAt: $lastSyncAt, ')
+          ..write('isTaxEnabled: $isTaxEnabled, ')
+          ..write('taxRate: $taxRate, ')
+          ..write('taxName: $taxName, ')
+          ..write('isServiceChargeEnabled: $isServiceChargeEnabled, ')
+          ..write('serviceChargeRate: $serviceChargeRate, ')
+          ..write('isPriceInclusiveTax: $isPriceInclusiveTax, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7262,6 +7677,1838 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntry> {
   }
 }
 
+class $LocalShiftsTable extends LocalShifts
+    with TableInfo<$LocalShiftsTable, LocalShift> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalShiftsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userNameMeta = const VerificationMeta(
+    'userName',
+  );
+  @override
+  late final GeneratedColumn<String> userName = GeneratedColumn<String>(
+    'user_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userEmailMeta = const VerificationMeta(
+    'userEmail',
+  );
+  @override
+  late final GeneratedColumn<String> userEmail = GeneratedColumn<String>(
+    'user_email',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _businessIdMeta = const VerificationMeta(
+    'businessId',
+  );
+  @override
+  late final GeneratedColumn<String> businessId = GeneratedColumn<String>(
+    'business_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startTimeMeta = const VerificationMeta(
+    'startTime',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startTime = GeneratedColumn<DateTime>(
+    'start_time',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endTimeMeta = const VerificationMeta(
+    'endTime',
+  );
+  @override
+  late final GeneratedColumn<DateTime> endTime = GeneratedColumn<DateTime>(
+    'end_time',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startCashMeta = const VerificationMeta(
+    'startCash',
+  );
+  @override
+  late final GeneratedColumn<double> startCash = GeneratedColumn<double>(
+    'start_cash',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endCashExpectedMeta = const VerificationMeta(
+    'endCashExpected',
+  );
+  @override
+  late final GeneratedColumn<double> endCashExpected = GeneratedColumn<double>(
+    'end_cash_expected',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _endCashActualMeta = const VerificationMeta(
+    'endCashActual',
+  );
+  @override
+  late final GeneratedColumn<double> endCashActual = GeneratedColumn<double>(
+    'end_cash_actual',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _cashDifferenceMeta = const VerificationMeta(
+    'cashDifference',
+  );
+  @override
+  late final GeneratedColumn<double> cashDifference = GeneratedColumn<double>(
+    'cash_difference',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _totalCashSalesMeta = const VerificationMeta(
+    'totalCashSales',
+  );
+  @override
+  late final GeneratedColumn<double> totalCashSales = GeneratedColumn<double>(
+    'total_cash_sales',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _totalNonCashSalesMeta = const VerificationMeta(
+    'totalNonCashSales',
+  );
+  @override
+  late final GeneratedColumn<double> totalNonCashSales =
+      GeneratedColumn<double>(
+        'total_non_cash_sales',
+        aliasedName,
+        false,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      );
+  static const VerificationMeta _totalSalesMeta = const VerificationMeta(
+    'totalSales',
+  );
+  @override
+  late final GeneratedColumn<double> totalSales = GeneratedColumn<double>(
+    'total_sales',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _totalTransactionsMeta = const VerificationMeta(
+    'totalTransactions',
+  );
+  @override
+  late final GeneratedColumn<int> totalTransactions = GeneratedColumn<int>(
+    'total_transactions',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('open'),
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('synced'),
+  );
+  static const VerificationMeta _lastSyncAtMeta = const VerificationMeta(
+    'lastSyncAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastSyncAt = GeneratedColumn<DateTime>(
+    'last_sync_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    userName,
+    userEmail,
+    businessId,
+    startTime,
+    endTime,
+    startCash,
+    endCashExpected,
+    endCashActual,
+    cashDifference,
+    totalCashSales,
+    totalNonCashSales,
+    totalSales,
+    totalTransactions,
+    status,
+    notes,
+    createdAt,
+    updatedAt,
+    syncStatus,
+    lastSyncAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_shifts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalShift> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('user_name')) {
+      context.handle(
+        _userNameMeta,
+        userName.isAcceptableOrUnknown(data['user_name']!, _userNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userNameMeta);
+    }
+    if (data.containsKey('user_email')) {
+      context.handle(
+        _userEmailMeta,
+        userEmail.isAcceptableOrUnknown(data['user_email']!, _userEmailMeta),
+      );
+    }
+    if (data.containsKey('business_id')) {
+      context.handle(
+        _businessIdMeta,
+        businessId.isAcceptableOrUnknown(data['business_id']!, _businessIdMeta),
+      );
+    }
+    if (data.containsKey('start_time')) {
+      context.handle(
+        _startTimeMeta,
+        startTime.isAcceptableOrUnknown(data['start_time']!, _startTimeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startTimeMeta);
+    }
+    if (data.containsKey('end_time')) {
+      context.handle(
+        _endTimeMeta,
+        endTime.isAcceptableOrUnknown(data['end_time']!, _endTimeMeta),
+      );
+    }
+    if (data.containsKey('start_cash')) {
+      context.handle(
+        _startCashMeta,
+        startCash.isAcceptableOrUnknown(data['start_cash']!, _startCashMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startCashMeta);
+    }
+    if (data.containsKey('end_cash_expected')) {
+      context.handle(
+        _endCashExpectedMeta,
+        endCashExpected.isAcceptableOrUnknown(
+          data['end_cash_expected']!,
+          _endCashExpectedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('end_cash_actual')) {
+      context.handle(
+        _endCashActualMeta,
+        endCashActual.isAcceptableOrUnknown(
+          data['end_cash_actual']!,
+          _endCashActualMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cash_difference')) {
+      context.handle(
+        _cashDifferenceMeta,
+        cashDifference.isAcceptableOrUnknown(
+          data['cash_difference']!,
+          _cashDifferenceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('total_cash_sales')) {
+      context.handle(
+        _totalCashSalesMeta,
+        totalCashSales.isAcceptableOrUnknown(
+          data['total_cash_sales']!,
+          _totalCashSalesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('total_non_cash_sales')) {
+      context.handle(
+        _totalNonCashSalesMeta,
+        totalNonCashSales.isAcceptableOrUnknown(
+          data['total_non_cash_sales']!,
+          _totalNonCashSalesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('total_sales')) {
+      context.handle(
+        _totalSalesMeta,
+        totalSales.isAcceptableOrUnknown(data['total_sales']!, _totalSalesMeta),
+      );
+    }
+    if (data.containsKey('total_transactions')) {
+      context.handle(
+        _totalTransactionsMeta,
+        totalTransactions.isAcceptableOrUnknown(
+          data['total_transactions']!,
+          _totalTransactionsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('last_sync_at')) {
+      context.handle(
+        _lastSyncAtMeta,
+        lastSyncAt.isAcceptableOrUnknown(
+          data['last_sync_at']!,
+          _lastSyncAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalShift map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalShift(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      userName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_name'],
+      )!,
+      userEmail: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_email'],
+      ),
+      businessId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}business_id'],
+      ),
+      startTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}start_time'],
+      )!,
+      endTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}end_time'],
+      ),
+      startCash: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}start_cash'],
+      )!,
+      endCashExpected: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}end_cash_expected'],
+      ),
+      endCashActual: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}end_cash_actual'],
+      ),
+      cashDifference: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}cash_difference'],
+      ),
+      totalCashSales: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}total_cash_sales'],
+      )!,
+      totalNonCashSales: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}total_non_cash_sales'],
+      )!,
+      totalSales: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}total_sales'],
+      )!,
+      totalTransactions: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_transactions'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      lastSyncAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_sync_at'],
+      ),
+    );
+  }
+
+  @override
+  $LocalShiftsTable createAlias(String alias) {
+    return $LocalShiftsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalShift extends DataClass implements Insertable<LocalShift> {
+  final String id;
+  final String userId;
+  final String userName;
+  final String? userEmail;
+  final String? businessId;
+  final DateTime startTime;
+  final DateTime? endTime;
+  final double startCash;
+  final double? endCashExpected;
+  final double? endCashActual;
+  final double? cashDifference;
+  final double totalCashSales;
+  final double totalNonCashSales;
+  final double totalSales;
+  final int totalTransactions;
+  final String status;
+  final String? notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String syncStatus;
+  final DateTime? lastSyncAt;
+  const LocalShift({
+    required this.id,
+    required this.userId,
+    required this.userName,
+    this.userEmail,
+    this.businessId,
+    required this.startTime,
+    this.endTime,
+    required this.startCash,
+    this.endCashExpected,
+    this.endCashActual,
+    this.cashDifference,
+    required this.totalCashSales,
+    required this.totalNonCashSales,
+    required this.totalSales,
+    required this.totalTransactions,
+    required this.status,
+    this.notes,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.syncStatus,
+    this.lastSyncAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['user_name'] = Variable<String>(userName);
+    if (!nullToAbsent || userEmail != null) {
+      map['user_email'] = Variable<String>(userEmail);
+    }
+    if (!nullToAbsent || businessId != null) {
+      map['business_id'] = Variable<String>(businessId);
+    }
+    map['start_time'] = Variable<DateTime>(startTime);
+    if (!nullToAbsent || endTime != null) {
+      map['end_time'] = Variable<DateTime>(endTime);
+    }
+    map['start_cash'] = Variable<double>(startCash);
+    if (!nullToAbsent || endCashExpected != null) {
+      map['end_cash_expected'] = Variable<double>(endCashExpected);
+    }
+    if (!nullToAbsent || endCashActual != null) {
+      map['end_cash_actual'] = Variable<double>(endCashActual);
+    }
+    if (!nullToAbsent || cashDifference != null) {
+      map['cash_difference'] = Variable<double>(cashDifference);
+    }
+    map['total_cash_sales'] = Variable<double>(totalCashSales);
+    map['total_non_cash_sales'] = Variable<double>(totalNonCashSales);
+    map['total_sales'] = Variable<double>(totalSales);
+    map['total_transactions'] = Variable<int>(totalTransactions);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || lastSyncAt != null) {
+      map['last_sync_at'] = Variable<DateTime>(lastSyncAt);
+    }
+    return map;
+  }
+
+  LocalShiftsCompanion toCompanion(bool nullToAbsent) {
+    return LocalShiftsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      userName: Value(userName),
+      userEmail: userEmail == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userEmail),
+      businessId: businessId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(businessId),
+      startTime: Value(startTime),
+      endTime: endTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endTime),
+      startCash: Value(startCash),
+      endCashExpected: endCashExpected == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endCashExpected),
+      endCashActual: endCashActual == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endCashActual),
+      cashDifference: cashDifference == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cashDifference),
+      totalCashSales: Value(totalCashSales),
+      totalNonCashSales: Value(totalNonCashSales),
+      totalSales: Value(totalSales),
+      totalTransactions: Value(totalTransactions),
+      status: Value(status),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      syncStatus: Value(syncStatus),
+      lastSyncAt: lastSyncAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncAt),
+    );
+  }
+
+  factory LocalShift.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalShift(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      userName: serializer.fromJson<String>(json['userName']),
+      userEmail: serializer.fromJson<String?>(json['userEmail']),
+      businessId: serializer.fromJson<String?>(json['businessId']),
+      startTime: serializer.fromJson<DateTime>(json['startTime']),
+      endTime: serializer.fromJson<DateTime?>(json['endTime']),
+      startCash: serializer.fromJson<double>(json['startCash']),
+      endCashExpected: serializer.fromJson<double?>(json['endCashExpected']),
+      endCashActual: serializer.fromJson<double?>(json['endCashActual']),
+      cashDifference: serializer.fromJson<double?>(json['cashDifference']),
+      totalCashSales: serializer.fromJson<double>(json['totalCashSales']),
+      totalNonCashSales: serializer.fromJson<double>(json['totalNonCashSales']),
+      totalSales: serializer.fromJson<double>(json['totalSales']),
+      totalTransactions: serializer.fromJson<int>(json['totalTransactions']),
+      status: serializer.fromJson<String>(json['status']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      lastSyncAt: serializer.fromJson<DateTime?>(json['lastSyncAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'userName': serializer.toJson<String>(userName),
+      'userEmail': serializer.toJson<String?>(userEmail),
+      'businessId': serializer.toJson<String?>(businessId),
+      'startTime': serializer.toJson<DateTime>(startTime),
+      'endTime': serializer.toJson<DateTime?>(endTime),
+      'startCash': serializer.toJson<double>(startCash),
+      'endCashExpected': serializer.toJson<double?>(endCashExpected),
+      'endCashActual': serializer.toJson<double?>(endCashActual),
+      'cashDifference': serializer.toJson<double?>(cashDifference),
+      'totalCashSales': serializer.toJson<double>(totalCashSales),
+      'totalNonCashSales': serializer.toJson<double>(totalNonCashSales),
+      'totalSales': serializer.toJson<double>(totalSales),
+      'totalTransactions': serializer.toJson<int>(totalTransactions),
+      'status': serializer.toJson<String>(status),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'lastSyncAt': serializer.toJson<DateTime?>(lastSyncAt),
+    };
+  }
+
+  LocalShift copyWith({
+    String? id,
+    String? userId,
+    String? userName,
+    Value<String?> userEmail = const Value.absent(),
+    Value<String?> businessId = const Value.absent(),
+    DateTime? startTime,
+    Value<DateTime?> endTime = const Value.absent(),
+    double? startCash,
+    Value<double?> endCashExpected = const Value.absent(),
+    Value<double?> endCashActual = const Value.absent(),
+    Value<double?> cashDifference = const Value.absent(),
+    double? totalCashSales,
+    double? totalNonCashSales,
+    double? totalSales,
+    int? totalTransactions,
+    String? status,
+    Value<String?> notes = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? syncStatus,
+    Value<DateTime?> lastSyncAt = const Value.absent(),
+  }) => LocalShift(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    userName: userName ?? this.userName,
+    userEmail: userEmail.present ? userEmail.value : this.userEmail,
+    businessId: businessId.present ? businessId.value : this.businessId,
+    startTime: startTime ?? this.startTime,
+    endTime: endTime.present ? endTime.value : this.endTime,
+    startCash: startCash ?? this.startCash,
+    endCashExpected: endCashExpected.present
+        ? endCashExpected.value
+        : this.endCashExpected,
+    endCashActual: endCashActual.present
+        ? endCashActual.value
+        : this.endCashActual,
+    cashDifference: cashDifference.present
+        ? cashDifference.value
+        : this.cashDifference,
+    totalCashSales: totalCashSales ?? this.totalCashSales,
+    totalNonCashSales: totalNonCashSales ?? this.totalNonCashSales,
+    totalSales: totalSales ?? this.totalSales,
+    totalTransactions: totalTransactions ?? this.totalTransactions,
+    status: status ?? this.status,
+    notes: notes.present ? notes.value : this.notes,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    lastSyncAt: lastSyncAt.present ? lastSyncAt.value : this.lastSyncAt,
+  );
+  LocalShift copyWithCompanion(LocalShiftsCompanion data) {
+    return LocalShift(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      userName: data.userName.present ? data.userName.value : this.userName,
+      userEmail: data.userEmail.present ? data.userEmail.value : this.userEmail,
+      businessId: data.businessId.present
+          ? data.businessId.value
+          : this.businessId,
+      startTime: data.startTime.present ? data.startTime.value : this.startTime,
+      endTime: data.endTime.present ? data.endTime.value : this.endTime,
+      startCash: data.startCash.present ? data.startCash.value : this.startCash,
+      endCashExpected: data.endCashExpected.present
+          ? data.endCashExpected.value
+          : this.endCashExpected,
+      endCashActual: data.endCashActual.present
+          ? data.endCashActual.value
+          : this.endCashActual,
+      cashDifference: data.cashDifference.present
+          ? data.cashDifference.value
+          : this.cashDifference,
+      totalCashSales: data.totalCashSales.present
+          ? data.totalCashSales.value
+          : this.totalCashSales,
+      totalNonCashSales: data.totalNonCashSales.present
+          ? data.totalNonCashSales.value
+          : this.totalNonCashSales,
+      totalSales: data.totalSales.present
+          ? data.totalSales.value
+          : this.totalSales,
+      totalTransactions: data.totalTransactions.present
+          ? data.totalTransactions.value
+          : this.totalTransactions,
+      status: data.status.present ? data.status.value : this.status,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      lastSyncAt: data.lastSyncAt.present
+          ? data.lastSyncAt.value
+          : this.lastSyncAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalShift(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('userName: $userName, ')
+          ..write('userEmail: $userEmail, ')
+          ..write('businessId: $businessId, ')
+          ..write('startTime: $startTime, ')
+          ..write('endTime: $endTime, ')
+          ..write('startCash: $startCash, ')
+          ..write('endCashExpected: $endCashExpected, ')
+          ..write('endCashActual: $endCashActual, ')
+          ..write('cashDifference: $cashDifference, ')
+          ..write('totalCashSales: $totalCashSales, ')
+          ..write('totalNonCashSales: $totalNonCashSales, ')
+          ..write('totalSales: $totalSales, ')
+          ..write('totalTransactions: $totalTransactions, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('lastSyncAt: $lastSyncAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    userId,
+    userName,
+    userEmail,
+    businessId,
+    startTime,
+    endTime,
+    startCash,
+    endCashExpected,
+    endCashActual,
+    cashDifference,
+    totalCashSales,
+    totalNonCashSales,
+    totalSales,
+    totalTransactions,
+    status,
+    notes,
+    createdAt,
+    updatedAt,
+    syncStatus,
+    lastSyncAt,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalShift &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.userName == this.userName &&
+          other.userEmail == this.userEmail &&
+          other.businessId == this.businessId &&
+          other.startTime == this.startTime &&
+          other.endTime == this.endTime &&
+          other.startCash == this.startCash &&
+          other.endCashExpected == this.endCashExpected &&
+          other.endCashActual == this.endCashActual &&
+          other.cashDifference == this.cashDifference &&
+          other.totalCashSales == this.totalCashSales &&
+          other.totalNonCashSales == this.totalNonCashSales &&
+          other.totalSales == this.totalSales &&
+          other.totalTransactions == this.totalTransactions &&
+          other.status == this.status &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.lastSyncAt == this.lastSyncAt);
+}
+
+class LocalShiftsCompanion extends UpdateCompanion<LocalShift> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> userName;
+  final Value<String?> userEmail;
+  final Value<String?> businessId;
+  final Value<DateTime> startTime;
+  final Value<DateTime?> endTime;
+  final Value<double> startCash;
+  final Value<double?> endCashExpected;
+  final Value<double?> endCashActual;
+  final Value<double?> cashDifference;
+  final Value<double> totalCashSales;
+  final Value<double> totalNonCashSales;
+  final Value<double> totalSales;
+  final Value<int> totalTransactions;
+  final Value<String> status;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<String> syncStatus;
+  final Value<DateTime?> lastSyncAt;
+  final Value<int> rowid;
+  const LocalShiftsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.userName = const Value.absent(),
+    this.userEmail = const Value.absent(),
+    this.businessId = const Value.absent(),
+    this.startTime = const Value.absent(),
+    this.endTime = const Value.absent(),
+    this.startCash = const Value.absent(),
+    this.endCashExpected = const Value.absent(),
+    this.endCashActual = const Value.absent(),
+    this.cashDifference = const Value.absent(),
+    this.totalCashSales = const Value.absent(),
+    this.totalNonCashSales = const Value.absent(),
+    this.totalSales = const Value.absent(),
+    this.totalTransactions = const Value.absent(),
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.lastSyncAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalShiftsCompanion.insert({
+    required String id,
+    required String userId,
+    required String userName,
+    this.userEmail = const Value.absent(),
+    this.businessId = const Value.absent(),
+    required DateTime startTime,
+    this.endTime = const Value.absent(),
+    required double startCash,
+    this.endCashExpected = const Value.absent(),
+    this.endCashActual = const Value.absent(),
+    this.cashDifference = const Value.absent(),
+    this.totalCashSales = const Value.absent(),
+    this.totalNonCashSales = const Value.absent(),
+    this.totalSales = const Value.absent(),
+    this.totalTransactions = const Value.absent(),
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.syncStatus = const Value.absent(),
+    this.lastSyncAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       userName = Value(userName),
+       startTime = Value(startTime),
+       startCash = Value(startCash),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<LocalShift> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? userName,
+    Expression<String>? userEmail,
+    Expression<String>? businessId,
+    Expression<DateTime>? startTime,
+    Expression<DateTime>? endTime,
+    Expression<double>? startCash,
+    Expression<double>? endCashExpected,
+    Expression<double>? endCashActual,
+    Expression<double>? cashDifference,
+    Expression<double>? totalCashSales,
+    Expression<double>? totalNonCashSales,
+    Expression<double>? totalSales,
+    Expression<int>? totalTransactions,
+    Expression<String>? status,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? syncStatus,
+    Expression<DateTime>? lastSyncAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (userName != null) 'user_name': userName,
+      if (userEmail != null) 'user_email': userEmail,
+      if (businessId != null) 'business_id': businessId,
+      if (startTime != null) 'start_time': startTime,
+      if (endTime != null) 'end_time': endTime,
+      if (startCash != null) 'start_cash': startCash,
+      if (endCashExpected != null) 'end_cash_expected': endCashExpected,
+      if (endCashActual != null) 'end_cash_actual': endCashActual,
+      if (cashDifference != null) 'cash_difference': cashDifference,
+      if (totalCashSales != null) 'total_cash_sales': totalCashSales,
+      if (totalNonCashSales != null) 'total_non_cash_sales': totalNonCashSales,
+      if (totalSales != null) 'total_sales': totalSales,
+      if (totalTransactions != null) 'total_transactions': totalTransactions,
+      if (status != null) 'status': status,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (lastSyncAt != null) 'last_sync_at': lastSyncAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalShiftsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? userName,
+    Value<String?>? userEmail,
+    Value<String?>? businessId,
+    Value<DateTime>? startTime,
+    Value<DateTime?>? endTime,
+    Value<double>? startCash,
+    Value<double?>? endCashExpected,
+    Value<double?>? endCashActual,
+    Value<double?>? cashDifference,
+    Value<double>? totalCashSales,
+    Value<double>? totalNonCashSales,
+    Value<double>? totalSales,
+    Value<int>? totalTransactions,
+    Value<String>? status,
+    Value<String?>? notes,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? syncStatus,
+    Value<DateTime?>? lastSyncAt,
+    Value<int>? rowid,
+  }) {
+    return LocalShiftsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      userEmail: userEmail ?? this.userEmail,
+      businessId: businessId ?? this.businessId,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      startCash: startCash ?? this.startCash,
+      endCashExpected: endCashExpected ?? this.endCashExpected,
+      endCashActual: endCashActual ?? this.endCashActual,
+      cashDifference: cashDifference ?? this.cashDifference,
+      totalCashSales: totalCashSales ?? this.totalCashSales,
+      totalNonCashSales: totalNonCashSales ?? this.totalNonCashSales,
+      totalSales: totalSales ?? this.totalSales,
+      totalTransactions: totalTransactions ?? this.totalTransactions,
+      status: status ?? this.status,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      lastSyncAt: lastSyncAt ?? this.lastSyncAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (userName.present) {
+      map['user_name'] = Variable<String>(userName.value);
+    }
+    if (userEmail.present) {
+      map['user_email'] = Variable<String>(userEmail.value);
+    }
+    if (businessId.present) {
+      map['business_id'] = Variable<String>(businessId.value);
+    }
+    if (startTime.present) {
+      map['start_time'] = Variable<DateTime>(startTime.value);
+    }
+    if (endTime.present) {
+      map['end_time'] = Variable<DateTime>(endTime.value);
+    }
+    if (startCash.present) {
+      map['start_cash'] = Variable<double>(startCash.value);
+    }
+    if (endCashExpected.present) {
+      map['end_cash_expected'] = Variable<double>(endCashExpected.value);
+    }
+    if (endCashActual.present) {
+      map['end_cash_actual'] = Variable<double>(endCashActual.value);
+    }
+    if (cashDifference.present) {
+      map['cash_difference'] = Variable<double>(cashDifference.value);
+    }
+    if (totalCashSales.present) {
+      map['total_cash_sales'] = Variable<double>(totalCashSales.value);
+    }
+    if (totalNonCashSales.present) {
+      map['total_non_cash_sales'] = Variable<double>(totalNonCashSales.value);
+    }
+    if (totalSales.present) {
+      map['total_sales'] = Variable<double>(totalSales.value);
+    }
+    if (totalTransactions.present) {
+      map['total_transactions'] = Variable<int>(totalTransactions.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (lastSyncAt.present) {
+      map['last_sync_at'] = Variable<DateTime>(lastSyncAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalShiftsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('userName: $userName, ')
+          ..write('userEmail: $userEmail, ')
+          ..write('businessId: $businessId, ')
+          ..write('startTime: $startTime, ')
+          ..write('endTime: $endTime, ')
+          ..write('startCash: $startCash, ')
+          ..write('endCashExpected: $endCashExpected, ')
+          ..write('endCashActual: $endCashActual, ')
+          ..write('cashDifference: $cashDifference, ')
+          ..write('totalCashSales: $totalCashSales, ')
+          ..write('totalNonCashSales: $totalNonCashSales, ')
+          ..write('totalSales: $totalSales, ')
+          ..write('totalTransactions: $totalTransactions, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('lastSyncAt: $lastSyncAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LocalCashMovementsTable extends LocalCashMovements
+    with TableInfo<$LocalCashMovementsTable, LocalCashMovement> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalCashMovementsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _shiftIdMeta = const VerificationMeta(
+    'shiftId',
+  );
+  @override
+  late final GeneratedColumn<String> shiftId = GeneratedColumn<String>(
+    'shift_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _businessIdMeta = const VerificationMeta(
+    'businessId',
+  );
+  @override
+  late final GeneratedColumn<String> businessId = GeneratedColumn<String>(
+    'business_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userNameMeta = const VerificationMeta(
+    'userName',
+  );
+  @override
+  late final GeneratedColumn<String> userName = GeneratedColumn<String>(
+    'user_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
+    'amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _reasonMeta = const VerificationMeta('reason');
+  @override
+  late final GeneratedColumn<String> reason = GeneratedColumn<String>(
+    'reason',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('synced'),
+  );
+  static const VerificationMeta _lastSyncAtMeta = const VerificationMeta(
+    'lastSyncAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastSyncAt = GeneratedColumn<DateTime>(
+    'last_sync_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    shiftId,
+    businessId,
+    userId,
+    userName,
+    type,
+    amount,
+    reason,
+    createdAt,
+    syncStatus,
+    lastSyncAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_cash_movements';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalCashMovement> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('shift_id')) {
+      context.handle(
+        _shiftIdMeta,
+        shiftId.isAcceptableOrUnknown(data['shift_id']!, _shiftIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_shiftIdMeta);
+    }
+    if (data.containsKey('business_id')) {
+      context.handle(
+        _businessIdMeta,
+        businessId.isAcceptableOrUnknown(data['business_id']!, _businessIdMeta),
+      );
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('user_name')) {
+      context.handle(
+        _userNameMeta,
+        userName.isAcceptableOrUnknown(data['user_name']!, _userNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userNameMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_amountMeta);
+    }
+    if (data.containsKey('reason')) {
+      context.handle(
+        _reasonMeta,
+        reason.isAcceptableOrUnknown(data['reason']!, _reasonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_reasonMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('last_sync_at')) {
+      context.handle(
+        _lastSyncAtMeta,
+        lastSyncAt.isAcceptableOrUnknown(
+          data['last_sync_at']!,
+          _lastSyncAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalCashMovement map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalCashMovement(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      shiftId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}shift_id'],
+      )!,
+      businessId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}business_id'],
+      ),
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      userName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_name'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}amount'],
+      )!,
+      reason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reason'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      lastSyncAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_sync_at'],
+      ),
+    );
+  }
+
+  @override
+  $LocalCashMovementsTable createAlias(String alias) {
+    return $LocalCashMovementsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalCashMovement extends DataClass
+    implements Insertable<LocalCashMovement> {
+  final String id;
+  final String shiftId;
+  final String? businessId;
+  final String userId;
+  final String userName;
+  final String type;
+  final double amount;
+  final String reason;
+  final DateTime createdAt;
+  final String syncStatus;
+  final DateTime? lastSyncAt;
+  const LocalCashMovement({
+    required this.id,
+    required this.shiftId,
+    this.businessId,
+    required this.userId,
+    required this.userName,
+    required this.type,
+    required this.amount,
+    required this.reason,
+    required this.createdAt,
+    required this.syncStatus,
+    this.lastSyncAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['shift_id'] = Variable<String>(shiftId);
+    if (!nullToAbsent || businessId != null) {
+      map['business_id'] = Variable<String>(businessId);
+    }
+    map['user_id'] = Variable<String>(userId);
+    map['user_name'] = Variable<String>(userName);
+    map['type'] = Variable<String>(type);
+    map['amount'] = Variable<double>(amount);
+    map['reason'] = Variable<String>(reason);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['sync_status'] = Variable<String>(syncStatus);
+    if (!nullToAbsent || lastSyncAt != null) {
+      map['last_sync_at'] = Variable<DateTime>(lastSyncAt);
+    }
+    return map;
+  }
+
+  LocalCashMovementsCompanion toCompanion(bool nullToAbsent) {
+    return LocalCashMovementsCompanion(
+      id: Value(id),
+      shiftId: Value(shiftId),
+      businessId: businessId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(businessId),
+      userId: Value(userId),
+      userName: Value(userName),
+      type: Value(type),
+      amount: Value(amount),
+      reason: Value(reason),
+      createdAt: Value(createdAt),
+      syncStatus: Value(syncStatus),
+      lastSyncAt: lastSyncAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncAt),
+    );
+  }
+
+  factory LocalCashMovement.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalCashMovement(
+      id: serializer.fromJson<String>(json['id']),
+      shiftId: serializer.fromJson<String>(json['shiftId']),
+      businessId: serializer.fromJson<String?>(json['businessId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      userName: serializer.fromJson<String>(json['userName']),
+      type: serializer.fromJson<String>(json['type']),
+      amount: serializer.fromJson<double>(json['amount']),
+      reason: serializer.fromJson<String>(json['reason']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      lastSyncAt: serializer.fromJson<DateTime?>(json['lastSyncAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'shiftId': serializer.toJson<String>(shiftId),
+      'businessId': serializer.toJson<String?>(businessId),
+      'userId': serializer.toJson<String>(userId),
+      'userName': serializer.toJson<String>(userName),
+      'type': serializer.toJson<String>(type),
+      'amount': serializer.toJson<double>(amount),
+      'reason': serializer.toJson<String>(reason),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'lastSyncAt': serializer.toJson<DateTime?>(lastSyncAt),
+    };
+  }
+
+  LocalCashMovement copyWith({
+    String? id,
+    String? shiftId,
+    Value<String?> businessId = const Value.absent(),
+    String? userId,
+    String? userName,
+    String? type,
+    double? amount,
+    String? reason,
+    DateTime? createdAt,
+    String? syncStatus,
+    Value<DateTime?> lastSyncAt = const Value.absent(),
+  }) => LocalCashMovement(
+    id: id ?? this.id,
+    shiftId: shiftId ?? this.shiftId,
+    businessId: businessId.present ? businessId.value : this.businessId,
+    userId: userId ?? this.userId,
+    userName: userName ?? this.userName,
+    type: type ?? this.type,
+    amount: amount ?? this.amount,
+    reason: reason ?? this.reason,
+    createdAt: createdAt ?? this.createdAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    lastSyncAt: lastSyncAt.present ? lastSyncAt.value : this.lastSyncAt,
+  );
+  LocalCashMovement copyWithCompanion(LocalCashMovementsCompanion data) {
+    return LocalCashMovement(
+      id: data.id.present ? data.id.value : this.id,
+      shiftId: data.shiftId.present ? data.shiftId.value : this.shiftId,
+      businessId: data.businessId.present
+          ? data.businessId.value
+          : this.businessId,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      userName: data.userName.present ? data.userName.value : this.userName,
+      type: data.type.present ? data.type.value : this.type,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      reason: data.reason.present ? data.reason.value : this.reason,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      lastSyncAt: data.lastSyncAt.present
+          ? data.lastSyncAt.value
+          : this.lastSyncAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalCashMovement(')
+          ..write('id: $id, ')
+          ..write('shiftId: $shiftId, ')
+          ..write('businessId: $businessId, ')
+          ..write('userId: $userId, ')
+          ..write('userName: $userName, ')
+          ..write('type: $type, ')
+          ..write('amount: $amount, ')
+          ..write('reason: $reason, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('lastSyncAt: $lastSyncAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    shiftId,
+    businessId,
+    userId,
+    userName,
+    type,
+    amount,
+    reason,
+    createdAt,
+    syncStatus,
+    lastSyncAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalCashMovement &&
+          other.id == this.id &&
+          other.shiftId == this.shiftId &&
+          other.businessId == this.businessId &&
+          other.userId == this.userId &&
+          other.userName == this.userName &&
+          other.type == this.type &&
+          other.amount == this.amount &&
+          other.reason == this.reason &&
+          other.createdAt == this.createdAt &&
+          other.syncStatus == this.syncStatus &&
+          other.lastSyncAt == this.lastSyncAt);
+}
+
+class LocalCashMovementsCompanion extends UpdateCompanion<LocalCashMovement> {
+  final Value<String> id;
+  final Value<String> shiftId;
+  final Value<String?> businessId;
+  final Value<String> userId;
+  final Value<String> userName;
+  final Value<String> type;
+  final Value<double> amount;
+  final Value<String> reason;
+  final Value<DateTime> createdAt;
+  final Value<String> syncStatus;
+  final Value<DateTime?> lastSyncAt;
+  final Value<int> rowid;
+  const LocalCashMovementsCompanion({
+    this.id = const Value.absent(),
+    this.shiftId = const Value.absent(),
+    this.businessId = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.userName = const Value.absent(),
+    this.type = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.reason = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.lastSyncAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalCashMovementsCompanion.insert({
+    required String id,
+    required String shiftId,
+    this.businessId = const Value.absent(),
+    required String userId,
+    required String userName,
+    required String type,
+    required double amount,
+    required String reason,
+    required DateTime createdAt,
+    this.syncStatus = const Value.absent(),
+    this.lastSyncAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       shiftId = Value(shiftId),
+       userId = Value(userId),
+       userName = Value(userName),
+       type = Value(type),
+       amount = Value(amount),
+       reason = Value(reason),
+       createdAt = Value(createdAt);
+  static Insertable<LocalCashMovement> custom({
+    Expression<String>? id,
+    Expression<String>? shiftId,
+    Expression<String>? businessId,
+    Expression<String>? userId,
+    Expression<String>? userName,
+    Expression<String>? type,
+    Expression<double>? amount,
+    Expression<String>? reason,
+    Expression<DateTime>? createdAt,
+    Expression<String>? syncStatus,
+    Expression<DateTime>? lastSyncAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (shiftId != null) 'shift_id': shiftId,
+      if (businessId != null) 'business_id': businessId,
+      if (userId != null) 'user_id': userId,
+      if (userName != null) 'user_name': userName,
+      if (type != null) 'type': type,
+      if (amount != null) 'amount': amount,
+      if (reason != null) 'reason': reason,
+      if (createdAt != null) 'created_at': createdAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (lastSyncAt != null) 'last_sync_at': lastSyncAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalCashMovementsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? shiftId,
+    Value<String?>? businessId,
+    Value<String>? userId,
+    Value<String>? userName,
+    Value<String>? type,
+    Value<double>? amount,
+    Value<String>? reason,
+    Value<DateTime>? createdAt,
+    Value<String>? syncStatus,
+    Value<DateTime?>? lastSyncAt,
+    Value<int>? rowid,
+  }) {
+    return LocalCashMovementsCompanion(
+      id: id ?? this.id,
+      shiftId: shiftId ?? this.shiftId,
+      businessId: businessId ?? this.businessId,
+      userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      type: type ?? this.type,
+      amount: amount ?? this.amount,
+      reason: reason ?? this.reason,
+      createdAt: createdAt ?? this.createdAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      lastSyncAt: lastSyncAt ?? this.lastSyncAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (shiftId.present) {
+      map['shift_id'] = Variable<String>(shiftId.value);
+    }
+    if (businessId.present) {
+      map['business_id'] = Variable<String>(businessId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (userName.present) {
+      map['user_name'] = Variable<String>(userName.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<double>(amount.value);
+    }
+    if (reason.present) {
+      map['reason'] = Variable<String>(reason.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (lastSyncAt.present) {
+      map['last_sync_at'] = Variable<DateTime>(lastSyncAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalCashMovementsCompanion(')
+          ..write('id: $id, ')
+          ..write('shiftId: $shiftId, ')
+          ..write('businessId: $businessId, ')
+          ..write('userId: $userId, ')
+          ..write('userName: $userName, ')
+          ..write('type: $type, ')
+          ..write('amount: $amount, ')
+          ..write('reason: $reason, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('lastSyncAt: $lastSyncAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$LocalDatabase extends GeneratedDatabase {
   _$LocalDatabase(QueryExecutor e) : super(e);
   $LocalDatabaseManager get managers => $LocalDatabaseManager(this);
@@ -7283,6 +9530,9 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
   late final $SyncQueueEntriesTable syncQueueEntries = $SyncQueueEntriesTable(
     this,
   );
+  late final $LocalShiftsTable localShifts = $LocalShiftsTable(this);
+  late final $LocalCashMovementsTable localCashMovements =
+      $LocalCashMovementsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -7298,6 +9548,8 @@ abstract class _$LocalDatabase extends GeneratedDatabase {
     localStockLogs,
     localBusinessInfo,
     syncQueueEntries,
+    localShifts,
+    localCashMovements,
   ];
 }
 
@@ -7320,6 +9572,7 @@ typedef $$LocalProductsTableCreateCompanionBuilder =
       Value<DateTime?> lastSyncAt,
       Value<String?> variants,
       Value<String?> modifierGroups,
+      Value<bool> trackStock,
       Value<int> rowid,
     });
 typedef $$LocalProductsTableUpdateCompanionBuilder =
@@ -7341,6 +9594,7 @@ typedef $$LocalProductsTableUpdateCompanionBuilder =
       Value<DateTime?> lastSyncAt,
       Value<String?> variants,
       Value<String?> modifierGroups,
+      Value<bool> trackStock,
       Value<int> rowid,
     });
 
@@ -7435,6 +9689,11 @@ class $$LocalProductsTableFilterComposer
 
   ColumnFilters<String> get modifierGroups => $composableBuilder(
     column: $table.modifierGroups,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get trackStock => $composableBuilder(
+    column: $table.trackStock,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -7532,6 +9791,11 @@ class $$LocalProductsTableOrderingComposer
     column: $table.modifierGroups,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get trackStock => $composableBuilder(
+    column: $table.trackStock,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalProductsTableAnnotationComposer
@@ -7607,6 +9871,11 @@ class $$LocalProductsTableAnnotationComposer
     column: $table.modifierGroups,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get trackStock => $composableBuilder(
+    column: $table.trackStock,
+    builder: (column) => column,
+  );
 }
 
 class $$LocalProductsTableTableManager
@@ -7659,6 +9928,7 @@ class $$LocalProductsTableTableManager
                 Value<DateTime?> lastSyncAt = const Value.absent(),
                 Value<String?> variants = const Value.absent(),
                 Value<String?> modifierGroups = const Value.absent(),
+                Value<bool> trackStock = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalProductsCompanion(
                 id: id,
@@ -7678,6 +9948,7 @@ class $$LocalProductsTableTableManager
                 lastSyncAt: lastSyncAt,
                 variants: variants,
                 modifierGroups: modifierGroups,
+                trackStock: trackStock,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7699,6 +9970,7 @@ class $$LocalProductsTableTableManager
                 Value<DateTime?> lastSyncAt = const Value.absent(),
                 Value<String?> variants = const Value.absent(),
                 Value<String?> modifierGroups = const Value.absent(),
+                Value<bool> trackStock = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalProductsCompanion.insert(
                 id: id,
@@ -7718,6 +9990,7 @@ class $$LocalProductsTableTableManager
                 lastSyncAt: lastSyncAt,
                 variants: variants,
                 modifierGroups: modifierGroups,
+                trackStock: trackStock,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -8427,6 +10700,7 @@ typedef $$LocalTransactionsTableCreateCompanionBuilder =
       Value<String?> businessId,
       Value<String> syncStatus,
       Value<DateTime?> lastSyncAt,
+      Value<String?> shiftId,
       Value<int> rowid,
     });
 typedef $$LocalTransactionsTableUpdateCompanionBuilder =
@@ -8451,6 +10725,7 @@ typedef $$LocalTransactionsTableUpdateCompanionBuilder =
       Value<String?> businessId,
       Value<String> syncStatus,
       Value<DateTime?> lastSyncAt,
+      Value<String?> shiftId,
       Value<int> rowid,
     });
 
@@ -8560,6 +10835,11 @@ class $$LocalTransactionsTableFilterComposer
 
   ColumnFilters<DateTime> get lastSyncAt => $composableBuilder(
     column: $table.lastSyncAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get shiftId => $composableBuilder(
+    column: $table.shiftId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -8672,6 +10952,11 @@ class $$LocalTransactionsTableOrderingComposer
     column: $table.lastSyncAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get shiftId => $composableBuilder(
+    column: $table.shiftId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalTransactionsTableAnnotationComposer
@@ -8768,6 +11053,9 @@ class $$LocalTransactionsTableAnnotationComposer
     column: $table.lastSyncAt,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get shiftId =>
+      $composableBuilder(column: $table.shiftId, builder: (column) => column);
 }
 
 class $$LocalTransactionsTableTableManager
@@ -8830,6 +11118,7 @@ class $$LocalTransactionsTableTableManager
                 Value<String?> businessId = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<DateTime?> lastSyncAt = const Value.absent(),
+                Value<String?> shiftId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalTransactionsCompanion(
                 id: id,
@@ -8852,6 +11141,7 @@ class $$LocalTransactionsTableTableManager
                 businessId: businessId,
                 syncStatus: syncStatus,
                 lastSyncAt: lastSyncAt,
+                shiftId: shiftId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8876,6 +11166,7 @@ class $$LocalTransactionsTableTableManager
                 Value<String?> businessId = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<DateTime?> lastSyncAt = const Value.absent(),
+                Value<String?> shiftId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalTransactionsCompanion.insert(
                 id: id,
@@ -8898,6 +11189,7 @@ class $$LocalTransactionsTableTableManager
                 businessId: businessId,
                 syncStatus: syncStatus,
                 lastSyncAt: lastSyncAt,
+                shiftId: shiftId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -10234,6 +12526,12 @@ typedef $$LocalBusinessInfoTableCreateCompanionBuilder =
       required DateTime updatedAt,
       Value<String> syncStatus,
       Value<DateTime?> lastSyncAt,
+      Value<bool> isTaxEnabled,
+      Value<double> taxRate,
+      Value<String> taxName,
+      Value<bool> isServiceChargeEnabled,
+      Value<double> serviceChargeRate,
+      Value<bool> isPriceInclusiveTax,
       Value<int> rowid,
     });
 typedef $$LocalBusinessInfoTableUpdateCompanionBuilder =
@@ -10249,6 +12547,12 @@ typedef $$LocalBusinessInfoTableUpdateCompanionBuilder =
       Value<DateTime> updatedAt,
       Value<String> syncStatus,
       Value<DateTime?> lastSyncAt,
+      Value<bool> isTaxEnabled,
+      Value<double> taxRate,
+      Value<String> taxName,
+      Value<bool> isServiceChargeEnabled,
+      Value<double> serviceChargeRate,
+      Value<bool> isPriceInclusiveTax,
       Value<int> rowid,
     });
 
@@ -10313,6 +12617,36 @@ class $$LocalBusinessInfoTableFilterComposer
 
   ColumnFilters<DateTime> get lastSyncAt => $composableBuilder(
     column: $table.lastSyncAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isTaxEnabled => $composableBuilder(
+    column: $table.isTaxEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get taxRate => $composableBuilder(
+    column: $table.taxRate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get taxName => $composableBuilder(
+    column: $table.taxName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isServiceChargeEnabled => $composableBuilder(
+    column: $table.isServiceChargeEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get serviceChargeRate => $composableBuilder(
+    column: $table.serviceChargeRate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isPriceInclusiveTax => $composableBuilder(
+    column: $table.isPriceInclusiveTax,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -10380,6 +12714,36 @@ class $$LocalBusinessInfoTableOrderingComposer
     column: $table.lastSyncAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isTaxEnabled => $composableBuilder(
+    column: $table.isTaxEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get taxRate => $composableBuilder(
+    column: $table.taxRate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get taxName => $composableBuilder(
+    column: $table.taxName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isServiceChargeEnabled => $composableBuilder(
+    column: $table.isServiceChargeEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get serviceChargeRate => $composableBuilder(
+    column: $table.serviceChargeRate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isPriceInclusiveTax => $composableBuilder(
+    column: $table.isPriceInclusiveTax,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalBusinessInfoTableAnnotationComposer
@@ -10427,6 +12791,32 @@ class $$LocalBusinessInfoTableAnnotationComposer
 
   GeneratedColumn<DateTime> get lastSyncAt => $composableBuilder(
     column: $table.lastSyncAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isTaxEnabled => $composableBuilder(
+    column: $table.isTaxEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get taxRate =>
+      $composableBuilder(column: $table.taxRate, builder: (column) => column);
+
+  GeneratedColumn<String> get taxName =>
+      $composableBuilder(column: $table.taxName, builder: (column) => column);
+
+  GeneratedColumn<bool> get isServiceChargeEnabled => $composableBuilder(
+    column: $table.isServiceChargeEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get serviceChargeRate => $composableBuilder(
+    column: $table.serviceChargeRate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isPriceInclusiveTax => $composableBuilder(
+    column: $table.isPriceInclusiveTax,
     builder: (column) => column,
   );
 }
@@ -10482,6 +12872,12 @@ class $$LocalBusinessInfoTableTableManager
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<DateTime?> lastSyncAt = const Value.absent(),
+                Value<bool> isTaxEnabled = const Value.absent(),
+                Value<double> taxRate = const Value.absent(),
+                Value<String> taxName = const Value.absent(),
+                Value<bool> isServiceChargeEnabled = const Value.absent(),
+                Value<double> serviceChargeRate = const Value.absent(),
+                Value<bool> isPriceInclusiveTax = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalBusinessInfoCompanion(
                 id: id,
@@ -10495,6 +12891,12 @@ class $$LocalBusinessInfoTableTableManager
                 updatedAt: updatedAt,
                 syncStatus: syncStatus,
                 lastSyncAt: lastSyncAt,
+                isTaxEnabled: isTaxEnabled,
+                taxRate: taxRate,
+                taxName: taxName,
+                isServiceChargeEnabled: isServiceChargeEnabled,
+                serviceChargeRate: serviceChargeRate,
+                isPriceInclusiveTax: isPriceInclusiveTax,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -10510,6 +12912,12 @@ class $$LocalBusinessInfoTableTableManager
                 required DateTime updatedAt,
                 Value<String> syncStatus = const Value.absent(),
                 Value<DateTime?> lastSyncAt = const Value.absent(),
+                Value<bool> isTaxEnabled = const Value.absent(),
+                Value<double> taxRate = const Value.absent(),
+                Value<String> taxName = const Value.absent(),
+                Value<bool> isServiceChargeEnabled = const Value.absent(),
+                Value<double> serviceChargeRate = const Value.absent(),
+                Value<bool> isPriceInclusiveTax = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalBusinessInfoCompanion.insert(
                 id: id,
@@ -10523,6 +12931,12 @@ class $$LocalBusinessInfoTableTableManager
                 updatedAt: updatedAt,
                 syncStatus: syncStatus,
                 lastSyncAt: lastSyncAt,
+                isTaxEnabled: isTaxEnabled,
+                taxRate: taxRate,
+                taxName: taxName,
+                isServiceChargeEnabled: isServiceChargeEnabled,
+                serviceChargeRate: serviceChargeRate,
+                isPriceInclusiveTax: isPriceInclusiveTax,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -10838,6 +13252,863 @@ typedef $$SyncQueueEntriesTableProcessedTableManager =
       SyncQueueEntry,
       PrefetchHooks Function()
     >;
+typedef $$LocalShiftsTableCreateCompanionBuilder =
+    LocalShiftsCompanion Function({
+      required String id,
+      required String userId,
+      required String userName,
+      Value<String?> userEmail,
+      Value<String?> businessId,
+      required DateTime startTime,
+      Value<DateTime?> endTime,
+      required double startCash,
+      Value<double?> endCashExpected,
+      Value<double?> endCashActual,
+      Value<double?> cashDifference,
+      Value<double> totalCashSales,
+      Value<double> totalNonCashSales,
+      Value<double> totalSales,
+      Value<int> totalTransactions,
+      Value<String> status,
+      Value<String?> notes,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<String> syncStatus,
+      Value<DateTime?> lastSyncAt,
+      Value<int> rowid,
+    });
+typedef $$LocalShiftsTableUpdateCompanionBuilder =
+    LocalShiftsCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String> userName,
+      Value<String?> userEmail,
+      Value<String?> businessId,
+      Value<DateTime> startTime,
+      Value<DateTime?> endTime,
+      Value<double> startCash,
+      Value<double?> endCashExpected,
+      Value<double?> endCashActual,
+      Value<double?> cashDifference,
+      Value<double> totalCashSales,
+      Value<double> totalNonCashSales,
+      Value<double> totalSales,
+      Value<int> totalTransactions,
+      Value<String> status,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> syncStatus,
+      Value<DateTime?> lastSyncAt,
+      Value<int> rowid,
+    });
+
+class $$LocalShiftsTableFilterComposer
+    extends Composer<_$LocalDatabase, $LocalShiftsTable> {
+  $$LocalShiftsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userName => $composableBuilder(
+    column: $table.userName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userEmail => $composableBuilder(
+    column: $table.userEmail,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get businessId => $composableBuilder(
+    column: $table.businessId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startTime => $composableBuilder(
+    column: $table.startTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get endTime => $composableBuilder(
+    column: $table.endTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get startCash => $composableBuilder(
+    column: $table.startCash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get endCashExpected => $composableBuilder(
+    column: $table.endCashExpected,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get endCashActual => $composableBuilder(
+    column: $table.endCashActual,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get cashDifference => $composableBuilder(
+    column: $table.cashDifference,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get totalCashSales => $composableBuilder(
+    column: $table.totalCashSales,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get totalNonCashSales => $composableBuilder(
+    column: $table.totalNonCashSales,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get totalSales => $composableBuilder(
+    column: $table.totalSales,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalTransactions => $composableBuilder(
+    column: $table.totalTransactions,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalShiftsTableOrderingComposer
+    extends Composer<_$LocalDatabase, $LocalShiftsTable> {
+  $$LocalShiftsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userName => $composableBuilder(
+    column: $table.userName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userEmail => $composableBuilder(
+    column: $table.userEmail,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get businessId => $composableBuilder(
+    column: $table.businessId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startTime => $composableBuilder(
+    column: $table.startTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get endTime => $composableBuilder(
+    column: $table.endTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get startCash => $composableBuilder(
+    column: $table.startCash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get endCashExpected => $composableBuilder(
+    column: $table.endCashExpected,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get endCashActual => $composableBuilder(
+    column: $table.endCashActual,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get cashDifference => $composableBuilder(
+    column: $table.cashDifference,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get totalCashSales => $composableBuilder(
+    column: $table.totalCashSales,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get totalNonCashSales => $composableBuilder(
+    column: $table.totalNonCashSales,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get totalSales => $composableBuilder(
+    column: $table.totalSales,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalTransactions => $composableBuilder(
+    column: $table.totalTransactions,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalShiftsTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $LocalShiftsTable> {
+  $$LocalShiftsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get userName =>
+      $composableBuilder(column: $table.userName, builder: (column) => column);
+
+  GeneratedColumn<String> get userEmail =>
+      $composableBuilder(column: $table.userEmail, builder: (column) => column);
+
+  GeneratedColumn<String> get businessId => $composableBuilder(
+    column: $table.businessId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get startTime =>
+      $composableBuilder(column: $table.startTime, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endTime =>
+      $composableBuilder(column: $table.endTime, builder: (column) => column);
+
+  GeneratedColumn<double> get startCash =>
+      $composableBuilder(column: $table.startCash, builder: (column) => column);
+
+  GeneratedColumn<double> get endCashExpected => $composableBuilder(
+    column: $table.endCashExpected,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get endCashActual => $composableBuilder(
+    column: $table.endCashActual,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get cashDifference => $composableBuilder(
+    column: $table.cashDifference,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get totalCashSales => $composableBuilder(
+    column: $table.totalCashSales,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get totalNonCashSales => $composableBuilder(
+    column: $table.totalNonCashSales,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get totalSales => $composableBuilder(
+    column: $table.totalSales,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get totalTransactions => $composableBuilder(
+    column: $table.totalTransactions,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
+    builder: (column) => column,
+  );
+}
+
+class $$LocalShiftsTableTableManager
+    extends
+        RootTableManager<
+          _$LocalDatabase,
+          $LocalShiftsTable,
+          LocalShift,
+          $$LocalShiftsTableFilterComposer,
+          $$LocalShiftsTableOrderingComposer,
+          $$LocalShiftsTableAnnotationComposer,
+          $$LocalShiftsTableCreateCompanionBuilder,
+          $$LocalShiftsTableUpdateCompanionBuilder,
+          (
+            LocalShift,
+            BaseReferences<_$LocalDatabase, $LocalShiftsTable, LocalShift>,
+          ),
+          LocalShift,
+          PrefetchHooks Function()
+        > {
+  $$LocalShiftsTableTableManager(_$LocalDatabase db, $LocalShiftsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalShiftsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalShiftsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalShiftsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> userName = const Value.absent(),
+                Value<String?> userEmail = const Value.absent(),
+                Value<String?> businessId = const Value.absent(),
+                Value<DateTime> startTime = const Value.absent(),
+                Value<DateTime?> endTime = const Value.absent(),
+                Value<double> startCash = const Value.absent(),
+                Value<double?> endCashExpected = const Value.absent(),
+                Value<double?> endCashActual = const Value.absent(),
+                Value<double?> cashDifference = const Value.absent(),
+                Value<double> totalCashSales = const Value.absent(),
+                Value<double> totalNonCashSales = const Value.absent(),
+                Value<double> totalSales = const Value.absent(),
+                Value<int> totalTransactions = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<DateTime?> lastSyncAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalShiftsCompanion(
+                id: id,
+                userId: userId,
+                userName: userName,
+                userEmail: userEmail,
+                businessId: businessId,
+                startTime: startTime,
+                endTime: endTime,
+                startCash: startCash,
+                endCashExpected: endCashExpected,
+                endCashActual: endCashActual,
+                cashDifference: cashDifference,
+                totalCashSales: totalCashSales,
+                totalNonCashSales: totalNonCashSales,
+                totalSales: totalSales,
+                totalTransactions: totalTransactions,
+                status: status,
+                notes: notes,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                syncStatus: syncStatus,
+                lastSyncAt: lastSyncAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                required String userName,
+                Value<String?> userEmail = const Value.absent(),
+                Value<String?> businessId = const Value.absent(),
+                required DateTime startTime,
+                Value<DateTime?> endTime = const Value.absent(),
+                required double startCash,
+                Value<double?> endCashExpected = const Value.absent(),
+                Value<double?> endCashActual = const Value.absent(),
+                Value<double?> cashDifference = const Value.absent(),
+                Value<double> totalCashSales = const Value.absent(),
+                Value<double> totalNonCashSales = const Value.absent(),
+                Value<double> totalSales = const Value.absent(),
+                Value<int> totalTransactions = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<String> syncStatus = const Value.absent(),
+                Value<DateTime?> lastSyncAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalShiftsCompanion.insert(
+                id: id,
+                userId: userId,
+                userName: userName,
+                userEmail: userEmail,
+                businessId: businessId,
+                startTime: startTime,
+                endTime: endTime,
+                startCash: startCash,
+                endCashExpected: endCashExpected,
+                endCashActual: endCashActual,
+                cashDifference: cashDifference,
+                totalCashSales: totalCashSales,
+                totalNonCashSales: totalNonCashSales,
+                totalSales: totalSales,
+                totalTransactions: totalTransactions,
+                status: status,
+                notes: notes,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                syncStatus: syncStatus,
+                lastSyncAt: lastSyncAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalShiftsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$LocalDatabase,
+      $LocalShiftsTable,
+      LocalShift,
+      $$LocalShiftsTableFilterComposer,
+      $$LocalShiftsTableOrderingComposer,
+      $$LocalShiftsTableAnnotationComposer,
+      $$LocalShiftsTableCreateCompanionBuilder,
+      $$LocalShiftsTableUpdateCompanionBuilder,
+      (
+        LocalShift,
+        BaseReferences<_$LocalDatabase, $LocalShiftsTable, LocalShift>,
+      ),
+      LocalShift,
+      PrefetchHooks Function()
+    >;
+typedef $$LocalCashMovementsTableCreateCompanionBuilder =
+    LocalCashMovementsCompanion Function({
+      required String id,
+      required String shiftId,
+      Value<String?> businessId,
+      required String userId,
+      required String userName,
+      required String type,
+      required double amount,
+      required String reason,
+      required DateTime createdAt,
+      Value<String> syncStatus,
+      Value<DateTime?> lastSyncAt,
+      Value<int> rowid,
+    });
+typedef $$LocalCashMovementsTableUpdateCompanionBuilder =
+    LocalCashMovementsCompanion Function({
+      Value<String> id,
+      Value<String> shiftId,
+      Value<String?> businessId,
+      Value<String> userId,
+      Value<String> userName,
+      Value<String> type,
+      Value<double> amount,
+      Value<String> reason,
+      Value<DateTime> createdAt,
+      Value<String> syncStatus,
+      Value<DateTime?> lastSyncAt,
+      Value<int> rowid,
+    });
+
+class $$LocalCashMovementsTableFilterComposer
+    extends Composer<_$LocalDatabase, $LocalCashMovementsTable> {
+  $$LocalCashMovementsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get shiftId => $composableBuilder(
+    column: $table.shiftId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get businessId => $composableBuilder(
+    column: $table.businessId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userName => $composableBuilder(
+    column: $table.userName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reason => $composableBuilder(
+    column: $table.reason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalCashMovementsTableOrderingComposer
+    extends Composer<_$LocalDatabase, $LocalCashMovementsTable> {
+  $$LocalCashMovementsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get shiftId => $composableBuilder(
+    column: $table.shiftId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get businessId => $composableBuilder(
+    column: $table.businessId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userName => $composableBuilder(
+    column: $table.userName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reason => $composableBuilder(
+    column: $table.reason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalCashMovementsTableAnnotationComposer
+    extends Composer<_$LocalDatabase, $LocalCashMovementsTable> {
+  $$LocalCashMovementsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get shiftId =>
+      $composableBuilder(column: $table.shiftId, builder: (column) => column);
+
+  GeneratedColumn<String> get businessId => $composableBuilder(
+    column: $table.businessId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get userName =>
+      $composableBuilder(column: $table.userName, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<double> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<String> get reason =>
+      $composableBuilder(column: $table.reason, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
+    builder: (column) => column,
+  );
+}
+
+class $$LocalCashMovementsTableTableManager
+    extends
+        RootTableManager<
+          _$LocalDatabase,
+          $LocalCashMovementsTable,
+          LocalCashMovement,
+          $$LocalCashMovementsTableFilterComposer,
+          $$LocalCashMovementsTableOrderingComposer,
+          $$LocalCashMovementsTableAnnotationComposer,
+          $$LocalCashMovementsTableCreateCompanionBuilder,
+          $$LocalCashMovementsTableUpdateCompanionBuilder,
+          (
+            LocalCashMovement,
+            BaseReferences<
+              _$LocalDatabase,
+              $LocalCashMovementsTable,
+              LocalCashMovement
+            >,
+          ),
+          LocalCashMovement,
+          PrefetchHooks Function()
+        > {
+  $$LocalCashMovementsTableTableManager(
+    _$LocalDatabase db,
+    $LocalCashMovementsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalCashMovementsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalCashMovementsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalCashMovementsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> shiftId = const Value.absent(),
+                Value<String?> businessId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> userName = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<double> amount = const Value.absent(),
+                Value<String> reason = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<DateTime?> lastSyncAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalCashMovementsCompanion(
+                id: id,
+                shiftId: shiftId,
+                businessId: businessId,
+                userId: userId,
+                userName: userName,
+                type: type,
+                amount: amount,
+                reason: reason,
+                createdAt: createdAt,
+                syncStatus: syncStatus,
+                lastSyncAt: lastSyncAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String shiftId,
+                Value<String?> businessId = const Value.absent(),
+                required String userId,
+                required String userName,
+                required String type,
+                required double amount,
+                required String reason,
+                required DateTime createdAt,
+                Value<String> syncStatus = const Value.absent(),
+                Value<DateTime?> lastSyncAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalCashMovementsCompanion.insert(
+                id: id,
+                shiftId: shiftId,
+                businessId: businessId,
+                userId: userId,
+                userName: userName,
+                type: type,
+                amount: amount,
+                reason: reason,
+                createdAt: createdAt,
+                syncStatus: syncStatus,
+                lastSyncAt: lastSyncAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalCashMovementsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$LocalDatabase,
+      $LocalCashMovementsTable,
+      LocalCashMovement,
+      $$LocalCashMovementsTableFilterComposer,
+      $$LocalCashMovementsTableOrderingComposer,
+      $$LocalCashMovementsTableAnnotationComposer,
+      $$LocalCashMovementsTableCreateCompanionBuilder,
+      $$LocalCashMovementsTableUpdateCompanionBuilder,
+      (
+        LocalCashMovement,
+        BaseReferences<
+          _$LocalDatabase,
+          $LocalCashMovementsTable,
+          LocalCashMovement
+        >,
+      ),
+      LocalCashMovement,
+      PrefetchHooks Function()
+    >;
 
 class $LocalDatabaseManager {
   final _$LocalDatabase _db;
@@ -10865,4 +14136,8 @@ class $LocalDatabaseManager {
       $$LocalBusinessInfoTableTableManager(_db, _db.localBusinessInfo);
   $$SyncQueueEntriesTableTableManager get syncQueueEntries =>
       $$SyncQueueEntriesTableTableManager(_db, _db.syncQueueEntries);
+  $$LocalShiftsTableTableManager get localShifts =>
+      $$LocalShiftsTableTableManager(_db, _db.localShifts);
+  $$LocalCashMovementsTableTableManager get localCashMovements =>
+      $$LocalCashMovementsTableTableManager(_db, _db.localCashMovements);
 }

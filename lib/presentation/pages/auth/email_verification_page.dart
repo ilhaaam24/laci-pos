@@ -89,8 +89,9 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -112,23 +113,26 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                   const SizedBox(height: 28),
 
                   // 2. Title & Subtitle
-                  const Text(
+                  Text(
                     'Verifikasi Email Anda',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0F172A),
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
                       letterSpacing: -0.5,
                     ),
                   ).animate().fadeIn(delay: 150.ms),
 
                   const SizedBox(height: 10),
 
-                  const Text(
+                  Text(
                     'Kami telah mengirimkan tautan verifikasi akun ke:',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    ),
                   ).animate().fadeIn(delay: 200.ms),
 
                   const SizedBox(height: 12),
@@ -140,9 +144,11 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -158,10 +164,10 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                             widget.user.email,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF0F172A),
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
                             ),
                           ),
                         ),
@@ -175,9 +181,11 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                      ),
                     ),
                     child: Column(
                       children: [
@@ -187,23 +195,23 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                             Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF1F5F9),
+                                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.info_outline_rounded,
                                 size: 18,
-                                color: Color(0xFF475569),
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
                               ),
                             ),
                             const SizedBox(width: 12),
-                            const Expanded(
+                            Expanded(
                               child: Text(
                                 'Buka kotak masuk atau folder spam di email Anda, lalu klik link untuk menyelesaikan aktivasi akun.',
                                 style: TextStyle(
                                   fontSize: 13,
                                   height: 1.45,
-                                  color: Color(0xFF475569),
+                                  color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
                                 ),
                               ),
                             ),
@@ -262,11 +270,13 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                           ? null
                           : _handleResend,
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFFCBD5E1)),
+                        side: BorderSide(
+                          color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        backgroundColor: Colors.white,
+                        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
                       ),
                       child: Text(
                         _cooldown > 0
@@ -276,8 +286,8 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: _cooldown > 0
-                              ? const Color(0xFF94A3B8)
-                              : const Color(0xFF334155),
+                              ? (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8))
+                              : (isDark ? Colors.white : const Color(0xFF334155)),
                         ),
                       ),
                     ),
@@ -294,7 +304,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Colors.red,
+                        color: isDark ? const Color(0xFFF87171) : Colors.red,
                       ),
                     ),
                   ),

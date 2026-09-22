@@ -57,6 +57,7 @@ class TransactionEntity extends Equatable {
   final List<TransactionItem> items;
   final String createdBy; // User ID yang melakukan transaksi
   final String? businessId;
+  final String? shiftId;
 
   const TransactionEntity({
     required this.id,
@@ -78,14 +79,62 @@ class TransactionEntity extends Equatable {
     required this.items,
     required this.createdBy,
     this.businessId,
+    this.shiftId,
   });
+
+  TransactionEntity copyWith({
+    String? id,
+    String? transactionCode,
+    String? customerId,
+    String? customerName,
+    double? subtotal,
+    double? taxAmount,
+    double? discountAmount,
+    double? totalAmount,
+    List<PaymentDetail>? payments,
+    PaymentStatus? paymentStatus,
+    TransactionStatus? status,
+    double? amountPaid,
+    double? changeAmount,
+    String? notes,
+    DateTime? createdAt,
+    DateTime? completedAt,
+    List<TransactionItem>? items,
+    String? createdBy,
+    String? businessId,
+    String? shiftId,
+  }) {
+    return TransactionEntity(
+      id: id ?? this.id,
+      transactionCode: transactionCode ?? this.transactionCode,
+      customerId: customerId ?? this.customerId,
+      customerName: customerName ?? this.customerName,
+      subtotal: subtotal ?? this.subtotal,
+      taxAmount: taxAmount ?? this.taxAmount,
+      discountAmount: discountAmount ?? this.discountAmount,
+      totalAmount: totalAmount ?? this.totalAmount,
+      payments: payments ?? this.payments,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      status: status ?? this.status,
+      amountPaid: amountPaid ?? this.amountPaid,
+      changeAmount: changeAmount ?? this.changeAmount,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      completedAt: completedAt ?? this.completedAt,
+      items: items ?? this.items,
+      createdBy: createdBy ?? this.createdBy,
+      businessId: businessId ?? this.businessId,
+      shiftId: shiftId ?? this.shiftId,
+    );
+  }
 
   double get grandTotal => subtotal + taxAmount - discountAmount;
 
   String get paymentMethodDisplay {
-    if (payments.isEmpty) return 'No Payment';
+    if (payments.isEmpty) return 'Belum Bayar';
     if (payments.length == 1) return payments.first.typeName;
-    return 'Multiple (${payments.length})';
+    final types = payments.map((p) => p.typeName).toSet().toList();
+    return 'Split (${types.join(' + ')})';
   }
 
   @override
@@ -109,6 +158,7 @@ class TransactionEntity extends Equatable {
     items,
     createdBy,
     businessId,
+    shiftId,
   ];
 }
 
@@ -125,6 +175,7 @@ class TransactionItem extends Equatable {
   final ProductVariant? selectedVariant;
   final List<ModifierOption> selectedModifiers;
   final String? notes;
+  final int? maxStock;
 
   const TransactionItem({
     required this.id,
@@ -139,6 +190,7 @@ class TransactionItem extends Equatable {
     this.selectedVariant,
     this.selectedModifiers = const [],
     this.notes,
+    this.maxStock,
   });
 
   /// The effective price for 1 unit including variant base and modifier additions.
@@ -177,6 +229,7 @@ class TransactionItem extends Equatable {
     ProductVariant? selectedVariant,
     List<ModifierOption>? selectedModifiers,
     String? notes,
+    int? maxStock,
   }) {
     return TransactionItem(
       id: id ?? this.id,
@@ -191,6 +244,7 @@ class TransactionItem extends Equatable {
       selectedVariant: selectedVariant ?? this.selectedVariant,
       selectedModifiers: selectedModifiers ?? this.selectedModifiers,
       notes: notes ?? this.notes,
+      maxStock: maxStock ?? this.maxStock,
     );
   }
 
@@ -208,6 +262,7 @@ class TransactionItem extends Equatable {
     selectedVariant,
     selectedModifiers,
     notes,
+    maxStock,
   ];
 }
 

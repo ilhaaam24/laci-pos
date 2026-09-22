@@ -16,6 +16,7 @@ class TransactionItemModel extends TransactionItem {
     super.selectedVariant,
     super.selectedModifiers = const [],
     super.notes,
+    super.maxStock,
   });
 
   factory TransactionItemModel.fromMap(Map<String, dynamic> map, String id) {
@@ -41,6 +42,7 @@ class TransactionItemModel extends TransactionItem {
               .toList()
           : const [],
       notes: map['notes'],
+      maxStock: map['maxStock'] as int?,
     );
   }
 
@@ -58,6 +60,7 @@ class TransactionItemModel extends TransactionItem {
       selectedVariant: entity.selectedVariant,
       selectedModifiers: entity.selectedModifiers,
       notes: entity.notes,
+      maxStock: entity.maxStock,
     );
   }
 
@@ -117,6 +120,7 @@ class TransactionItemModel extends TransactionItem {
               .toList()
           : const [],
       notes: json['notes'],
+      maxStock: json['maxStock'] as int?,
     );
   }
 
@@ -134,6 +138,7 @@ class TransactionItemModel extends TransactionItem {
     ProductVariant? selectedVariant,
     List<ModifierOption>? selectedModifiers,
     String? notes,
+    int? maxStock,
   }) {
     return TransactionItemModel(
       id: id ?? this.id,
@@ -148,6 +153,7 @@ class TransactionItemModel extends TransactionItem {
       selectedVariant: selectedVariant ?? this.selectedVariant,
       selectedModifiers: selectedModifiers ?? this.selectedModifiers,
       notes: notes ?? this.notes,
+      maxStock: maxStock ?? this.maxStock,
     );
   }
 
@@ -165,6 +171,7 @@ class TransactionItemModel extends TransactionItem {
       selectedVariant: selectedVariant,
       selectedModifiers: selectedModifiers,
       notes: notes,
+      maxStock: maxStock,
     );
   }
 }
@@ -254,6 +261,7 @@ class TransactionModel extends TransactionEntity {
     required super.items,
     required super.createdBy,
     super.businessId,
+    super.shiftId,
   });
 
   factory TransactionModel.fromFirestore(
@@ -308,6 +316,7 @@ class TransactionModel extends TransactionEntity {
       items: items,
       createdBy: data['createdBy'] ?? '',
       businessId: data['businessId'],
+      shiftId: data['shiftId'],
     );
   }
 
@@ -332,6 +341,7 @@ class TransactionModel extends TransactionEntity {
       items: entity.items,
       createdBy: entity.createdBy,
       businessId: entity.businessId,
+      shiftId: entity.shiftId,
     );
   }
 
@@ -359,6 +369,7 @@ class TransactionModel extends TransactionEntity {
           : null,
       'createdBy': createdBy,
       'businessId': businessId,
+      'shiftId': shiftId,
     };
   }
 
@@ -388,6 +399,7 @@ class TransactionModel extends TransactionEntity {
           .toList(),
       'createdBy': createdBy,
       'businessId': businessId,
+      'shiftId': shiftId,
     };
   }
 
@@ -445,9 +457,11 @@ class TransactionModel extends TransactionEntity {
           [],
       createdBy: json['createdBy'] ?? '',
       businessId: json['businessId'],
+      shiftId: json['shiftId'],
     );
   }
 
+  @override
   TransactionModel copyWith({
     String? id,
     String? transactionCode,
@@ -468,6 +482,7 @@ class TransactionModel extends TransactionEntity {
     List<TransactionItem>? items,
     String? createdBy,
     String? businessId,
+    String? shiftId,
   }) {
     return TransactionModel(
       id: id ?? this.id,
@@ -489,6 +504,7 @@ class TransactionModel extends TransactionEntity {
       items: items ?? this.items,
       createdBy: createdBy ?? this.createdBy,
       businessId: businessId ?? this.businessId,
+      shiftId: shiftId ?? this.shiftId,
     );
   }
 
@@ -513,6 +529,7 @@ class TransactionModel extends TransactionEntity {
       items: items,
       createdBy: createdBy,
       businessId: businessId,
+      shiftId: shiftId,
     );
   }
 }

@@ -46,6 +46,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
   String? _imageUrl;
   bool _isUploading = false;
   bool _isSaving = false;
+  bool _trackStock = true;
 
   List<ProductVariant> _variants = [];
   List<ModifierGroup> _modifierGroups = [];
@@ -74,6 +75,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
     _imageUrl = widget.product?.imageUrl;
     _variants = List.from(widget.product?.variants ?? []);
     _modifierGroups = List.from(widget.product?.modifierGroups ?? []);
+    _trackStock = widget.product?.trackStock ?? true;
   }
 
   @override
@@ -99,14 +101,21 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
     setState(() => _isSaving = true);
 
     try {
+      final stockValue = _trackStock
+          ? (int.tryParse(_stockController.text.trim()) ?? 0)
+          : (widget.product?.stock ?? 0);
+      final stockThresholdValue = _trackStock
+          ? (int.tryParse(_stockThresholdController.text.trim()) ?? 5)
+          : (widget.product?.stockThreshold ?? 5);
+
       final product = Product(
         id: widget.product?.id ?? const Uuid().v4(),
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         costPrice: double.parse(_costPriceController.text),
         price: double.parse(_priceController.text),
-        stock: int.parse(_stockController.text),
-        stockThreshold: int.parse(_stockThresholdController.text),
+        stock: stockValue,
+        stockThreshold: stockThresholdValue,
         categoryId: _selectedCategoryId!,
         imageUrl: _imageUrl,
         sku: _skuController.text.trim().isEmpty
@@ -116,6 +125,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
         updatedAt: DateTime.now(),
         variants: _variants,
         modifierGroups: _modifierGroups,
+        trackStock: _trackStock,
       );
 
       if (widget.product == null) {
@@ -135,14 +145,15 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
   Future<void> _handleImageUpload() async {
     final uploadService = getIt<ImageUploadService>();
     final cloudinaryService = getIt<CloudinaryService>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => SafeArea(
+      builder: (sheetContext) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Column(
@@ -152,31 +163,33 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE2E8F0),
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Foto Produk',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Color(0xFF0F172A),
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                 ),
               ),
               const SizedBox(height: 8),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.camera_alt_outlined,
-                  color: Color(0xFF0F172A),
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                 ),
-                title: const Text(
+                title: Text(
                   'Ambil dari Kamera',
-                  style: TextStyle(color: Colors.black),
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
                 ),
                 onTap: () async {
-                  Navigator.pop(context);
+                  Navigator.pop(sheetContext);
                   await _pickAndUpload(
                     uploadService,
                     cloudinaryService,
@@ -185,16 +198,18 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
                 },
               ),
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.image_outlined,
-                  color: Color(0xFF0F172A),
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
                 ),
-                title: const Text(
+                title: Text(
                   'Pilih dari Galeri',
-                  style: TextStyle(color: Colors.black),
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
                 ),
                 onTap: () async {
-                  Navigator.pop(context);
+                  Navigator.pop(sheetContext);
                   await _pickAndUpload(
                     uploadService,
                     cloudinaryService,
@@ -213,7 +228,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
                     style: TextStyle(color: Color(0xFFDC2626)),
                   ),
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.pop(sheetContext);
                     setState(() => _imageUrl = null);
                   },
                 ),
@@ -595,57 +610,107 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
                   ],
                 ),
                 const SizedBox(height: 16),
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
+                ),
+                const SizedBox(height: 16),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildLabel('Stok Saat Ini'),
-                          TextFormField(
-                            controller: _stockController,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                            style: TextStyle(fontSize: 14, color: textColor),
-                            decoration: _buildInputDecoration(
-                              hint: '0',
-                              prefixIcon: Icons.inventory_2_outlined,
+                          Text(
+                            'Kelola Stok Produk',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: textColor,
                             ),
-                            validator: (v) => v == null || v.isEmpty
-                                ? 'Isi jumlah stok'
-                                : null,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _trackStock
+                                ? 'Stok otomatis berkurang saat transaksi berhasil'
+                                : 'Stok tidak terbatas (cocok untuk F&B siap saji, jasa, digital)',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildLabel('Batas Stok Tipis'),
-                          TextFormField(
-                            controller: _stockThresholdController,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                            style: TextStyle(fontSize: 14, color: textColor),
-                            decoration: _buildInputDecoration(
-                              hint: '5',
-                              prefixIcon: Icons.notifications_active_outlined,
-                            ),
-                            validator: (v) => v == null || v.isEmpty
-                                ? 'Isi batas stok'
-                                : null,
-                          ),
-                        ],
-                      ),
+                    Switch(
+                      value: _trackStock,
+                      activeThumbColor: AppColors.primary,
+                      onChanged: (val) {
+                        setState(() => _trackStock = val);
+                      },
                     ),
                   ],
                 ),
+                if (_trackStock) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildLabel('Stok Saat Ini'),
+                            TextFormField(
+                              controller: _stockController,
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              style: TextStyle(fontSize: 14, color: textColor),
+                              decoration: _buildInputDecoration(
+                                hint: '0',
+                                prefixIcon: Icons.inventory_2_outlined,
+                              ),
+                              validator: (v) => _trackStock && (v == null || v.isEmpty)
+                                  ? 'Isi jumlah stok'
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildLabel('Batas Stok Tipis'),
+                            TextFormField(
+                              controller: _stockThresholdController,
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              style: TextStyle(fontSize: 14, color: textColor),
+                              decoration: _buildInputDecoration(
+                                hint: '5',
+                                prefixIcon: Icons.notifications_active_outlined,
+                              ),
+                              validator: (v) => _trackStock && (v == null || v.isEmpty)
+                                  ? 'Isi batas stok'
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 16),

@@ -12,6 +12,12 @@ class BusinessInfoModel extends BusinessInfo {
     super.qrisUrl,
     required super.createdAt,
     required super.updatedAt,
+    super.isTaxEnabled = false,
+    super.taxRate = 0.0,
+    super.taxName = 'Pajak',
+    super.isServiceChargeEnabled = false,
+    super.serviceChargeRate = 0.0,
+    super.isPriceInclusiveTax = false,
   });
 
   factory BusinessInfoModel.fromFirestore(DocumentSnapshot doc) {
@@ -26,6 +32,32 @@ class BusinessInfoModel extends BusinessInfo {
       qrisUrl: data['qrisUrl'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      isTaxEnabled: data['isTaxEnabled'] ?? false,
+      taxRate: (data['taxRate'] ?? 0.0).toDouble(),
+      taxName: data['taxName'] ?? 'Pajak',
+      isServiceChargeEnabled: data['isServiceChargeEnabled'] ?? false,
+      serviceChargeRate: (data['serviceChargeRate'] ?? 0.0).toDouble(),
+      isPriceInclusiveTax: data['isPriceInclusiveTax'] ?? false,
+    );
+  }
+
+  factory BusinessInfoModel.fromEntity(BusinessInfo entity) {
+    return BusinessInfoModel(
+      id: entity.id,
+      businessName: entity.businessName,
+      address: entity.address,
+      phone: entity.phone,
+      email: entity.email,
+      logoUrl: entity.logoUrl,
+      qrisUrl: entity.qrisUrl,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+      isTaxEnabled: entity.isTaxEnabled,
+      taxRate: entity.taxRate,
+      taxName: entity.taxName,
+      isServiceChargeEnabled: entity.isServiceChargeEnabled,
+      serviceChargeRate: entity.serviceChargeRate,
+      isPriceInclusiveTax: entity.isPriceInclusiveTax,
     );
   }
 
@@ -40,6 +72,12 @@ class BusinessInfoModel extends BusinessInfo {
       qrisUrl: qrisUrl,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      isTaxEnabled: isTaxEnabled,
+      taxRate: taxRate,
+      taxName: taxName,
+      isServiceChargeEnabled: isServiceChargeEnabled,
+      serviceChargeRate: serviceChargeRate,
+      isPriceInclusiveTax: isPriceInclusiveTax,
     );
   }
 
@@ -53,6 +91,12 @@ class BusinessInfoModel extends BusinessInfo {
       'qrisUrl': qrisUrl,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'isTaxEnabled': isTaxEnabled,
+      'taxRate': taxRate,
+      'taxName': taxName,
+      'isServiceChargeEnabled': isServiceChargeEnabled,
+      'serviceChargeRate': serviceChargeRate,
+      'isPriceInclusiveTax': isPriceInclusiveTax,
     };
   }
 
@@ -67,6 +111,12 @@ class BusinessInfoModel extends BusinessInfo {
       'qrisUrl': qrisUrl,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'isTaxEnabled': isTaxEnabled,
+      'taxRate': taxRate,
+      'taxName': taxName,
+      'isServiceChargeEnabled': isServiceChargeEnabled,
+      'serviceChargeRate': serviceChargeRate,
+      'isPriceInclusiveTax': isPriceInclusiveTax,
     };
   }
 
@@ -85,6 +135,12 @@ class BusinessInfoModel extends BusinessInfo {
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'])
           : DateTime.now(),
+      isTaxEnabled: json['isTaxEnabled'] ?? false,
+      taxRate: (json['taxRate'] ?? 0.0).toDouble(),
+      taxName: json['taxName'] ?? 'Pajak',
+      isServiceChargeEnabled: json['isServiceChargeEnabled'] ?? false,
+      serviceChargeRate: (json['serviceChargeRate'] ?? 0.0).toDouble(),
+      isPriceInclusiveTax: json['isPriceInclusiveTax'] ?? false,
     );
   }
 }

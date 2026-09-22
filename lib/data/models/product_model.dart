@@ -19,6 +19,7 @@ class ProductModel extends Product {
     super.businessId,
     super.variants = const [],
     super.modifierGroups = const [],
+    super.trackStock = true,
   });
 
   factory ProductModel.fromFirestore(DocumentSnapshot doc) {
@@ -57,6 +58,7 @@ class ProductModel extends Product {
               )
               .toList() ??
           const [],
+      trackStock: data['trackStock'] ?? true,
     );
   }
 
@@ -76,6 +78,7 @@ class ProductModel extends Product {
       'businessId': businessId,
       'variants': variants.map((v) => v.toJson()).toList(),
       'modifierGroups': modifierGroups.map((g) => g.toJson()).toList(),
+      'trackStock': trackStock,
     };
   }
 
@@ -96,6 +99,7 @@ class ProductModel extends Product {
       'businessId': businessId,
       'variants': variants.map((v) => v.toJson()).toList(),
       'modifierGroups': modifierGroups.map((g) => g.toJson()).toList(),
+      'trackStock': trackStock,
     };
   }
 
@@ -134,6 +138,7 @@ class ProductModel extends Product {
               )
               .toList() ??
           const [],
+      trackStock: json['trackStock'] ?? true,
     );
   }
 
@@ -154,6 +159,7 @@ class ProductModel extends Product {
       businessId: businessId,
       variants: variants,
       modifierGroups: modifierGroups,
+      trackStock: trackStock,
     );
   }
 
@@ -174,9 +180,11 @@ class ProductModel extends Product {
       businessId: product.businessId,
       variants: product.variants,
       modifierGroups: product.modifierGroups,
+      trackStock: product.trackStock,
     );
   }
 
+  @override
   ProductModel copyWith({
     String? id,
     String? categoryId,
@@ -193,6 +201,7 @@ class ProductModel extends Product {
     String? businessId,
     List<ProductVariant>? variants,
     List<ModifierGroup>? modifierGroups,
+    bool? trackStock,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -210,6 +219,7 @@ class ProductModel extends Product {
       businessId: businessId ?? this.businessId,
       variants: variants ?? this.variants,
       modifierGroups: modifierGroups ?? this.modifierGroups,
+      trackStock: trackStock ?? this.trackStock,
     );
   }
 }

@@ -52,6 +52,11 @@ class TransactionService {
             throw Exception('Produk ${item.displayName} tidak ditemukan');
           }
 
+          if (!product.trackStock) {
+            // Item does not track inventory (e.g. cooked to order, services)
+            continue;
+          }
+
           final currentStock = product.stock;
           final newStock = currentStock - item.quantity;
 

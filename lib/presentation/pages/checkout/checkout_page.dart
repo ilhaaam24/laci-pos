@@ -24,9 +24,12 @@ import '../../blocs/product/product_bloc.dart';
 import '../../blocs/promo/promo_bloc.dart';
 import '../../blocs/report/report_bloc.dart';
 import '../../blocs/transaction/transaction_bloc.dart';
+import '../../blocs/shift/shift_bloc.dart';
 import '../customer/add_edit_customer_page.dart';
 import 'widgets/payment_dialog.dart';
 import 'widgets/transaction_success_dialog.dart';
+import '../../../core/services/held_order_service.dart';
+import '../kasir/widgets/hold_order_dialog.dart';
 
 class CheckoutPage extends StatefulWidget {
   final VoidCallback? onBackToKasir;
@@ -39,9 +42,9 @@ class CheckoutPage extends StatefulWidget {
 }
 
 class _CheckoutPageState extends State<CheckoutPage> {
-  final double _taxPercent = 10.0;
   PromoEntity? _selectedPromo;
   String _orderType = 'Dine In';
+  String? _tableNumber = 'Meja 01';
   final Map<String, String> _itemNotes = {};
   late final String _orderCode;
   late final String _orderTime;
@@ -50,6 +53,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   void initState() {
     super.initState();
     context.read<PromoBloc>().add(LoadPromos());
+    context.read<BusinessBloc>().add(LoadBusinessInfo());
     final now = DateTime.now();
     final orderNum = (now.minute * 10 + now.second % 100).toString().padLeft(
       3,
@@ -57,6 +61,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
     _orderCode = '#ORD-$orderNum';
     _orderTime = '${DateFormat('HH:mm').format(now)} WIB';
+
+    final cartState = context.read<CartBloc>().state;
+    if (cartState.orderName != null && cartState.orderName!.isNotEmpty) {
+      _tableNumber = cartState.orderName;
+    }
   }
 
   double get _discountAmount {
@@ -106,6 +115,24 @@ class _CheckoutPageState extends State<CheckoutPage> {
           backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
           elevation: 0,
           scrolledUnderElevation: 0,
+          leading: MediaQuery.of(context).size.width >= 720
+              ? IconButton(
+                  icon: Icon(
+                    Icons.menu_rounded,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
+                  tooltip: 'Menu Navigasi',
+                  onPressed: () {
+                    if (widget.onOpenDrawer != null) {
+                      widget.onOpenDrawer!();
+                    } else {
+                      context
+                          .findRootAncestorStateOfType<ScaffoldState>()
+                          ?.openDrawer();
+                    }
+                  },
+                )
+              : null,
           title: Text(
             'Pesanan',
             style: TextStyle(
@@ -123,8 +150,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
           ),
         ),
-        backgroundColor:
-            isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+        backgroundColor: isDark
+            ? const Color(0xFF0F172A)
+            : const Color(0xFFF8FAFC),
         body: SafeArea(
           child: Column(
             children: [
@@ -135,12 +163,55 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       return _buildEmptyState(isDark);
                     }
 
+                    final businessInfo = context
+                        .watch<BusinessBloc>()
+                        .state
+                        .businessInfo;
+                    final isTaxEnabled = businessInfo?.isTaxEnabled ?? false;
+                    final taxRate = isTaxEnabled
+                        ? (businessInfo?.taxRate ?? 0.0)
+                        : 0.0;
+                    final taxName = (businessInfo?.taxName.isNotEmpty == true)
+                        ? businessInfo!.taxName
+                        : 'Pajak';
+                    final isServiceChargeEnabled =
+                        businessInfo?.isServiceChargeEnabled ?? false;
+                    final serviceChargeRate = isServiceChargeEnabled
+                        ? (businessInfo?.serviceChargeRate ?? 0.0)
+                        : 0.0;
+                    final isPriceInclusive =
+                        businessInfo?.isPriceInclusiveTax ?? false;
+
                     final subtotal = state.totalAmount;
                     final discount = _discountAmount;
-                    final taxAmount = (subtotal - discount > 0)
-                        ? (subtotal - discount) * (_taxPercent / 100)
+                    final netSubtotal = (subtotal - discount > 0)
+                        ? (subtotal - discount)
                         : 0.0;
-                    final grandTotal = subtotal - discount + taxAmount;
+
+                    double taxAmount = 0.0;
+                    double serviceChargeAmount = 0.0;
+                    double grandTotal = 0.0;
+
+                    if (isPriceInclusive && taxRate > 0) {
+                      taxAmount =
+                          netSubtotal - (netSubtotal / (1 + (taxRate / 100)));
+                      serviceChargeAmount =
+                          isServiceChargeEnabled && serviceChargeRate > 0
+                          ? (netSubtotal - taxAmount) *
+                                (serviceChargeRate / 100)
+                          : 0.0;
+                      grandTotal = netSubtotal + serviceChargeAmount;
+                    } else {
+                      taxAmount = isTaxEnabled && taxRate > 0
+                          ? netSubtotal * (taxRate / 100)
+                          : 0.0;
+                      serviceChargeAmount =
+                          isServiceChargeEnabled && serviceChargeRate > 0
+                          ? netSubtotal * (serviceChargeRate / 100)
+                          : 0.0;
+                      grandTotal =
+                          netSubtotal + taxAmount + serviceChargeAmount;
+                    }
 
                     return ListView(
                       padding: const EdgeInsets.fromLTRB(16, 6, 16, 32),
@@ -170,6 +241,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           subtotal: subtotal,
                           discount: discount,
                           tax: taxAmount,
+                          taxName: taxName,
+                          taxRate: taxRate,
+                          isTaxEnabled: isTaxEnabled,
+                          isPriceInclusive: isPriceInclusive,
+                          serviceCharge: serviceChargeAmount,
+                          serviceChargeRate: serviceChargeRate,
+                          isServiceChargeEnabled: isServiceChargeEnabled,
                           grandTotal: grandTotal,
                           formatter: currencyFormatter,
                           isDark: isDark,
@@ -223,8 +301,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
               Icon(
                 Icons.access_time_rounded,
                 size: 16,
-                color:
-                    isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF475569),
               ),
               const SizedBox(width: 4),
               Text(
@@ -232,10 +311,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
-                  color:
-                      isDark
-                          ? const Color(0xFF94A3B8)
-                          : const Color(0xFF475569),
+                  color: isDark
+                      ? const Color(0xFF94A3B8)
+                      : const Color(0xFF475569),
                 ),
               ),
             ],
@@ -256,6 +334,100 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ],
             ),
           ),
+          if (_orderType == 'Dine In') ...[
+            const SizedBox(height: 10),
+            InkWell(
+              onTap: _showTablePickerDialog,
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF0F172A)
+                      : const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF334155)
+                        : const Color(0xFFE2E8F0),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    SvgPicture.asset("assets/icons/meja.svg", height: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Nomor Meja:',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _tableNumber?.isNotEmpty == true
+                            ? _tableNumber!
+                            : 'Belum ditentukan',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF1E293B)
+                            : const Color(0xFFEEF2FF),
+                        borderRadius: BorderRadius.circular(6),
+                        border: isDark
+                            ? Border.all(color: const Color(0xFF334155))
+                            : null,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Pilih Meja',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? const Color(0xFF93C5FD)
+                                  : const Color(0xFF4338CA),
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 14,
+                            color: isDark
+                                ? const Color(0xFF93C5FD)
+                                : const Color(0xFF4338CA),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -266,26 +438,29 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     return Expanded(
       child: InkWell(
-        onTap: () => setState(() => _orderType = type),
+        onTap: () => setState(() {
+          _orderType = type;
+          if (type == 'Dine In' &&
+              (_tableNumber == null || _tableNumber!.isEmpty)) {
+            _tableNumber = 'Meja 01';
+          }
+        }),
         borderRadius: BorderRadius.circular(10),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color:
-                isSelected
-                    ? (isDark ? const Color(0xFF334155) : Colors.black)
-                    : Colors.transparent,
+            color: isSelected
+                ? (isDark ? const Color(0xFF334155) : Colors.black)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
-            border:
-                isSelected
-                    ? Border.all(
-                      color:
-                          isDark
-                              ? const Color(0xFF475569)
-                              : const Color(0xFFE2E8F0),
-                    )
-                    : null,
+            border: isSelected
+                ? Border.all(
+                    color: isDark
+                        ? const Color(0xFF475569)
+                        : const Color(0xFFE2E8F0),
+                  )
+                : null,
           ),
           child: Center(
             child: Text(
@@ -293,17 +468,258 @@ class _CheckoutPageState extends State<CheckoutPage> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color:
-                    isSelected
-                        ? AppColors.white
-                        : (isDark
-                            ? const Color(0xFF94A3B8)
-                            : const Color(0xFF64748B)),
+                color: isSelected
+                    ? AppColors.white
+                    : (isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B)),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  void _showTablePickerDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textController = TextEditingController(text: _tableNumber ?? '');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final commonTables = [
+              'Meja 01',
+              'Meja 02',
+              'Meja 03',
+              'Meja 04',
+              'Meja 05',
+              'Meja 06',
+              'Meja 07',
+              'Meja 08',
+              'Meja 09',
+              'Meja 10',
+              'VIP 1',
+              'VIP 2',
+              'Outdoor 1',
+              'Outdoor 2',
+              'Bar 1',
+              'Bar 2',
+            ];
+
+            return Container(
+              padding: EdgeInsets.only(
+                top: 20,
+                left: 20,
+                right: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+              ),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF475569)
+                            : const Color(0xFFCBD5E1),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.table_restaurant_rounded,
+                        color: isDark
+                            ? const Color(0xFF60A5FA)
+                            : const Color(0xFF2563EB),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Pilih Nomor Meja',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Pilih meja cepat atau ketik nama/nomor meja kustom di bawah.',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: textController,
+                          style: TextStyle(
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Contoh: Meja 12, VIP, Lt 2',
+                            hintStyle: TextStyle(
+                              fontSize: 13,
+                              color: isDark
+                                  ? const Color(0xFF64748B)
+                                  : const Color(0xFF94A3B8),
+                            ),
+                            filled: true,
+                            fillColor: isDark
+                                ? const Color(0xFF0F172A)
+                                : const Color(0xFFF8FAFC),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: isDark
+                                    ? const Color(0xFF334155)
+                                    : const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: isDark
+                                    ? const Color(0xFF334155)
+                                    : const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                          ),
+                          onChanged: (_) => setModalState(() {}),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _tableNumber = textController.text.trim();
+                          });
+                          Navigator.pop(ctx);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 14,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Simpan'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'PILIHAN CEPAT',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      color: isDark
+                          ? const Color(0xFF64748B)
+                          : const Color(0xFF94A3B8),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: commonTables.map((table) {
+                      final isSelected =
+                          textController.text.trim().toLowerCase() ==
+                          table.toLowerCase();
+                      return InkWell(
+                        onTap: () {
+                          textController.text = table;
+                          setModalState(() {});
+                          setState(() {
+                            _tableNumber = table;
+                          });
+                          Navigator.pop(ctx);
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? (isDark
+                                      ? const Color(0xFF3B82F6)
+                                      : AppColors.primary)
+                                : (isDark
+                                      ? const Color(0xFF0F172A)
+                                      : const Color(0xFFF1F5F9)),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isSelected
+                                  ? (isDark
+                                        ? const Color(0xFF60A5FA)
+                                        : AppColors.primary)
+                                  : (isDark
+                                        ? const Color(0xFF334155)
+                                        : const Color(0xFFE2E8F0)),
+                            ),
+                          ),
+                          child: Text(
+                            table,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? Colors.white
+                                  : (isDark
+                                        ? const Color(0xFFCBD5E1)
+                                        : const Color(0xFF334155)),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -333,7 +749,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         style: TextStyle(
                           fontSize: 14.5,
                           fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -368,10 +786,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           : 'Tanpa Akun Member'),
                   style: TextStyle(
                     fontSize: 12,
-                    color:
-                        isDark
-                            ? const Color(0xFF94A3B8)
-                            : const Color(0xFF64748B),
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
                   ),
                 ),
               ],
@@ -383,11 +800,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                color: isDark
+                    ? const Color(0xFF0F172A)
+                    : const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color:
-                      isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
                 ),
               ),
               child: Row(
@@ -397,20 +817,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color:
-                          isDark
-                              ? const Color(0xFFCBD5E1)
-                              : const Color(0xFF334155),
+                      color: isDark
+                          ? const Color(0xFFCBD5E1)
+                          : const Color(0xFF334155),
                     ),
                   ),
                   const SizedBox(width: 4),
                   Icon(
                     Icons.keyboard_arrow_down_rounded,
                     size: 16,
-                    color:
-                        isDark
-                            ? const Color(0xFF94A3B8)
-                            : const Color(0xFF64748B),
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
                   ),
                 ],
               ),
@@ -476,10 +894,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   Divider(
                     height: 20,
                     thickness: 1,
-                    color:
-                        isDark
-                            ? const Color(0xFF334155)
-                            : const Color(0xFFF1F5F9),
+                    color: isDark
+                        ? const Color(0xFF334155)
+                        : const Color(0xFFF1F5F9),
                   ),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
@@ -496,10 +913,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
-                                color:
-                                    isDark
-                                        ? Colors.white
-                                        : const Color(0xFF0F172A),
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0F172A),
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -510,10 +926,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
-                              color:
-                                    isDark
-                                        ? Colors.white
-                                        : const Color(0xFF0F172A),
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF0F172A),
                             ),
                           ),
                         ],
@@ -524,10 +939,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           item.modifiersDisplay,
                           style: TextStyle(
                             fontSize: 12,
-                            color:
-                                isDark
-                                    ? const Color(0xFF94A3B8)
-                                    : AppColors.textSecondary,
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : AppColors.textSecondary,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -545,14 +959,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                     ? Icons.notes_rounded
                                     : Icons.border_color_outlined,
                                 size: 14,
-                                color:
-                                    hasNote
-                                        ? (isDark
-                                            ? const Color(0xFF94A3B8)
-                                            : const Color(0xFF64748B))
-                                        : (isDark
-                                            ? const Color(0xFF94A3B8)
-                                            : AppColors.textSecondary),
+                                color: hasNote
+                                    ? (isDark
+                                          ? const Color(0xFF94A3B8)
+                                          : const Color(0xFF64748B))
+                                    : (isDark
+                                          ? const Color(0xFF94A3B8)
+                                          : AppColors.textSecondary),
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -560,18 +973,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                   hasNote ? currentNote! : 'Tambah Catatan',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    fontWeight:
-                                        hasNote
-                                            ? FontWeight.w500
-                                            : FontWeight.w600,
-                                    color:
-                                        hasNote
-                                            ? (isDark
-                                                ? const Color(0xFF94A3B8)
-                                                : const Color(0xFF64748B))
-                                            : (isDark
-                                                ? const Color(0xFF94A3B8)
-                                                : AppColors.textSecondary),
+                                    fontWeight: hasNote
+                                        ? FontWeight.w500
+                                        : FontWeight.w600,
+                                    color: hasNote
+                                        ? (isDark
+                                              ? const Color(0xFF94A3B8)
+                                              : const Color(0xFF64748B))
+                                        : (isDark
+                                              ? const Color(0xFF94A3B8)
+                                              : AppColors.textSecondary),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -583,10 +994,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ),
                       const SizedBox(height: 8),
                       Divider(
-                        color:
-                            isDark
-                                ? const Color(0xFF334155)
-                                : AppColors.border,
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : AppColors.border,
                       ),
                       const SizedBox(height: 8),
                       // Line 3: Unit Price, Trash Icon & Stepper
@@ -596,10 +1006,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             '@ ${formatter.format(item.unitPrice).trim()}',
                             style: TextStyle(
                               fontSize: 13,
-                              color:
-                                  isDark
-                                      ? const Color(0xFF94A3B8)
-                                      : const Color(0xFF64748B),
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -608,16 +1017,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           // Stepper Pill (- QTY +)
                           Container(
                             decoration: BoxDecoration(
-                              color:
-                                  isDark
-                                      ? const Color(0xFF0F172A)
-                                      : const Color(0xFFF8FAFC),
+                              color: isDark
+                                  ? const Color(0xFF0F172A)
+                                  : const Color(0xFFF8FAFC),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color:
-                                    isDark
-                                        ? const Color(0xFF334155)
-                                        : const Color(0xFFE2E8F0),
+                                color: isDark
+                                    ? const Color(0xFF334155)
+                                    : const Color(0xFFE2E8F0),
                               ),
                             ),
                             child: Row(
@@ -639,10 +1046,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                     child: Icon(
                                       Icons.remove,
                                       size: 15,
-                                      color:
-                                          isDark
-                                              ? const Color(0xFF94A3B8)
-                                              : const Color(0xFF475569),
+                                      color: isDark
+                                          ? const Color(0xFF94A3B8)
+                                          : const Color(0xFF475569),
                                     ),
                                   ),
                                 ),
@@ -660,15 +1066,29 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
-                                      color:
-                                          isDark
-                                              ? Colors.white
-                                              : const Color(0xFF0F172A),
+                                      color: isDark
+                                          ? Colors.white
+                                          : const Color(0xFF0F172A),
                                     ),
                                   ),
                                 ),
                                 InkWell(
                                   onTap: () {
+                                    final cartState = context.read<CartBloc>().state;
+                                    final currentTotalQty = cartState.items
+                                        .where((i) =>
+                                            i.productId == item.productId &&
+                                            (item.selectedVariant == null ||
+                                                i.selectedVariant?.id == item.selectedVariant?.id))
+                                        .fold<int>(0, (sum, i) => sum + i.quantity);
+
+                                    if (item.maxStock != null && currentTotalQty >= item.maxStock!) {
+                                      AppToast.showWarning(
+                                        context,
+                                        'Maksimal stok ${item.displayName} tercapai (${item.maxStock})',
+                                      );
+                                      return;
+                                    }
                                     context.read<CartBloc>().add(
                                       IncrementQuantity(item.id),
                                     );
@@ -684,10 +1104,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                     child: Icon(
                                       Icons.add,
                                       size: 15,
-                                      color:
-                                          isDark
+                                      color: (item.maxStock != null && item.quantity >= item.maxStock!)
+                                          ? (isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1))
+                                          : (isDark
                                               ? const Color(0xFF94A3B8)
-                                              : const Color(0xFF475569),
+                                              : const Color(0xFF475569)),
                                     ),
                                   ),
                                 ),
@@ -729,10 +1150,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color:
-                    isDark
-                        ? const Color(0xFF0D9488).withValues(alpha: 0.2)
-                        : const Color(0xFFCCFBF1),
+                color: isDark
+                    ? const Color(0xFF0D9488).withValues(alpha: 0.2)
+                    : const Color(0xFFCCFBF1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Center(
@@ -755,8 +1175,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color:
-                              isDark ? Colors.white : const Color(0xFF0F172A),
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -766,10 +1187,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color:
-                              isDark
-                                  ? const Color(0xFF0D9488).withValues(alpha: 0.2)
-                                  : const Color(0xFFE6F4F2),
+                          color: isDark
+                              ? const Color(0xFF0D9488).withValues(alpha: 0.2)
+                              : const Color(0xFFE6F4F2),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Text(
@@ -799,8 +1219,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
               icon: Icon(
                 Icons.close_rounded,
                 size: 20,
-                color:
-                    isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
               ),
               onPressed: () => setState(() => _selectedPromo = null),
             ),
@@ -854,11 +1275,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-  // 6. Card 5: Summary Card (Subtotal, Discount, PB1 Resto, Grand Total)
+  // 6. Card 5: Summary Card (Subtotal, Discount, Dynamic Tax, Service Charge, Grand Total)
   Widget _buildSummaryCard({
     required double subtotal,
     required double discount,
     required double tax,
+    required String taxName,
+    required double taxRate,
+    required bool isTaxEnabled,
+    required bool isPriceInclusive,
+    required double serviceCharge,
+    required double serviceChargeRate,
+    required bool isServiceChargeEnabled,
     required double grandTotal,
     required NumberFormat formatter,
     required bool isDark,
@@ -886,11 +1314,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
               isDiscount: true,
               isDark: isDark,
             ),
-          _buildSummaryRow(
-            'PB1 Resto (${_taxPercent.toStringAsFixed(0)}%)',
-            formatter.format(tax).trim(),
-            isDark: isDark,
-          ),
+          if (isTaxEnabled && taxRate > 0)
+            _buildSummaryRow(
+              '$taxName (${taxRate.toStringAsFixed(taxRate % 1 == 0 ? 0 : 1)}%${isPriceInclusive ? ' Termasuk' : ''})',
+              formatter.format(tax).trim(),
+              isDark: isDark,
+            ),
+          if (isServiceChargeEnabled && serviceChargeRate > 0)
+            _buildSummaryRow(
+              'Biaya Layanan (${serviceChargeRate.toStringAsFixed(serviceChargeRate % 1 == 0 ? 0 : 1)}%)',
+              formatter.format(serviceCharge).trim(),
+              isDark: isDark,
+            ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Divider(
@@ -919,10 +1354,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     'Termasuk pajak & layanan',
                     style: TextStyle(
                       fontSize: 11.5,
-                      color:
-                          isDark
-                              ? const Color(0xFF94A3B8)
-                              : const Color(0xFF94A3B8),
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF94A3B8),
                     ),
                   ),
                 ],
@@ -957,8 +1391,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             label,
             style: TextStyle(
               fontSize: 14,
-              color:
-                  isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -967,10 +1400,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color:
-                  isDiscount
-                      ? AppColors.primary
-                      : (isDark ? Colors.white : const Color(0xFF0F172A)),
+              color: isDiscount
+                  ? AppColors.primary
+                  : (isDark ? Colors.white : const Color(0xFF0F172A)),
             ),
           ),
         ],
@@ -1030,19 +1462,53 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
           ),
         ),
+        const SizedBox(height: 10),
+        // Secondary Button: Tahan Pesanan (Open Bill)
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFFD97706),
+              side: const BorderSide(color: Color(0xFFF59E0B)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            onPressed: _handleHoldOrder,
+            icon: const Icon(Icons.pause_circle_outline_rounded, size: 20),
+            label: Text(
+              state.heldOrderId != null
+                  ? 'Perbarui Tahan Pesanan (Open Bill)'
+                  : 'Tahan Pesanan (Open Bill)',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+          ),
+        ),
       ],
     );
   }
 
   void _handleHoldOrder() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Bill order $_orderCode berhasil disimpan sebagai pending bill.',
-        ),
-        backgroundColor: const Color(0xFF0F172A),
-        duration: const Duration(seconds: 2),
-      ),
+    final cartState = context.read<CartBloc>().state;
+    if (cartState.items.isEmpty) {
+      AppToast.showWarning(context, 'Keranjang masih kosong');
+      return;
+    }
+    final sessionService = getIt<SessionService>();
+    final cashierName = sessionService.currentUser?.name ?? 'Kasir';
+    HoldOrderDialog.show(
+      context: context,
+      cartState: cartState,
+      cashierName: cashierName,
+      onOrderHeld: () {
+        context.read<CartBloc>().add(ClearCart());
+        if (widget.onBackToKasir != null) {
+          widget.onBackToKasir!();
+        } else if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+      },
     );
   }
 
@@ -1069,8 +1535,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
-                color:
-                    isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
               ),
             ),
             const SizedBox(height: 16),
@@ -1122,25 +1589,31 @@ class _CheckoutPageState extends State<CheckoutPage> {
               color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
             ),
             filled: true,
-            fillColor:
-                isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+            fillColor: isDark
+                ? const Color(0xFF0F172A)
+                : const Color(0xFFF8FAFC),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(
-                color:
-                    isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(
-                color:
-                    isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -1150,8 +1623,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
             onPressed: () => Navigator.pop(dialogContext),
             style: OutlinedButton.styleFrom(
               side: BorderSide(
-                color:
-                    isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -1160,8 +1634,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
             child: Text(
               'Batal',
               style: TextStyle(
-                color:
-                    isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
               ),
             ),
           ),
@@ -1228,8 +1703,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
             onPressed: () => Navigator.pop(dialogContext),
             style: OutlinedButton.styleFrom(
               side: BorderSide(
-                color:
-                    isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -1238,8 +1714,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
             child: Text(
               'Batal',
               style: TextStyle(
-                color:
-                    isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
               ),
             ),
           ),
@@ -1277,6 +1754,19 @@ class _CheckoutPageState extends State<CheckoutPage> {
     BuildContext context,
     CartState cartState,
   ) async {
+    final businessInfo = context.read<BusinessBloc>().state.businessInfo;
+    final isTaxEnabled = businessInfo?.isTaxEnabled ?? false;
+    final taxRate = isTaxEnabled ? (businessInfo?.taxRate ?? 0.0) : 0.0;
+    final taxName = (businessInfo?.taxName.isNotEmpty == true)
+        ? businessInfo!.taxName
+        : 'Pajak';
+    final isServiceChargeEnabled =
+        businessInfo?.isServiceChargeEnabled ?? false;
+    final serviceChargeRate = isServiceChargeEnabled
+        ? (businessInfo?.serviceChargeRate ?? 0.0)
+        : 0.0;
+    final isPriceInclusive = businessInfo?.isPriceInclusiveTax ?? false;
+
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -1284,10 +1774,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
           create: (_) => PaymentBloc(),
           child: PaymentDialog(
             orderCode: _orderCode,
-            orderType: _orderType,
+            orderType:
+                _orderType == 'Dine In' &&
+                    _tableNumber != null &&
+                    _tableNumber!.isNotEmpty
+                ? '$_orderType ($_tableNumber)'
+                : _orderType,
             itemCount: cartState.items.length,
             subtotal: cartState.totalAmount,
-            taxPercent: _taxPercent,
+            taxPercent: isPriceInclusive ? 0 : taxRate,
+            taxName: taxName,
+            serviceChargeRate: serviceChargeRate,
             discountAmount: _discountAmount,
             customer: cartState.customer,
             onHoldOrder: () {
@@ -1332,10 +1829,39 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
       final now = DateTime.now();
       final transactionCode = 'INV-${DateFormat('yyyyMMddHHmmss').format(now)}';
-      final taxAmount = (cartState.totalAmount - _discountAmount > 0)
-          ? (cartState.totalAmount - _discountAmount) * (_taxPercent / 100)
+
+      final isTaxEnabled = businessInfo?.isTaxEnabled ?? false;
+      final taxRate = isTaxEnabled ? (businessInfo?.taxRate ?? 0.0) : 0.0;
+      final isServiceChargeEnabled =
+          businessInfo?.isServiceChargeEnabled ?? false;
+      final serviceChargeRate = isServiceChargeEnabled
+          ? (businessInfo?.serviceChargeRate ?? 0.0)
           : 0.0;
-      final grandTotal = cartState.totalAmount + taxAmount - _discountAmount;
+      final isPriceInclusive = businessInfo?.isPriceInclusiveTax ?? false;
+
+      final netSubtotal = (cartState.totalAmount - _discountAmount > 0)
+          ? (cartState.totalAmount - _discountAmount)
+          : 0.0;
+
+      double taxAmount = 0.0;
+      double serviceChargeAmount = 0.0;
+      double grandTotal = 0.0;
+
+      if (isPriceInclusive && taxRate > 0) {
+        taxAmount = netSubtotal - (netSubtotal / (1 + (taxRate / 100)));
+        serviceChargeAmount = isServiceChargeEnabled && serviceChargeRate > 0
+            ? (netSubtotal - taxAmount) * (serviceChargeRate / 100)
+            : 0.0;
+        grandTotal = netSubtotal + serviceChargeAmount;
+      } else {
+        taxAmount = isTaxEnabled && taxRate > 0
+            ? netSubtotal * (taxRate / 100)
+            : 0.0;
+        serviceChargeAmount = isServiceChargeEnabled && serviceChargeRate > 0
+            ? netSubtotal * (serviceChargeRate / 100)
+            : 0.0;
+        grandTotal = netSubtotal + taxAmount + serviceChargeAmount;
+      }
 
       final sessionService = getIt<SessionService>();
       final businessId = sessionService.businessId;
@@ -1362,6 +1888,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
         );
       }).toList();
 
+      final activeShift = context.read<ShiftBloc>().state.activeShift;
+
       final transaction = TransactionEntity(
         id: const Uuid().v4(),
         transactionCode: transactionCode,
@@ -1381,6 +1909,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
         items: items,
         createdBy: userId,
         businessId: businessId,
+        shiftId: activeShift?.id,
+        notes:
+            _orderType == 'Dine In' &&
+                _tableNumber != null &&
+                _tableNumber!.isNotEmpty
+            ? 'Dine In ($_tableNumber)'
+            : _orderType,
       );
 
       final transactionService = getIt<TransactionService>();
@@ -1391,6 +1926,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         context.read<TransactionBloc>().add(LoadTransactions());
         context.read<ReportBloc>().add(LoadDailyReport(DateTime.now()));
         context.read<ProductBloc>().add(LoadProducts());
+        context.read<ShiftBloc>().add(LoadShiftSummary());
       }
 
       if (!mounted) return;
@@ -1406,8 +1942,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
         );
       }
 
+      final customerPhone = cartState.customer?.phone;
+
       if (shouldSendWA) {
-        final customerPhone = cartState.customer?.phone;
         await WhatsappService.shareReceipt(
           transaction: transaction,
           businessInfo: businessInfo,
@@ -1416,6 +1953,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
       }
 
       if (!mounted) return;
+      if (cartState.heldOrderId != null) {
+        await HeldOrderService().removeHeldOrder(cartState.heldOrderId!);
+      }
+      if (!mounted) return;
       context.read<CartBloc>().add(ClearCart());
       setState(() {
         _selectedPromo = null;
@@ -1423,7 +1964,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
       });
 
       if (!mounted) return;
-      await _showSuccessDialog(context, transaction);
+      await _showSuccessDialog(
+        context,
+        transaction,
+        customerPhone: customerPhone,
+      );
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context);
@@ -1433,12 +1978,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Future<void> _showSuccessDialog(
     BuildContext context,
-    TransactionEntity transaction,
-  ) async {
+    TransactionEntity transaction, {
+    String? customerPhone,
+  }) async {
     final businessState = context.read<BusinessBloc>().state;
     final businessInfo = businessState.businessInfo;
-    final cartState = context.read<CartBloc>().state;
-    final customerPhone = cartState.customer?.phone;
 
     return showDialog(
       context: context,
@@ -1487,8 +2031,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
               return Container(
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(20)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -1497,10 +2042,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       width: 36,
                       height: 4,
                       decoration: BoxDecoration(
-                        color:
-                            isDark
-                                ? const Color(0xFF334155)
-                                : const Color(0xFFCBD5E1),
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFCBD5E1),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -1514,10 +2058,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.bold,
-                              color:
-                                  isDark
-                                      ? Colors.white
-                                      : const Color(0xFF0F172A),
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF0F172A),
                             ),
                           ),
                           TextButton(
@@ -1544,30 +2087,28 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         controller: searchCtrl,
                         onChanged: (_) => setStateSheet(() {}),
                         style: TextStyle(
-                          color:
-                              isDark ? Colors.white : const Color(0xFF0F172A),
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
                         ),
                         decoration: InputDecoration(
                           hintText: 'Cari nama atau telepon...',
                           hintStyle: TextStyle(
-                            color:
-                                isDark
-                                    ? const Color(0xFF94A3B8)
-                                    : const Color(0xFF64748B),
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
                           ),
                           prefixIcon: Icon(
                             Icons.search,
                             size: 20,
-                            color:
-                                isDark
-                                    ? const Color(0xFF94A3B8)
-                                    : const Color(0xFF64748B),
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
                           ),
                           filled: true,
-                          fillColor:
-                              isDark
-                                  ? const Color(0xFF0F172A)
-                                  : const Color(0xFFF1F5F9),
+                          fillColor: isDark
+                              ? const Color(0xFF0F172A)
+                              : const Color(0xFFF1F5F9),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
@@ -1594,26 +2135,23 @@ class _CheckoutPageState extends State<CheckoutPage> {
                               if (index == 0) {
                                 return ListTile(
                                   leading: CircleAvatar(
-                                    backgroundColor:
-                                        isDark
-                                            ? const Color(0xFF334155)
-                                            : const Color(0xFFF1F5F9),
+                                    backgroundColor: isDark
+                                        ? const Color(0xFF334155)
+                                        : const Color(0xFFF1F5F9),
                                     child: Icon(
                                       Icons.people_alt_outlined,
                                       size: 20,
-                                      color:
-                                          isDark
-                                              ? Colors.white
-                                              : const Color(0xFF64748B),
+                                      color: isDark
+                                          ? Colors.white
+                                          : const Color(0xFF64748B),
                                     ),
                                   ),
                                   title: Text(
                                     'Pelanggan Umum / Walk-in',
                                     style: TextStyle(
-                                      color:
-                                          isDark
-                                              ? Colors.white
-                                              : const Color(0xFF0F172A),
+                                      color: isDark
+                                          ? Colors.white
+                                          : const Color(0xFF0F172A),
                                     ),
                                   ),
                                   trailing: currentCustomer == null
@@ -1637,11 +2175,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
                               return ListTile(
                                 leading: CircleAvatar(
-                                  backgroundColor: AppColors.primaryLight,
+                                  backgroundColor: isDark
+                                      ? AppColors.primary.withValues(
+                                          alpha: 0.25,
+                                        )
+                                      : AppColors.primaryLight,
                                   child: Text(
                                     customer.name.substring(0, 1).toUpperCase(),
-                                    style: const TextStyle(
-                                      color: AppColors.primary,
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? const Color(0xFF34D399)
+                                          : AppColors.primary,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -1650,19 +2194,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                   customer.name,
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
-                                    color:
-                                        isDark
-                                            ? Colors.white
-                                            : const Color(0xFF0F172A),
+                                    color: isDark
+                                        ? Colors.white
+                                        : const Color(0xFF0F172A),
                                   ),
                                 ),
                                 subtitle: Text(
                                   customer.phone ?? '-',
                                   style: TextStyle(
-                                    color:
-                                        isDark
-                                            ? const Color(0xFF94A3B8)
-                                            : const Color(0xFF64748B),
+                                    color: isDark
+                                        ? const Color(0xFF94A3B8)
+                                        : const Color(0xFF64748B),
                                   ),
                                 ),
                                 trailing: isSelected
@@ -1711,8 +2253,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
             return Container(
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
               ),
               child: Column(
                 children: [
@@ -1721,10 +2264,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     width: 36,
                     height: 4,
                     decoration: BoxDecoration(
-                      color:
-                          isDark
-                              ? const Color(0xFF334155)
-                              : const Color(0xFFCBD5E1),
+                      color: isDark
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFCBD5E1),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -1738,8 +2280,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
-                        color:
-                            isDark ? Colors.white : const Color(0xFF0F172A),
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
                     ),
                   ),
@@ -1789,19 +2330,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                   Container(
                                     padding: const EdgeInsets.all(14),
                                     decoration: BoxDecoration(
-                                      color:
-                                          isDark
-                                              ? const Color(0xFF0F172A)
-                                              : const Color(0xFFF1F5F9),
+                                      color: isDark
+                                          ? const Color(0xFF0F172A)
+                                          : const Color(0xFFF1F5F9),
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
                                       Icons.confirmation_number_outlined,
                                       size: 32,
-                                      color:
-                                          isDark
-                                              ? const Color(0xFF94A3B8)
-                                              : const Color(0xFF94A3B8),
+                                      color: isDark
+                                          ? const Color(0xFF94A3B8)
+                                          : const Color(0xFF94A3B8),
                                     ),
                                   ),
                                   const SizedBox(height: 12),
@@ -1810,10 +2349,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.bold,
-                                      color:
-                                          isDark
-                                              ? Colors.white
-                                              : const Color(0xFF0F172A),
+                                      color: isDark
+                                          ? Colors.white
+                                          : const Color(0xFF0F172A),
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -1822,10 +2360,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color:
-                                          isDark
-                                              ? const Color(0xFF94A3B8)
-                                              : const Color(0xFF64748B),
+                                      color: isDark
+                                          ? const Color(0xFF94A3B8)
+                                          : const Color(0xFF64748B),
                                     ),
                                   ),
                                 ],
@@ -1862,17 +2399,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                 decoration: BoxDecoration(
                                   color: isDisabled
                                       ? (isDark
-                                          ? const Color(0xFF0F172A)
-                                          : const Color(0xFFF8FAFC))
+                                            ? const Color(0xFF0F172A)
+                                            : const Color(0xFFF8FAFC))
                                       : (isDark
-                                          ? const Color(0xFF1E293B)
-                                          : Colors.white),
+                                            ? const Color(0xFF1E293B)
+                                            : Colors.white),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: isDisabled
                                         ? (isDark
-                                            ? const Color(0xFF334155)
-                                            : const Color(0xFFE2E8F0))
+                                              ? const Color(0xFF334155)
+                                              : const Color(0xFFE2E8F0))
                                         : AppColors.primary,
                                   ),
                                 ),
@@ -1882,8 +2419,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                       Icons.confirmation_number_outlined,
                                       color: isDisabled
                                           ? (isDark
-                                              ? const Color(0xFF64748B)
-                                              : const Color(0xFF94A3B8))
+                                                ? const Color(0xFF64748B)
+                                                : const Color(0xFF94A3B8))
                                           : AppColors.primary,
                                     ),
                                     const SizedBox(width: 12),
@@ -1899,11 +2436,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                               fontSize: 14,
                                               color: isDisabled
                                                   ? (isDark
-                                                      ? const Color(0xFF64748B)
-                                                      : const Color(0xFF94A3B8))
+                                                        ? const Color(
+                                                            0xFF64748B,
+                                                          )
+                                                        : const Color(
+                                                            0xFF94A3B8,
+                                                          ))
                                                   : (isDark
-                                                      ? Colors.white
-                                                      : const Color(0xFF0F172A)),
+                                                        ? Colors.white
+                                                        : const Color(
+                                                            0xFF0F172A,
+                                                          )),
                                             ),
                                           ),
                                           const SizedBox(height: 2),
@@ -1915,11 +2458,19 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                               fontSize: 11.5,
                                               color: isDisabled
                                                   ? (isDark
-                                                      ? const Color(0xFF64748B)
-                                                      : const Color(0xFF94A3B8))
+                                                        ? const Color(
+                                                            0xFF64748B,
+                                                          )
+                                                        : const Color(
+                                                            0xFF94A3B8,
+                                                          ))
                                                   : (isDark
-                                                      ? const Color(0xFF94A3B8)
-                                                      : const Color(0xFF64748B)),
+                                                        ? const Color(
+                                                            0xFF94A3B8,
+                                                          )
+                                                        : const Color(
+                                                            0xFF64748B,
+                                                          )),
                                             ),
                                           ),
                                         ],

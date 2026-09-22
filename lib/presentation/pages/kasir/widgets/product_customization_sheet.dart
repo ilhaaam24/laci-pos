@@ -6,6 +6,8 @@ import '../../../../core/style/app_colors.dart';
 import '../../../../core/utils/app_toast.dart';
 import '../../../../domain/entities/product_entity.dart';
 import '../../../../domain/entities/product_variant.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../blocs/cart/cart_bloc.dart';
 
 class ProductCustomizationSheet extends StatefulWidget {
   final Product product;
@@ -103,6 +105,37 @@ class _ProductCustomizationSheetState extends State<ProductCustomizationSheet> {
   double get _unitPrice => _basePrice + _modifiersTotal;
   double get _totalPrice => _unitPrice * _quantity;
 
+  int get _availableStock {
+    if (!widget.product.trackStock) return 999999;
+    if (_selectedVariant != null && _selectedVariant!.stock > 0) {
+      return _selectedVariant!.stock;
+    }
+    return widget.product.stock;
+  }
+
+  int get _alreadyInCart {
+    if (!widget.product.trackStock) return 0;
+    try {
+      final cartState = context.read<CartBloc>().state;
+      return cartState.items
+          .where((i) {
+            if (i.productId != widget.product.id) return false;
+            if (_selectedVariant != null && _selectedVariant!.stock > 0) {
+              return i.selectedVariant?.id == _selectedVariant!.id;
+            }
+            return true;
+          })
+          .fold<int>(0, (sum, i) => sum + i.quantity);
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  int get _remainingStock {
+    final rem = _availableStock - _alreadyInCart;
+    return rem < 0 ? 0 : rem;
+  }
+
   bool get _isValid {
     // If has variants, one must be selected
     if (widget.product.hasVariants && _selectedVariant == null) {
@@ -117,7 +150,23 @@ class _ProductCustomizationSheetState extends State<ProductCustomizationSheet> {
         }
       }
     }
+    if (widget.product.trackStock && _remainingStock <= 0) {
+      return false;
+    }
     return true;
+  }
+
+  void _incrementQuantity() {
+    if (widget.product.trackStock) {
+      if (_quantity >= _remainingStock) {
+        AppToast.showWarning(
+          context,
+          'Maksimal stok tercapai ($_availableStock item${_alreadyInCart > 0 ? ', $_alreadyInCart sudah di keranjang' : ''})',
+        );
+        return;
+      }
+    }
+    setState(() => _quantity++);
   }
 
   void _submit() {
@@ -136,6 +185,16 @@ class _ProductCustomizationSheetState extends State<ProductCustomizationSheet> {
           );
           return;
         }
+      }
+    }
+
+    if (widget.product.trackStock) {
+      if (_quantity > _remainingStock) {
+        AppToast.showWarning(
+          context,
+          'Stok ${widget.product.name} tidak mencukupi (tersedia: $_availableStock, di keranjang: $_alreadyInCart)',
+        );
+        return;
       }
     }
 
@@ -288,14 +347,49 @@ class _ProductCustomizationSheetState extends State<ProductCustomizationSheet> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  _currencyFormat.format(_unitPrice),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _currencyFormat.format(_unitPrice),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    if (widget.product.trackStock)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _remainingStock <= 0
+                              ? (isDark
+                                    ? const Color(0xFF7F1D1D)
+                                    : const Color(0xFFFEE2E2))
+                              : (isDark
+                                    ? const Color(0xFF1E293B)
+                                    : const Color(0xFFE2E8F0)),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          _remainingStock <= 0
+                              ? 'Stok Habis'
+                              : 'Sisa $_remainingStock',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: _remainingStock <= 0
+                                ? const Color(0xFFEF4444)
+                                : (isDark
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF475569)),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),
@@ -667,8 +761,10 @@ class _ProductCustomizationSheetState extends State<ProductCustomizationSheet> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.add, size: 18),
-                  color: iconColor,
-                  onPressed: () => setState(() => _quantity++),
+                  color: (!widget.product.trackStock || _quantity < _remainingStock)
+                      ? iconColor
+                      : disabledIconColor,
+                  onPressed: _incrementQuantity,
                 ),
               ],
             ),
@@ -702,7 +798,9 @@ class _ProductCustomizationSheetState extends State<ProductCustomizationSheet> {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        'Tambah • ${_currencyFormat.format(_totalPrice)}',
+                        widget.product.trackStock && _remainingStock <= 0
+                            ? 'Stok Habis'
+                            : 'Tambah • ${_currencyFormat.format(_totalPrice)}',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,

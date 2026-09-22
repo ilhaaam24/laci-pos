@@ -4,6 +4,7 @@ import '../../../domain/entities/product_variant.dart';
 import '../../../domain/entities/transaction_entity.dart';
 import '../../../domain/entities/product_entity.dart';
 import '../../../domain/entities/customer_entity.dart';
+import '../../../domain/entities/held_order_entity.dart';
 import 'package:uuid/uuid.dart';
 
 // Events
@@ -67,27 +68,77 @@ class SetCartCustomer extends CartEvent {
   List<Object?> get props => [customer];
 }
 
+class LoadHeldOrderIntoCart extends CartEvent {
+  final HeldOrder order;
+  LoadHeldOrderIntoCart(this.order);
+  @override
+  List<Object?> get props => [order];
+}
+
+class SetCartItems extends CartEvent {
+  final List<TransactionItem> items;
+  final Customer? customer;
+  final String? heldOrderId;
+  final String? orderName;
+  final String? notes;
+
+  SetCartItems(
+    this.items, {
+    this.customer,
+    this.heldOrderId,
+    this.orderName,
+    this.notes,
+  });
+
+  @override
+  List<Object?> get props => [items, customer, heldOrderId, orderName, notes];
+}
+
 // State
 class CartState extends Equatable {
   final List<TransactionItem> items;
   final double totalAmount;
   final Customer? customer;
+  final String? heldOrderId;
+  final String? orderName;
+  final String? notes;
 
-  const CartState({this.items = const [], this.totalAmount = 0, this.customer});
+  const CartState({
+    this.items = const [],
+    this.totalAmount = 0,
+    this.customer,
+    this.heldOrderId,
+    this.orderName,
+    this.notes,
+  });
 
   @override
-  List<Object?> get props => [items, totalAmount, customer];
+  List<Object?> get props => [
+    items,
+    totalAmount,
+    customer,
+    heldOrderId,
+    orderName,
+    notes,
+  ];
 
   CartState copyWith({
     List<TransactionItem>? items,
     double? totalAmount,
     Customer? customer,
     bool clearCustomer = false,
+    String? heldOrderId,
+    bool clearHeldOrder = false,
+    String? orderName,
+    String? notes,
   }) {
     return CartState(
       items: items ?? this.items,
       totalAmount: totalAmount ?? this.totalAmount,
       customer: clearCustomer ? null : (customer ?? this.customer),
+      heldOrderId: clearHeldOrder ? null : (heldOrderId ?? this.heldOrderId),
+      orderName: clearHeldOrder ? null : (orderName ?? this.orderName),
+      notes: clearHeldOrder ? null : (notes ?? this.notes),
     );
   }
 }
@@ -101,9 +152,71 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<IncrementQuantity>(_onIncrementQuantity);
     on<ClearCart>(_onClearCart);
     on<SetCartCustomer>(_onSetCartCustomer);
+    on<LoadHeldOrderIntoCart>(_onLoadHeldOrderIntoCart);
+    on<SetCartItems>(_onSetCartItems);
+  }
+
+  void _onLoadHeldOrderIntoCart(
+    LoadHeldOrderIntoCart event,
+    Emitter<CartState> emit,
+  ) {
+    emit(
+      CartState(
+        items: List.from(event.order.items),
+        totalAmount: _calculateTotal(event.order.items),
+        customer: event.order.customer,
+        heldOrderId: event.order.id,
+        orderName: event.order.orderName,
+        notes: event.order.notes,
+      ),
+    );
+  }
+
+  void _onSetCartItems(SetCartItems event, Emitter<CartState> emit) {
+    emit(
+      CartState(
+        items: List.from(event.items),
+        totalAmount: _calculateTotal(event.items),
+        customer: event.customer,
+        heldOrderId: event.heldOrderId,
+        orderName: event.orderName,
+        notes: event.notes,
+      ),
+    );
   }
 
   void _onAddToCart(AddToCart event, Emitter<CartState> emit) {
+    final qtyToAdd = event.quantity > 0 ? event.quantity : 1;
+
+    // Check stock if product tracks stock
+    final int? maxStock;
+    if (event.product.trackStock) {
+      final availableStock =
+          (event.selectedVariant != null && event.selectedVariant!.stock > 0)
+          ? event.selectedVariant!.stock
+          : event.product.stock;
+
+      maxStock = availableStock;
+
+      final currentCartQty = state.items
+          .where((i) {
+            if (i.productId != event.product.id) return false;
+            if (event.selectedVariant != null &&
+                event.selectedVariant!.stock > 0) {
+              return i.selectedVariant?.id == event.selectedVariant!.id;
+            }
+            return true;
+          })
+          .fold<int>(0, (sum, i) => sum + i.quantity);
+
+      if (currentCartQty + qtyToAdd > availableStock) {
+        // Stock limit exceeded, reject addition
+        return;
+      }
+    } else {
+      maxStock = null;
+    }
+
     // Check if an identical item exists in the cart:
     // same product, same variant, same modifiers, same notes
     final existingIndex = state.items.indexWhere((i) {
@@ -125,7 +238,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       (sum, m) => sum + m.price,
     );
     final effectiveUnitPrice = basePrice + modifiersCost;
-    final qtyToAdd = event.quantity > 0 ? event.quantity : 1;
 
     if (existingIndex >= 0) {
       final existingItem = newItems[existingIndex];
@@ -133,6 +245,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       newItems[existingIndex] = existingItem.copyWith(
         quantity: newQty,
         subtotal: newQty * existingItem.unitPrice,
+        maxStock: maxStock,
       );
     } else {
       newItems.add(
@@ -147,7 +260,10 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           businessId: event.product.businessId,
           selectedVariant: event.selectedVariant,
           selectedModifiers: event.selectedModifiers,
-          notes: event.notes?.trim().isEmpty == true ? null : event.notes?.trim(),
+          notes: event.notes?.trim().isEmpty == true
+              ? null
+              : event.notes?.trim(),
+          maxStock: maxStock,
         ),
       );
     }
@@ -199,6 +315,24 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
     List<TransactionItem> newItems = List.from(state.items);
     final item = newItems[index];
+
+    if (item.maxStock != null) {
+      final currentTotalQty = newItems
+          .where((i) {
+            if (i.productId != item.productId) return false;
+            if (item.selectedVariant != null &&
+                item.selectedVariant!.stock > 0) {
+              return i.selectedVariant?.id == item.selectedVariant!.id;
+            }
+            return true;
+          })
+          .fold<int>(0, (sum, i) => sum + i.quantity);
+
+      if (currentTotalQty >= item.maxStock!) {
+        // Cannot exceed max stock
+        return;
+      }
+    }
 
     newItems[index] = item.copyWith(
       quantity: item.quantity + 1,

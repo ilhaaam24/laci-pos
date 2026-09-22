@@ -24,6 +24,7 @@ class _PromoPageState extends State<PromoPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final currencyFormatter = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',
@@ -31,26 +32,35 @@ class _PromoPageState extends State<PromoPage> {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: isDark
+          ? const Color(0xFF0F172A)
+          : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF0F172A)),
+          icon: Icon(
+            Icons.arrow_back,
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Promo & Diskon',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF0F172A),
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
           ),
         ),
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -102,39 +112,48 @@ class _PromoPageState extends State<PromoPage> {
   }
 
   Widget _buildPromoCard(PromoEntity promo, NumberFormat formatter) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bool isExpired =
         promo.endDate != null && promo.endDate!.isBefore(DateTime.now());
     final bool isFuture =
         promo.startDate != null && promo.startDate!.isAfter(DateTime.now());
 
     String statusText = 'Aktif';
-    Color statusBg = AppColors.primary;
-    Color statusColor = AppColors.white;
-    Color statusBorder = const Color(0xFFA7F3D0);
+    Color statusBg = isDark
+        ? const Color(0xFF064E3B).withValues(alpha: 0.4)
+        : AppColors.primary;
+    Color statusColor = isDark ? const Color(0xFF34D399) : AppColors.white;
+    Color statusBorder = isDark ? const Color(0xFF059669) : const Color(0xFFA7F3D0);
 
     if (!promo.isActive) {
       statusText = 'Nonaktif';
-      statusBg = const Color(0xFFF1F5F9);
-      statusColor = const Color(0xFF64748B);
-      statusBorder = const Color(0xFFE2E8F0);
+      statusBg = isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9);
+      statusColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+      statusBorder = isDark ? const Color(0xFF475569) : const Color(0xFFE2E8F0);
     } else if (isExpired) {
       statusText = 'Berakhir';
-      statusBg = const Color(0xFFFEF2F2);
-      statusColor = const Color(0xFFDC2626);
-      statusBorder = const Color(0xFFFECACA);
+      statusBg = isDark
+          ? const Color(0xFF7F1D1D).withValues(alpha: 0.3)
+          : const Color(0xFFFEF2F2);
+      statusColor = isDark ? const Color(0xFFF87171) : const Color(0xFFDC2626);
+      statusBorder = isDark ? const Color(0xFF991B1B) : const Color(0xFFFECACA);
     } else if (isFuture) {
       statusText = 'Akan Datang';
-      statusBg = const Color(0xFFFFFBEB);
-      statusColor = const Color(0xFFD97706);
-      statusBorder = const Color(0xFFFDE68A);
+      statusBg = isDark
+          ? const Color(0xFF78350F).withValues(alpha: 0.3)
+          : const Color(0xFFFFFBEB);
+      statusColor = isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706);
+      statusBorder = isDark ? const Color(0xFF92400E) : const Color(0xFFFDE68A);
     }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: InkWell(
         onTap: () {
@@ -160,10 +179,10 @@ class _PromoPageState extends State<PromoPage> {
                       children: [
                         Text(
                           promo.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
-                            color: Color(0xFF0F172A),
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -201,27 +220,27 @@ class _PromoPageState extends State<PromoPage> {
                   ),
                 ],
               ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Divider(
                   height: 1,
                   thickness: 1,
-                  color: Color(0xFFF1F5F9),
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
                 ),
               ),
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.shopping_bag_outlined,
                     size: 14,
-                    color: Color(0xFF64748B),
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                   ),
                   const SizedBox(width: 6),
                   Text(
                     'Min. Belanja: ${promo.minPurchase > 0 ? formatter.format(promo.minPurchase) : 'Tanpa Minimum'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF64748B),
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                     ),
                   ),
                 ],
@@ -229,17 +248,17 @@ class _PromoPageState extends State<PromoPage> {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.calendar_today_outlined,
                     size: 14,
-                    color: Color(0xFF64748B),
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                   ),
                   const SizedBox(width: 6),
                   Text(
                     'Periode: ${_formatDateRange(promo)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF64748B),
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                     ),
                   ),
                 ],
@@ -275,6 +294,7 @@ class _PromoPageState extends State<PromoPage> {
   }
 
   Widget _buildEmptyState() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -285,30 +305,35 @@ class _PromoPageState extends State<PromoPage> {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.confirmation_number_outlined,
                 size: 34,
-                color: Color(0xFF94A3B8),
+                color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Belum ada promo',
               style: TextStyle(
-                color: Color(0xFF0F172A),
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Buat kupon promo atau diskon menarik untuk meningkatkan penjualan',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+              style: TextStyle(
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                fontSize: 13,
+              ),
             ),
           ],
         ),

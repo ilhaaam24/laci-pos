@@ -15,8 +15,13 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
   }
 
   void _onCalculatePayment(CalculatePayment event, Emitter<PaymentState> emit) {
-    final taxAmount = event.subtotal * (event.taxPercent / 100);
-    final totalAmount = event.subtotal + taxAmount - event.discountAmount;
+    final netSubtotal = event.subtotal - event.discountAmount > 0
+        ? event.subtotal - event.discountAmount
+        : 0.0;
+    final taxAmount = netSubtotal * (event.taxPercent / 100);
+    final serviceAmount = netSubtotal * (event.serviceChargePercent / 100);
+    final totalAmount =
+        event.subtotal - event.discountAmount + taxAmount + serviceAmount;
 
     emit(
       state.copyWith(

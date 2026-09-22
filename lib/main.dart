@@ -17,11 +17,15 @@ import 'presentation/blocs/auth/auth_bloc.dart';
 import 'presentation/blocs/report/report_bloc.dart';
 import 'presentation/blocs/promo/promo_bloc.dart';
 import 'presentation/blocs/users/users_bloc.dart';
+import 'presentation/blocs/shift/shift_bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'core/services/background_service.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/printer_service.dart';
+import 'core/services/receipt_settings_service.dart';
+import 'core/services/held_order_service.dart';
 import 'presentation/pages/auth/auth_wrapper.dart';
 
 void main() async {
@@ -39,6 +43,9 @@ void main() async {
   );
 
   await initializeDependencies();
+  await PrinterService().init();
+  await ReceiptSettingsService().init();
+  await HeldOrderService().init();
 
   if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
     await BackgroundService.init();
@@ -76,6 +83,7 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(create: (_) => getIt<PromoBloc>()..add(LoadPromos())),
         BlocProvider(create: (_) => getIt<UsersBloc>()),
+        BlocProvider(create: (_) => getIt<ShiftBloc>()..add(CheckActiveShift())),
       ],
       child: MaterialApp(
         title: 'Laci POS',

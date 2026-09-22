@@ -23,7 +23,11 @@ import '../customer/customers_page.dart';
 import '../promo/promo_page.dart';
 import 'business_info_page.dart';
 import 'printer_page.dart';
+import 'receipt_settings_page.dart';
 import 'users_management_page.dart';
+import 'shift_history_page.dart';
+import 'help_page.dart';
+import 'terms_and_conditions_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final VoidCallback? onOpenDrawer;
@@ -62,6 +66,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, authState) {
         final role = (authState is Authenticated)
@@ -74,13 +80,15 @@ class _SettingsPageState extends State<SettingsPage> {
         final canManageUsers = role.canManageUsers || role.isOwner;
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF8FAFC),
+          backgroundColor: isDark
+              ? const Color(0xFF0F172A)
+              : const Color(0xFFF8FAFC),
           appBar: AppBar(
             leading: MediaQuery.of(context).size.width >= 720
                 ? IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.menu_rounded,
-                      color: Color(0xFF0F172A),
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
                     ),
                     tooltip: 'Menu Navigasi',
                     onPressed: () {
@@ -94,20 +102,26 @@ class _SettingsPageState extends State<SettingsPage> {
                     },
                   )
                 : null,
-            backgroundColor: Colors.white,
+            backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
             elevation: 0,
             scrolledUnderElevation: 0,
-            title: const Text(
+            title: Text(
               'Pengaturan',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF0F172A),
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
               ),
             ),
-            bottom: const PreferredSize(
-              preferredSize: Size.fromHeight(1),
-              child: Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1),
+              child: Divider(
+                height: 1,
+                thickness: 1,
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
+              ),
             ),
           ),
           body: ListView(
@@ -182,6 +196,18 @@ class _SettingsPageState extends State<SettingsPage> {
                       );
                     },
                   ),
+                  _buildDivider(),
+                  _buildTile(
+                    icon: "assets/icons/chasier.svg",
+                    title: 'Riwayat Shift Kasir',
+                    subtitle: 'Laporan buka/tutup kasir & selisih uang laci',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ShiftHistoryPage(),
+                      ),
+                    ),
+                  ),
                 ]),
                 const SizedBox(height: 20),
               ],
@@ -196,6 +222,18 @@ class _SettingsPageState extends State<SettingsPage> {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const PrinterPage()),
+                  ),
+                ),
+                _buildDivider(),
+                _buildTile(
+                  icon: "assets/icons/struk.svg",
+                  title: 'Kustomisasi Struk',
+                  subtitle: 'Logo toko, header, footer, & opsi tampilan nota',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ReceiptSettingsPage(),
+                    ),
                   ),
                 ),
                 if (canManageStore) ...[
@@ -278,9 +316,39 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 _buildDivider(),
                 _buildTile(
+                  icon: "assets/icons/help.svg",
+                  iconColor: const Color(0xFF0284C7),
+                  iconBgColor: isDark
+                      ? const Color(0xFF0369A1).withValues(alpha: 0.25)
+                      : const Color(0xFFE0F2FE),
+                  title: 'Pusat Bantuan & Kendala',
+                  subtitle: 'Solusi kendala aplikasi & kontak tim teknis',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HelpPage()),
+                  ),
+                ),
+                _buildDivider(),
+                _buildTile(
+                  icon: "assets/icons/term_condition.svg",
+                  iconColor: const Color(0xFF8B5CF6),
+                  iconBgColor: isDark
+                      ? const Color(0xFF6D28D9).withValues(alpha: 0.25)
+                      : const Color(0xFFEDE9FE),
+                  title: 'Syarat & Ketentuan',
+                  subtitle: 'Ketentuan penggunaan layanan Laci POS',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const TermsAndConditionsPage(),
+                    ),
+                  ),
+                ),
+                _buildDivider(),
+                _buildTile(
                   icon: "assets/icons/policy.svg",
                   title: 'Kebijakan Privasi',
-                  subtitle: 'Syarat & ketentuan penggunaan Laci POS',
+                  subtitle: 'Kebijakan privasi & perlindungan data pengguna',
                   onTap: () async {
                     final url = Uri.parse(
                       'https://sites.google.com/view/lacipos-privacypolicy',
@@ -296,17 +364,17 @@ class _SettingsPageState extends State<SettingsPage> {
               ]),
               const SizedBox(height: 16),
 
-              // 5. Logout Button (Clean, flat, zero shadow)
               _buildLogoutButton(),
               const SizedBox(height: 16),
 
-              // Version Info
-              const Center(
+              Center(
                 child: Text(
-                  'Laci POS v2.0',
+                  'Laci POS v1.0.0',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF94A3B8),
+                    color: isDark
+                        ? const Color(0xFF64748B)
+                        : const Color(0xFF94A3B8),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -320,6 +388,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   // Profile Card: Real Store & User Info (Clean flat card, no shadow)
   Widget _buildProfileCard(AuthState authState) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return BlocBuilder<BusinessBloc, BusinessState>(
       builder: (context, bState) {
         final businessInfo = bState.businessInfo;
@@ -346,9 +415,11 @@ class _SettingsPageState extends State<SettingsPage> {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
           ),
           child: Row(
             children: [
@@ -358,7 +429,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 height: 48,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF334155)
+                        : const Color(0xFFE2E8F0),
+                  ),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(11),
@@ -378,8 +453,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           errorWidget: (context, url, error) => Center(
                             child: Text(
                               initials,
-                              style: const TextStyle(
-                                color: Color(0xFF0F172A),
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0F172A),
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -401,10 +478,10 @@ class _SettingsPageState extends State<SettingsPage> {
                   children: [
                     Text(
                       businessName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F172A),
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -415,9 +492,11 @@ class _SettingsPageState extends State<SettingsPage> {
                         Flexible(
                           child: Text(
                             '$userName ($userEmail)',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12.5,
-                              color: Color(0xFF64748B),
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -455,14 +534,15 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildSectionHeader(String title) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF64748B),
+          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
           letterSpacing: 0.6,
         ),
       ),
@@ -470,40 +550,72 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildCardGroup(List<Widget> children) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: Column(children: children),
     );
   }
 
   Widget _buildDivider() {
-    return const Divider(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Divider(
       height: 1,
       thickness: 1,
       indent: 54,
-      color: Color(0xFFF1F5F9),
+      color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
     );
   }
 
   Widget _buildTile({
-    required String icon,
+    String? icon,
+    IconData? iconData,
+    Color? iconColor,
+    Color? iconBgColor,
     required String title,
     required String subtitle,
     String? trailingText,
     Widget? customTrailing,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Widget leadingWidget = iconData != null
+        ? Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color:
+                  iconBgColor ??
+                  (isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9)),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Icon(
+              iconData,
+              size: 20,
+              color:
+                  iconColor ??
+                  (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+            ),
+          )
+        : SvgPicture.asset(
+            icon ?? "assets/icons/setting.svg",
+            width: 34,
+            height: 34,
+          );
+
     return InkWell(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           children: [
-            SvgPicture.asset(icon, width: 34, height: 34),
+            leadingWidget,
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -511,18 +623,20 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF0F172A),
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF64748B),
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -536,17 +650,21 @@ class _SettingsPageState extends State<SettingsPage> {
               if (trailingText != null) ...[
                 Text(
                   trailingText,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF94A3B8),
+                    color: isDark
+                        ? const Color(0xFF64748B)
+                        : const Color(0xFF94A3B8),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(width: 4),
               ],
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
-                color: Color(0xFFCBD5E1),
+                color: isDark
+                    ? const Color(0xFF475569)
+                    : const Color(0xFFCBD5E1),
                 size: 20,
               ),
             ],
@@ -588,40 +706,54 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showLogoutDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFE2E8F0)),
+          side: BorderSide(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
         elevation: 0,
         title: Text(
           'Keluar dari Akun',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 17,
-            color: Colors.black87,
+            color: isDark ? Colors.white : Colors.black87,
           ),
         ),
-        content: const Text(
+        content: Text(
           'Apakah Anda yakin ingin keluar dari akun ini? Semua perubahan offline telah diamankan.',
-          style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+          style: TextStyle(
+            fontSize: 14,
+            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+          ),
         ),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
           OutlinedButton(
             onPressed: () => Navigator.pop(dialogContext),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFFE2E8F0)),
+              side: BorderSide(
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text(
+            child: Text(
               'Batal',
-              style: TextStyle(color: Color(0xFF64748B)),
+              style: TextStyle(
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
+              ),
             ),
           ),
           ElevatedButton(
