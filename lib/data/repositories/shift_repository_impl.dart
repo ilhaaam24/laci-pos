@@ -240,7 +240,7 @@ class ShiftRepositoryImpl implements ShiftRepository {
     final difference = summary.calculateDifference(actualCash);
     final now = DateTime.now();
 
-    final shiftModel = (summary.shift as ShiftModel).copyWith(
+    final shiftModel = ShiftModel.fromEntity(summary.shift).copyWith(
       endTime: now,
       endCashExpected: expectedCash,
       endCashActual: actualCash,

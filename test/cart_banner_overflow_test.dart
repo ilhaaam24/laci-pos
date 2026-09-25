@@ -15,10 +15,7 @@ Widget _buildTestFloatingCartBanner({
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final screenWidth = MediaQuery.of(context).size.width;
 
-  final totalQuantity = state.items.fold(
-    0,
-    (sum, item) => sum + item.quantity,
-  );
+  final totalQuantity = state.items.fold(0, (sum, item) => sum + item.quantity);
 
   return Positioned(
     bottom: 12,
@@ -119,13 +116,6 @@ Widget _buildTestFloatingCartBanner({
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.pause_circle_outline_rounded,
-                      color: isDark
-                          ? const Color(0xFFFCD34D)
-                          : const Color(0xFFD97706),
-                      size: 17,
-                    ),
                     if (screenWidth >= 360) ...[
                       const SizedBox(width: 4),
                       Text(
@@ -202,13 +192,12 @@ void main() {
       subtotal: 15000000,
     );
 
-    final cartState = CartState(
-      items: [testItem],
-      totalAmount: 15000000,
-    );
+    final cartState = CartState(items: [testItem], totalAmount: 15000000);
 
     for (final width in [320.0, 360.0, 375.0, 390.0, 412.0]) {
-      testWidgets('Renders without overflow on width: $width dp', (tester) async {
+      testWidgets('Renders without overflow on width: $width dp', (
+        tester,
+      ) async {
         tester.view.physicalSize = Size(width, 800);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
@@ -235,8 +224,7 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        // Verify "Tahan" icon is always present
-        expect(find.byIcon(Icons.pause_circle_outline_rounded), findsOneWidget);
+        // Verify "Tahan" button
         if (width >= 360) {
           expect(find.text('Tahan'), findsOneWidget);
         }

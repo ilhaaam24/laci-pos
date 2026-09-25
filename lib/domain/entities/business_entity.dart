@@ -16,6 +16,9 @@ class BusinessInfo extends Equatable {
   final bool isServiceChargeEnabled;
   final double serviceChargeRate;
   final bool isPriceInclusiveTax;
+  final String subscriptionTier;
+  final DateTime? subscriptionExpiresAt;
+  final String? subscriptionPlan;
 
   const BusinessInfo({
     required this.id,
@@ -33,7 +36,27 @@ class BusinessInfo extends Equatable {
     this.isServiceChargeEnabled = false,
     this.serviceChargeRate = 0.0,
     this.isPriceInclusiveTax = false,
+    this.subscriptionTier = 'free',
+    this.subscriptionExpiresAt,
+    this.subscriptionPlan,
   });
+
+  /// True if the business has an active Pro subscription
+  bool get isPro {
+    if (subscriptionTier.toLowerCase() != 'pro') return false;
+    if (subscriptionExpiresAt == null) return false;
+    return subscriptionExpiresAt!.isAfter(DateTime.now());
+  }
+
+  /// True if the business is on the free tier
+  bool get isFree => !isPro;
+
+  /// Remaining days of Pro subscription
+  int get remainingProDays {
+    if (!isPro || subscriptionExpiresAt == null) return 0;
+    final diff = subscriptionExpiresAt!.difference(DateTime.now()).inDays;
+    return diff < 0 ? 0 : diff + 1;
+  }
 
   BusinessInfo copyWith({
     String? id,
@@ -51,6 +74,9 @@ class BusinessInfo extends Equatable {
     bool? isServiceChargeEnabled,
     double? serviceChargeRate,
     bool? isPriceInclusiveTax,
+    String? subscriptionTier,
+    DateTime? subscriptionExpiresAt,
+    String? subscriptionPlan,
   }) {
     return BusinessInfo(
       id: id ?? this.id,
@@ -69,6 +95,10 @@ class BusinessInfo extends Equatable {
           isServiceChargeEnabled ?? this.isServiceChargeEnabled,
       serviceChargeRate: serviceChargeRate ?? this.serviceChargeRate,
       isPriceInclusiveTax: isPriceInclusiveTax ?? this.isPriceInclusiveTax,
+      subscriptionTier: subscriptionTier ?? this.subscriptionTier,
+      subscriptionExpiresAt:
+          subscriptionExpiresAt ?? this.subscriptionExpiresAt,
+      subscriptionPlan: subscriptionPlan ?? this.subscriptionPlan,
     );
   }
 
@@ -89,5 +119,8 @@ class BusinessInfo extends Equatable {
     isServiceChargeEnabled,
     serviceChargeRate,
     isPriceInclusiveTax,
+    subscriptionTier,
+    subscriptionExpiresAt,
+    subscriptionPlan,
   ];
 }

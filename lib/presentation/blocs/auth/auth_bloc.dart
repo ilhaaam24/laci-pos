@@ -37,6 +37,8 @@ class SignUpRequested extends AuthEvent {
 
 class SignOutRequested extends AuthEvent {}
 
+class DeleteAccountRequested extends AuthEvent {}
+
 class SendEmailVerificationRequested extends AuthEvent {}
 
 class CheckEmailVerificationRequested extends AuthEvent {}
@@ -84,6 +86,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<GoogleSignInRequested>(_onGoogleSignInRequested);
     on<SignUpRequested>(_onSignUpRequested);
     on<SignOutRequested>(_onSignOutRequested);
+    on<DeleteAccountRequested>(_onDeleteAccountRequested);
     on<SendEmailVerificationRequested>(_onSendEmailVerificationRequested);
     on<CheckEmailVerificationRequested>(_onCheckEmailVerificationRequested);
     on<_AuthStatusChanged>(_onAuthStatusChanged);
@@ -193,6 +196,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     await localDatabase.clearAllData();
     sessionService.setUser(null);
     emit(Unauthenticated());
+  }
+
+  Future<void> _onDeleteAccountRequested(
+    DeleteAccountRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    final result = await repository.deleteAccount();
+    await result.fold(
+      (error) async {
+        emit(AuthError(error));
+      },
+      (_) async {
+        await localDatabase.clearAllData();
+        sessionService.setUser(null);
+        emit(Unauthenticated());
+      },
+    );
   }
 
   Future<void> _onSendEmailVerificationRequested(

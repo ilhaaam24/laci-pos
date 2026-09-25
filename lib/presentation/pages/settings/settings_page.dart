@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/di/injection.dart';
 import '../../../core/services/sync_service.dart';
 import '../../../core/style/app_colors.dart';
+import '../../../core/utils/app_toast.dart';
 import '../../../domain/entities/user_entity.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/cart/cart_bloc.dart';
@@ -28,6 +29,12 @@ import 'users_management_page.dart';
 import 'shift_history_page.dart';
 import 'help_page.dart';
 import 'terms_and_conditions_page.dart';
+import '../../../core/services/tutorial_service.dart';
+import '../kasir/kasir_page.dart';
+import '../main_page.dart';
+import '../../widgets/upgrade_pro_sheet.dart';
+import '../../widgets/pro_badge.dart';
+import '../../widgets/voucher_activation_dialog.dart';
 
 class SettingsPage extends StatefulWidget {
   final VoidCallback? onOpenDrawer;
@@ -68,7 +75,12 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return BlocBuilder<AuthBloc, AuthState>(
+    return BlocConsumer<AuthBloc, AuthState>(
+      listener: (context, authState) {
+        if (authState is AuthError) {
+          AppToast.showError(context, authState.message);
+        }
+      },
       builder: (context, authState) {
         final role = (authState is Authenticated)
             ? authState.user.role
@@ -127,11 +139,16 @@ class _SettingsPageState extends State<SettingsPage> {
           body: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             children: [
-              // 1. Business & User Profile Card
               _buildProfileCard(authState),
+              const SizedBox(height: 14),
+
+              BlocBuilder<BusinessBloc, BusinessState>(
+                builder: (context, bState) {
+                  return _buildProMembershipCard(context, bState, isDark);
+                },
+              ),
               const SizedBox(height: 20),
 
-              // 2. Section: Manajemen Toko (Only if authorized)
               if (canManageData) ...[
                 _buildSectionHeader('MANAJEMEN TOKO'),
                 _buildCardGroup([
@@ -316,6 +333,23 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 _buildDivider(),
                 _buildTile(
+                  icon: "assets/icons/panduan.svg",
+                  iconColor: AppColors.primary,
+                  iconBgColor: isDark
+                      ? AppColors.primary.withValues(alpha: 0.25)
+                      : const Color(0xFFCCFBF1),
+                  title: 'Panduan Aplikasi',
+                  subtitle: 'Mulai tur panduan langkah kasir & POS',
+                  onTap: () async {
+                    await TutorialService().resetPosTutorial();
+                    MainPage.switchToKasir();
+                    Future.delayed(const Duration(milliseconds: 350), () {
+                      KasirPage.startTutorial(force: true);
+                    });
+                  },
+                ),
+                _buildDivider(),
+                _buildTile(
                   icon: "assets/icons/help.svg",
                   iconColor: const Color(0xFF0284C7),
                   iconBgColor: isDark
@@ -360,6 +394,29 @@ class _SettingsPageState extends State<SettingsPage> {
                       );
                     }
                   },
+                ),
+                _buildDivider(),
+                _buildTile(
+                  icon: "assets/icons/aktivasi_lisensi.svg",
+                  iconColor: const Color(0xFFF59E0B),
+                  iconBgColor: isDark
+                      ? const Color(0xFFF59E0B).withValues(alpha: 0.25)
+                      : const Color(0xFFFEF3C7),
+                  title: 'Aktivasi Lisensi',
+                  subtitle: 'Masukkan kode voucher untuk aktifkan status Pro',
+                  customTrailing: const ProBadge(),
+                  onTap: () => showVoucherActivationDialog(context),
+                ),
+                _buildDivider(),
+                _buildTile(
+                  icon: "assets/icons/delete_account.svg",
+                  iconColor: const Color(0xFFEF4444),
+                  iconBgColor: isDark
+                      ? const Color(0xFFEF4444).withValues(alpha: 0.15)
+                      : const Color(0xFFFEF2F2),
+                  title: 'Hapus Akun',
+                  subtitle: 'Hapus akun dan seluruh data toko secara permanen',
+                  onTap: () => _showDeleteAccountDialog(context),
                 ),
               ]),
               const SizedBox(height: 16),
@@ -533,6 +590,195 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Widget _buildProMembershipCard(
+    BuildContext context,
+    BusinessState bState,
+    bool isDark,
+  ) {
+    final businessInfo = bState.businessInfo;
+    final isPro = businessInfo?.isPro ?? false;
+
+    if (isPro) {
+      final remainingDays = businessInfo?.remainingProDays ?? 0;
+      final planLabel = businessInfo?.subscriptionPlan == 'yearly'
+          ? 'Paket Tahunan'
+          : businessInfo?.subscriptionPlan == 'monthly'
+          ? 'Paket Bulanan'
+          : 'Lisensi Pro';
+
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: const Color(0xFFF59E0B).withValues(alpha: 0.6),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.workspace_premium_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'Laci POS Pro Aktif',
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const ProBadge(),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$planLabel • Sisa masa aktif: $remainingDays hari',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              icon: const Icon(Icons.info_outline_rounded, size: 20),
+              color: const Color(0xFFD97706),
+              tooltip: 'Info Langganan',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              onPressed: () => showUpgradeProSheet(context),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Free Tier Upgrade Card
+    return InkWell(
+      onTap: () => showUpgradeProSheet(context),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+            width: 1.2,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: SvgPicture.asset("assets/icons/premium.svg", height: 32),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      const Flexible(
+                        child: Text(
+                          'Upgrade ke Laci POS Pro',
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  const Text(
+                    'Akses multi-kasir, produk unlimited, dan laporan laba kotor',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.white,
+                      height: 1.25,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF59E0B),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'Lihat Paket',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSectionHeader(String title) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
@@ -692,7 +938,7 @@ class _SettingsPageState extends State<SettingsPage> {
             Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 20),
             SizedBox(width: 8),
             Text(
-              'Keluar dari Akun',
+              'Keluar',
               style: TextStyle(
                 color: Color(0xFFDC2626),
                 fontWeight: FontWeight.bold,
@@ -780,6 +1026,165 @@ class _SettingsPageState extends State<SettingsPage> {
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
+        ),
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        elevation: 0,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                'Hapus Akun & Data',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tindakan ini permanen dan tidak dapat dibatalkan. Menghapus akun akan:',
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark
+                    ? const Color(0xFFCBD5E1)
+                    : const Color(0xFF334155),
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 10),
+            _buildDeleteBullet('Profil akun dan kredensial login Anda', isDark),
+            _buildDeleteBullet(
+              'Seluruh data produk, kategori, dan pelanggan',
+              isDark,
+            ),
+            _buildDeleteBullet(
+              'Seluruh riwayat transaksi & mutasi stok toko',
+              isDark,
+            ),
+            _buildDeleteBullet(
+              'Semua status lisensi Pro yang terhubung',
+              isDark,
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.3),
+                ),
+              ),
+              child: const Text(
+                'Semua data akan dihapus permanen dari server dan perangkat ini.',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFDC2626),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              'Batal',
+              style: TextStyle(
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context.read<CartBloc>().add(ClearCart());
+              context.read<ProductBloc>().add(ResetProducts());
+              context.read<CategoryBloc>().add(ResetCategories());
+              context.read<CustomerBloc>().add(ResetCustomers());
+              context.read<TransactionBloc>().add(ResetTransactions());
+              context.read<BusinessBloc>().add(ResetBusinessInfo());
+              context.read<AuthBloc>().add(DeleteAccountRequested());
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Hapus Permanen',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeleteBullet(String text, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '• ',
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
+                height: 1.25,
               ),
             ),
           ),

@@ -163,7 +163,9 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -184,9 +186,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
                 ),
                 title: Text(
                   'Ambil dari Kamera',
-                  style: TextStyle(
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
                 ),
                 onTap: () async {
                   Navigator.pop(sheetContext);
@@ -204,9 +204,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
                 ),
                 title: Text(
                   'Pilih dari Galeri',
-                  style: TextStyle(
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
                 ),
                 onTap: () async {
                   Navigator.pop(sheetContext);
@@ -291,6 +289,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.width >= 720;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
@@ -334,7 +333,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
                 onTap: (_isUploading || _isSaving) ? null : _handleImageUpload,
                 child: Container(
                   width: double.infinity,
-                  height: 200,
+                  height: isTablet ? 400 : 200,
                   decoration: BoxDecoration(
                     color: cardColor,
                     borderRadius: BorderRadius.circular(16),
@@ -364,7 +363,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
                               child: CachedNetworkImage(
                                 imageUrl: _imageUrl!,
                                 width: double.infinity,
-                                height: 200,
+                                height: isTablet ? 400 : 200,
                                 fit: BoxFit.cover,
                                 placeholder: (context, url) => const Center(
                                   child: CircularProgressIndicator(
@@ -650,7 +649,8 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
                     ),
                     Switch(
                       value: _trackStock,
-                      activeThumbColor: AppColors.primary,
+                      activeThumbColor: AppColors.white,
+                      activeTrackColor: AppColors.primary,
                       onChanged: (val) {
                         setState(() => _trackStock = val);
                       },
@@ -677,7 +677,8 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
                                 hint: '0',
                                 prefixIcon: Icons.inventory_2_outlined,
                               ),
-                              validator: (v) => _trackStock && (v == null || v.isEmpty)
+                              validator: (v) =>
+                                  _trackStock && (v == null || v.isEmpty)
                                   ? 'Isi jumlah stok'
                                   : null,
                             ),
@@ -701,7 +702,8 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
                                 hint: '5',
                                 prefixIcon: Icons.notifications_active_outlined,
                               ),
-                              validator: (v) => _trackStock && (v == null || v.isEmpty)
+                              validator: (v) =>
+                                  _trackStock && (v == null || v.isEmpty)
                                   ? 'Isi batas stok'
                                   : null,
                             ),

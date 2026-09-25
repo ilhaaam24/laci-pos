@@ -98,6 +98,36 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<String, void>> deleteAccount() async {
+    try {
+      final user = dataSource.getCurrentUser();
+      final uid = user?.uid;
+      // 1. Delete user profile from Firestore if uid exists
+      if (uid != null) {
+        try {
+          await userDataSource.deleteUser(uid);
+        } catch (e) {
+          log('Error deleting user profile from Firestore during deleteAccount: $e');
+        }
+      }
+      // 2. Delete user authentication in Firebase Auth
+      await dataSource.deleteAccount();
+      return const Right(null);
+    } on FirebaseAuthException catch (e) {
+      log('FirebaseAuthException during deleteAccount: [${e.code}] ${e.message}');
+      if (e.code == 'requires-recent-login') {
+        return const Left(
+          'Demi keamanan akun, Anda harus keluar dan masuk kembali sebelum dapat menghapus akun.',
+        );
+      }
+      return Left(_getFirebaseAuthErrorMessage(e));
+    } catch (e) {
+      log('Exception during deleteAccount: $e');
+      return Left(e.toString());
+    }
+  }
+
+  @override
   Future<Either<String, void>> sendEmailVerification() async {
     try {
       await dataSource.sendEmailVerification();

@@ -1,8 +1,11 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../blocs/product/product_bloc.dart';
 import '../../blocs/category/category_bloc.dart';
 import '../../blocs/cart/cart_bloc.dart';
@@ -11,13 +14,13 @@ import '../../blocs/business/business_bloc.dart';
 import '../../blocs/customer/customer_bloc.dart';
 import '../../blocs/promo/promo_bloc.dart';
 import '../../blocs/shift/shift_bloc.dart';
+import '../../../domain/entities/shift_entity.dart';
 import '../../../domain/entities/product_entity.dart';
 import '../../../domain/entities/category_entity.dart';
 import '../../../domain/entities/customer_entity.dart';
 import '../../../domain/entities/promo_entity.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
-import '../../widgets/barcode_scanner_page.dart';
 import '../checkout/checkout_page.dart';
 import '../customer/add_edit_customer_page.dart';
 import 'widgets/product_customization_sheet.dart';
@@ -26,28 +29,65 @@ import 'widgets/shift_control_sheet.dart';
 import 'widgets/hold_order_dialog.dart';
 import 'widgets/held_orders_sheet.dart';
 import '../../../core/services/held_order_service.dart';
+import '../../../core/di/injection.dart';
+import '../../../core/services/staff_auth_service.dart';
+import '../../../core/services/tutorial_service.dart';
+import '../../../domain/entities/user_entity.dart';
+import 'widgets/staff_pin_dialog.dart';
+import 'widgets/close_shift_dialog.dart';
+import 'widgets/pos_tutorial.dart';
 
 class KasirPage extends StatefulWidget {
   final VoidCallback? onOpenOrders;
   final VoidCallback? onOpenDrawer;
+  final GlobalKey? ordersTabKey;
 
-  const KasirPage({super.key, this.onOpenOrders, this.onOpenDrawer});
+  static final GlobalKey<KasirPageState> globalKey =
+      GlobalKey<KasirPageState>();
+
+  const KasirPage({
+    super.key,
+    this.onOpenOrders,
+    this.onOpenDrawer,
+    this.ordersTabKey,
+  });
+
+  static void startTutorial({bool force = true}) {
+    globalKey.currentState?.showTutorial(force: force);
+  }
 
   @override
-  State<KasirPage> createState() => _KasirPageState();
+  State<KasirPage> createState() => KasirPageState();
 }
 
-class _KasirPageState extends State<KasirPage> {
+class KasirPageState extends State<KasirPage> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
   String _selectedCategoryId = 'all';
   bool _isGridView = true;
 
+  // Coach mark tutorial keys
+  final GlobalKey _shiftBadgeKey = GlobalKey();
+  final GlobalKey _staffSwitchBadgeKey = GlobalKey();
+  final GlobalKey _searchBarKey = GlobalKey();
+  final GlobalKey _categoryBarKey = GlobalKey();
+  final GlobalKey _productCatalogKey = GlobalKey();
+  final GlobalKey _tabletCartPanelKey = GlobalKey();
+
   // Tablet POS state
   String _orderType = 'Dine In'; // 'Dine In' | 'Take Away'
   String? _tableNumber;
   PromoEntity? _selectedPromo;
+
+  // In-place Barcode Scanner Mode state
+  bool _isScanMode = false;
+  MobileScannerController? _embeddedScannerController;
+  bool _isScannerTorchOn = false;
+  DateTime? _lastScannedTime;
+  String? _lastScannedBarcode;
+  String? _lastScannedProductName;
+  bool _lastScanSuccess = false;
 
   @override
   void initState() {
@@ -61,13 +101,127 @@ class _KasirPageState extends State<KasirPage> {
     if (bState.businessInfo == null) {
       context.read<BusinessBloc>().add(LoadBusinessInfo());
     }
+
+    // Auto-trigger coach mark tutorial on fresh installation
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final hasSeen = await TutorialService().hasSeenPosTutorial();
+      if (!hasSeen && mounted) {
+        Future.delayed(const Duration(milliseconds: 700), () {
+          if (mounted) {
+            showTutorial();
+          }
+        });
+      }
+    });
+  }
+
+  void showTutorial({bool force = false}) async {
+    if (!force) {
+      final hasSeen = await TutorialService().hasSeenPosTutorial();
+      if (hasSeen) return;
+    }
+    if (!mounted) return;
+
+    PosTutorial.show(
+      context: context,
+      targets: PosTutorialTargets(
+        shiftBadgeKey: _shiftBadgeKey,
+        staffSwitchBadgeKey: _staffSwitchBadgeKey,
+        searchBarKey: _searchBarKey,
+        categoryBarKey: _categoryBarKey,
+        productCatalogKey: _productCatalogKey,
+        ordersTabKey: widget.ordersTabKey,
+        tabletCartPanelKey: _tabletCartPanelKey,
+      ),
+    );
   }
 
   @override
   void dispose() {
+    _embeddedScannerController?.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  void _toggleScanMode() {
+    setState(() {
+      _isScanMode = !_isScanMode;
+      if (_isScanMode) {
+        _searchFocusNode.unfocus();
+        _embeddedScannerController ??= MobileScannerController(
+          detectionSpeed: DetectionSpeed.normal,
+          facing: CameraFacing.back,
+          torchEnabled: false,
+        );
+      } else {
+        _embeddedScannerController?.dispose();
+        _embeddedScannerController = null;
+        _isScannerTorchOn = false;
+        _lastScannedProductName = null;
+      }
+    });
+  }
+
+  void _handleEmbeddedBarcodeDetect(BarcodeCapture capture) {
+    if (!_isScanMode) return;
+    for (final barcode in capture.barcodes) {
+      final rawCode = barcode.rawValue?.trim();
+      if (rawCode == null || rawCode.isEmpty) continue;
+
+      final now = DateTime.now();
+      if (_lastScannedBarcode == rawCode &&
+          _lastScannedTime != null &&
+          now.difference(_lastScannedTime!).inMilliseconds < 1500) {
+        continue;
+      }
+
+      _lastScannedBarcode = rawCode;
+      _lastScannedTime = now;
+
+      final productState = context.read<ProductBloc>().state;
+      final products = productState.products;
+
+      final matched = products.where(
+        (p) =>
+            (p.sku != null &&
+                p.sku!.trim().toLowerCase() == rawCode.toLowerCase()) ||
+            p.id.toLowerCase() == rawCode.toLowerCase(),
+      );
+
+      if (matched.isNotEmpty) {
+        final product = matched.first;
+        if (product.trackStock && product.stock <= 0) {
+          HapticFeedback.vibrate();
+          setState(() {
+            _lastScannedProductName = '${product.name} (Stok Habis)';
+            _lastScanSuccess = false;
+          });
+          AppToast.showWarning(
+            context,
+            'Produk ${product.name} ditemukan, namun stok habis',
+          );
+        } else {
+          HapticFeedback.lightImpact();
+          _onProductSelected(product);
+          setState(() {
+            _lastScannedProductName = '${product.name} (+1)';
+            _lastScanSuccess = true;
+          });
+        }
+      } else {
+        HapticFeedback.vibrate();
+        setState(() {
+          _lastScannedProductName = 'Tidak ditemukan: $rawCode';
+          _lastScanSuccess = false;
+        });
+        AppToast.showWarning(
+          context,
+          'Produk dengan SKU/Barcode "$rawCode" tidak ditemukan',
+        );
+      }
+      break;
+    }
   }
 
   void _onProductSelected(Product product) {
@@ -118,11 +272,6 @@ class _KasirPageState extends State<KasirPage> {
     }
   }
 
-  String _capitalize(String s) {
-    if (s.isEmpty) return s;
-    return s[0].toUpperCase() + s.substring(1);
-  }
-
   @override
   Widget build(BuildContext context) {
     final currencyFormatter = NumberFormat.currency(
@@ -153,9 +302,14 @@ class _KasirPageState extends State<KasirPage> {
             _buildSearchBar(),
             _buildCategoryAndFilterBar(),
             Expanded(
-              child: _isGridView
-                  ? _buildProductGrid(currencyFormatter)
-                  : _buildProductList(currencyFormatter),
+              child: _isScanMode
+                  ? _buildEmbeddedScannerView()
+                  : KeyedSubtree(
+                      key: _productCatalogKey,
+                      child: _isGridView
+                          ? _buildProductGrid(currencyFormatter)
+                          : _buildProductList(currencyFormatter),
+                    ),
             ),
           ],
         ),
@@ -164,12 +318,14 @@ class _KasirPageState extends State<KasirPage> {
     );
   }
 
-  // 1. Top Header: Business Logo, Online Status Dot, Store & Role Info, User Avatar
+  // 1. Top Header: Business Logo, Online Status Dot, Store & Role Info, Action Badges
   Widget _buildTopHeader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final staffService = getIt<StaffAuthService>();
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
             child: BlocBuilder<BusinessBloc, BusinessState>(
@@ -183,119 +339,165 @@ class _KasirPageState extends State<KasirPage> {
                 final logoUrl = businessInfo?.logoUrl;
                 final hasLogo = logoUrl != null && logoUrl.isNotEmpty;
 
-                return Row(
-                  children: [
-                    // Business Logo / App Icon
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: hasLogo
-                            ? const Color(0xFFF1F5F9)
-                            : AppColors.primary,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(9),
-                        child: hasLogo
-                            ? CachedNetworkImage(
-                                imageUrl: logoUrl,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => const Center(
-                                  child: SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
-                                ),
-                                errorWidget: (context, url, error) =>
-                                    const Center(
-                                      child: Icon(
-                                        Icons.storefront_rounded,
-                                        color: Color(0xFF64748B),
-                                        size: 20,
-                                      ),
-                                    ),
-                              )
-                            : SvgPicture.asset("assets/icons/logo.svg"),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    // App Name & Store Subtitle
-                    Expanded(
-                      child: BlocBuilder<AuthBloc, AuthState>(
-                        builder: (context, aState) {
-                          final roleName = (aState is Authenticated)
-                              ? _capitalize(aState.user.role.name)
-                              : 'Kasir';
+                return ValueListenableBuilder<UserEntity?>(
+                  valueListenable: staffService.activeStaffNotifier,
+                  builder: (context, activeStaff, _) {
+                    final staffName = (activeStaff?.name?.isNotEmpty == true)
+                        ? activeStaff!.name!
+                        : (activeStaff?.email.split('@').first ?? '');
 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                    return BlocBuilder<AuthBloc, AuthState>(
+                      builder: (context, aState) {
+                        final storeUser = (aState is Authenticated)
+                            ? aState.user
+                            : null;
+                        final effectiveName = staffName.isNotEmpty
+                            ? staffName
+                            : (storeUser?.name ?? 'Kasir');
+
+                        return BlocBuilder<ShiftBloc, ShiftState>(
+                          builder: (context, shiftState) {
+                            final isOpen = shiftState.hasActiveShift;
+
+                            return InkWell(
+                              onTap: () => StaffPinDialog.show(context),
+                              borderRadius: BorderRadius.circular(10),
+                              child: Row(
                                 children: [
-                                  Flexible(
-                                    child: Text(
-                                      businessName,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w800,
-                                        color: Color(0xFF0F172A),
-                                        letterSpacing: -0.2,
+                                  // Business Logo / App Icon
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: hasLogo
+                                          ? const Color(0xFFF1F5F9)
+                                          : AppColors.primary,
+                                      borderRadius: BorderRadius.circular(9),
+                                      border: Border.all(
+                                        color: isDark
+                                            ? const Color(0xFF334155)
+                                            : const Color(0xFFE2E8F0),
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: hasLogo
+                                          ? CachedNetworkImage(
+                                              imageUrl: logoUrl,
+                                              fit: BoxFit.cover,
+                                              placeholder: (context, url) =>
+                                                  const Center(
+                                                    child: SizedBox(
+                                                      width: 14,
+                                                      height: 14,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                          ),
+                                                    ),
+                                                  ),
+                                              errorWidget:
+                                                  (
+                                                    context,
+                                                    url,
+                                                    error,
+                                                  ) => const Center(
+                                                    child: Icon(
+                                                      Icons.storefront_rounded,
+                                                      color: Color(0xFF64748B),
+                                                      size: 18,
+                                                    ),
+                                                  ),
+                                            )
+                                          : SvgPicture.asset(
+                                              "assets/icons/logo.svg",
+                                            ),
                                     ),
                                   ),
-                                  const SizedBox(width: 5),
-                                  Container(
-                                    width: 7,
-                                    height: 7,
-                                    decoration: const BoxDecoration(
-                                      color: Color(
-                                        0xFF10B981,
-                                      ), // Emerald online dot
-                                      shape: BoxShape.circle,
+                                  const SizedBox(width: 8),
+                                  // Store Name & Active Staff Subtitle
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          businessName,
+                                          style: TextStyle(
+                                            fontSize: 14.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: isDark
+                                                ? Colors.white
+                                                : const Color(0xFF0F172A),
+                                            letterSpacing: -0.2,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 1),
+                                        Row(
+                                          children: [
+                                            Container(
+                                              width: 6,
+                                              height: 6,
+                                              decoration: BoxDecoration(
+                                                color: isOpen
+                                                    ? const Color(0xFF10B981)
+                                                    : const Color(0xFFF59E0B),
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Flexible(
+                                              child: Text(
+                                                isOpen
+                                                    ? '$effectiveName • Shift Aktif'
+                                                    : '$effectiveName • Belum Buka Shift',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: isDark
+                                                      ? const Color(0xFF94A3B8)
+                                                      : const Color(0xFF64748B),
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 1),
-                              Text(
-                                businessName != 'Laci POS'
-                                    ? 'Laci POS • $roleName'
-                                    : roleName,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF64748B),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
                 );
               },
             ),
           ),
-          const SizedBox(width: 8),
-          _buildShiftBadge(),
-          const SizedBox(width: 8),
-          _buildOpenBillBadge(),
+          const SizedBox(width: 6),
+          _buildStaffSwitchBadge(isCompact: true),
+          const SizedBox(width: 6),
+          _buildShiftBadge(isCompact: true),
+          const SizedBox(width: 6),
+          _buildOpenBillBadge(isCompact: true),
         ],
       ),
     );
   }
 
-  Widget _buildOpenBillBadge({bool isTablet = false, bool isCompact = false}) {
+  Widget _buildOpenBillBadge({
+    bool isTablet = false,
+    bool isCompact = false,
+    bool isUltraCompact = false,
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return ValueListenableBuilder<int>(
       valueListenable: HeldOrderService().heldOrderCountNotifier,
@@ -305,21 +507,25 @@ class _KasirPageState extends State<KasirPage> {
 
         final badgeChild = isCompact
             ? Container(
-                height: 38,
+                height: isUltraCompact ? 34 : 36,
                 alignment: Alignment.center,
-                padding: EdgeInsets.symmetric(horizontal: hasOrders ? 8 : 10),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isUltraCompact ? 6 : 8,
+                ),
                 decoration: BoxDecoration(
                   color: hasOrders
                       ? (isDark
-                            ? const Color(0xFF78350F)
+                            ? const Color(0xFF78350F).withValues(alpha: 0.35)
                             : const Color(0xFFFEF3C7))
                       : (isDark
                             ? const Color(0xFF1E293B)
                             : const Color(0xFFF8FAFC)),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(isUltraCompact ? 8 : 10),
                   border: Border.all(
                     color: hasOrders
-                        ? const Color(0xFFF59E0B)
+                        ? (isDark
+                              ? const Color(0xFFD97706).withValues(alpha: 0.5)
+                              : const Color(0xFFF59E0B))
                         : (isDark
                               ? const Color(0xFF334155)
                               : const Color(0xFFE2E8F0)),
@@ -328,29 +534,48 @@ class _KasirPageState extends State<KasirPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SvgPicture.asset("assets/icons/bill.svg", height: 18),
-                    if (hasOrders) ...[
-                      const SizedBox(width: 4),
+                    SvgPicture.asset(
+                      "assets/icons/bill.svg",
+                      height: isUltraCompact ? 14 : 16,
+                      colorFilter: hasOrders
+                          ? const ColorFilter.mode(
+                              Color(0xFFD97706),
+                              BlendMode.srcIn,
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 4),
+                    if (hasOrders)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 5,
+                          horizontal: 4.5,
                           vertical: 1.5,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF59E0B),
-                          borderRadius: BorderRadius.circular(8),
+                          color: const Color(0xFFD97706),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           '$count',
-                          style: const TextStyle(
-                            fontSize: 10.5,
+                          style: TextStyle(
+                            fontSize: isUltraCompact ? 9.5 : 10,
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                             height: 1.1,
                           ),
                         ),
+                      )
+                    else
+                      Text(
+                        '0',
+                        style: TextStyle(
+                          fontSize: isUltraCompact ? 10 : 11,
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B),
+                        ),
                       ),
-                    ],
                   ],
                 ),
               )
@@ -419,174 +644,420 @@ class _KasirPageState extends State<KasirPage> {
     );
   }
 
-  Widget _buildShiftBadge({bool isTablet = false, bool isCompact = false}) {
+  Widget _buildStaffSwitchBadge({
+    bool isTablet = false,
+    bool isCompact = false,
+    bool isUltraCompact = false,
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return BlocBuilder<ShiftBloc, ShiftState>(
-      builder: (context, shiftState) {
-        final isOpen = shiftState.hasActiveShift;
-        final shift = shiftState.activeShift;
-        final tooltipText = isOpen
-            ? 'Shift: ${shift?.userName ?? 'Aktif'}'
-            : 'Buka Shift';
+    final staffService = getIt<StaffAuthService>();
 
-        final badgeChild = isCompact
-            ? Container(
-                height: 38,
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  color: isOpen
-                      ? AppColors.primary
-                      : (isDark
-                            ? const Color(0xFF78350F)
-                            : const Color(0xFFFFFBEB)),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isOpen
-                        ? const Color(0xFF10B981).withValues(alpha: 0.5)
-                        : const Color(0xFFF59E0B).withValues(alpha: 0.5),
-                  ),
-                ),
-                child: Icon(
-                  isOpen ? Icons.lock_open_rounded : Icons.lock_outline_rounded,
-                  size: 18,
-                  color: isOpen
-                      ? Colors.white
-                      : (isDark
-                            ? const Color(0xFFFCD34D)
-                            : const Color(0xFF92400E)),
-                ),
-              )
-            : AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: EdgeInsets.symmetric(
-                  horizontal: isTablet ? 12 : 9,
-                  vertical: isTablet ? 8 : 5,
-                ),
-                decoration: BoxDecoration(
-                  color: isOpen
-                      ? AppColors.primary
-                      : (isDark
-                            ? const Color(0xFF78350F)
-                            : const Color(0xFFFFFBEB)),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isOpen
-                        ? const Color(0xFF10B981).withValues(alpha: 0.5)
-                        : const Color(0xFFF59E0B).withValues(alpha: 0.5),
-                  ),
-                ),
-                child: Text(
-                  isOpen
-                      ? (isTablet
-                            ? 'Shift: ${shift?.userName ?? 'Aktif'}'
-                            : 'Shift Aktif')
-                      : 'Buka Shift',
-                  style: TextStyle(
-                    fontSize: isTablet ? 12 : 11,
-                    fontWeight: FontWeight.bold,
-                    color: isOpen
-                        ? Colors.white
-                        : (isDark
-                              ? const Color(0xFFFCD34D)
-                              : const Color(0xFF92400E)),
-                  ),
-                ),
-              );
+    return KeyedSubtree(
+      key: _staffSwitchBadgeKey,
+      child: ValueListenableBuilder<UserEntity?>(
+        valueListenable: staffService.activeStaffNotifier,
+        builder: (context, staff, _) {
+          final displayName = (staff?.name?.isNotEmpty == true)
+              ? staff!.name!
+              : (staff?.email.split('@').first ?? 'Kasir');
+          final initial = displayName.isNotEmpty
+              ? displayName[0].toUpperCase()
+              : 'K';
+          final roleLabel = staff?.role.name.toUpperCase() ?? 'KASIR';
 
-        return Tooltip(
-          message: tooltipText,
-          child: InkWell(
-            onTap: () {
-              if (isOpen) {
-                ShiftControlSheet.show(context);
-              } else {
-                OpenShiftDialog.show(context);
-              }
-            },
-            borderRadius: BorderRadius.circular(isCompact ? 10 : 20),
-            child: badgeChild,
-          ),
+          return Tooltip(
+            message:
+                'Staf: $displayName ($roleLabel) • Klik untuk ganti / kunci',
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  StaffPinDialog.show(context);
+                },
+                borderRadius: BorderRadius.circular(isCompact ? 10 : 20),
+                child: isCompact
+                    ? Container(
+                        height: isUltraCompact ? 34 : 36,
+                        alignment: Alignment.center,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isUltraCompact ? 5 : 7,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF1E293B)
+                              : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(
+                            isUltraCompact ? 8 : 10,
+                          ),
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF334155)
+                                : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircleAvatar(
+                              radius: isUltraCompact ? 9 : 10.5,
+                              backgroundColor: AppColors.primary,
+                              child: Text(
+                                initial,
+                                style: TextStyle(
+                                  fontSize: isUltraCompact ? 8.5 : 9.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: isUltraCompact ? 3 : 4),
+                            Icon(
+                              Icons.lock_outline_rounded,
+                              size: isUltraCompact ? 12 : 13,
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isTablet ? 10 : 8,
+                          vertical: isTablet ? 6 : 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF1E293B)
+                              : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF334155)
+                                : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircleAvatar(
+                              radius: 10.5,
+                              backgroundColor: AppColors.primary,
+                              child: Text(
+                                initial,
+                                style: const TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 80),
+                              child: Text(
+                                displayName,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF0F172A),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.lock_outline_rounded,
+                              size: 13,
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _handleCloseShiftFlow() async {
+    final shiftState = context.read<ShiftBloc>().state;
+    final active = shiftState.activeShift;
+    if (active != null) {
+      final summary =
+          shiftState.currentSummary ??
+          ShiftSummary(
+            shift: active,
+            startCash: active.startCash,
+            totalCashSales: active.totalCashSales,
+            totalQrisSales: 0,
+            totalDebitSales: 0,
+            totalTransferSales: 0,
+            totalSales: active.totalSales,
+            totalTransactions: active.totalTransactions,
+            totalCashIn: 0,
+            totalCashOut: 0,
+            cashMovements: const [],
+          );
+      final closeResult = await CloseShiftDialog.show(
+        context,
+        shift: active,
+        summary: summary,
+      );
+      if (closeResult != null && closeResult.isClosed && mounted) {
+        final curFmt = NumberFormat.currency(
+          locale: 'id_ID',
+          symbol: 'Rp ',
+          decimalDigits: 0,
         );
-      },
+        await StaffPinDialog.show(
+          context,
+          isLockMode: true,
+          title: 'Shift Selesai • Masuk Kasir Baru',
+          subtitle: 'Masukkan 4 digit PIN kasir berikutnya',
+          pendingHandoverAmount: closeResult.remainingCashInDrawer,
+          pendingHandoverNote:
+              'Serah terima dari ${active.userName}: Ditinggalkan ${curFmt.format(closeResult.remainingCashInDrawer)} di laci (Setor: ${curFmt.format(closeResult.depositedCash)})',
+        );
+      }
+    }
+  }
+
+  Widget _buildShiftBadge({
+    bool isTablet = false,
+    bool isCompact = false,
+    bool isUltraCompact = false,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return KeyedSubtree(
+      key: _shiftBadgeKey,
+      child: BlocBuilder<ShiftBloc, ShiftState>(
+        builder: (context, shiftState) {
+          final isOpen = shiftState.hasActiveShift;
+          final shift = shiftState.activeShift;
+          final tooltipText = isOpen
+              ? 'Shift: ${shift?.userName ?? 'Aktif'} (Ketuk untuk kontrol shift)'
+              : 'Shift Belum Buka (Ketuk untuk buka shift)';
+
+          final badgeChild = isCompact
+              ? Container(
+                  height: isUltraCompact ? 34 : 36,
+                  alignment: Alignment.center,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isUltraCompact ? 7 : 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isOpen
+                        ? (isDark
+                              ? const Color(0xFF064E3B).withValues(alpha: 0.35)
+                              : Colors.transparent)
+                        : (isDark
+                              ? const Color(0xFF78350F).withValues(alpha: 0.35)
+                              : const Color(0xFFFFFBEB)),
+                    borderRadius: BorderRadius.circular(
+                      isUltraCompact ? 8 : 10,
+                    ),
+                    border: Border.all(
+                      color: isOpen
+                          ? (isDark
+                                ? const Color(0xFF334155)
+                                : const Color(0xFFE2E8F0))
+                          : (isDark
+                                ? const Color(0xFFD97706).withValues(alpha: 0.5)
+                                : const Color(0xFFFDE68A)),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isOpen
+                            ? Icons.lock_open_rounded
+                            : Icons.lock_outline_rounded,
+                        size: isUltraCompact ? 13 : 14,
+                        color: isOpen
+                            ? (isDark
+                                  ? const Color(0xFF34D399)
+                                  : AppColors.textSecondary)
+                            : (isDark
+                                  ? const Color(0xFFFCD34D)
+                                  : const Color(0xFFD97706)),
+                      ),
+                      if (!isUltraCompact) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          isOpen ? 'Shift' : 'Buka',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: isOpen
+                                ? (isDark
+                                      ? const Color(0xFF34D399)
+                                      : AppColors.textSecondary)
+                                : (isDark
+                                      ? const Color(0xFFFCD34D)
+                                      : const Color(0xFFD97706)),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                )
+              : AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isTablet ? 12 : 9,
+                    vertical: isTablet ? 8 : 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isOpen
+                        ? AppColors.primary
+                        : (isDark
+                              ? const Color(0xFF78350F)
+                              : const Color(0xFFFFFBEB)),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isOpen
+                          ? const Color(0xFF10B981).withValues(alpha: 0.5)
+                          : const Color(0xFFF59E0B).withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Text(
+                    isOpen
+                        ? (isTablet
+                              ? 'Shift: ${shift?.userName ?? 'Aktif'}'
+                              : 'Shift Aktif')
+                        : 'Buka Shift',
+                    style: TextStyle(
+                      fontSize: isTablet ? 12 : 11,
+                      fontWeight: FontWeight.bold,
+                      color: isOpen
+                          ? Colors.white
+                          : (isDark
+                                ? const Color(0xFFFCD34D)
+                                : const Color(0xFF92400E)),
+                    ),
+                  ),
+                );
+
+          return Tooltip(
+            message: tooltipText,
+            child: InkWell(
+              onTap: () async {
+                if (isOpen) {
+                  final action = await ShiftControlSheet.show(context);
+                  if (action == 'close_shift' && mounted) {
+                    await _handleCloseShiftFlow();
+                  }
+                } else {
+                  OpenShiftDialog.show(context);
+                }
+              },
+              borderRadius: BorderRadius.circular(isCompact ? 10 : 20),
+              child: badgeChild,
+            ),
+          );
+        },
+      ),
     );
   }
 
   // 2. Full-width Search Input with Scanner Action
   Widget _buildSearchBar() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Container(
-        height: 48,
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+    return KeyedSubtree(
+      key: _searchBarKey,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Container(
+          height: 48,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Icon(
-                Icons.search,
-                color: isDark
-                    ? const Color(0xFF94A3B8)
-                    : const Color(0xFF64748B),
-                size: 20,
-              ),
-            ),
-            Expanded(
-              child: TextField(
-                controller: _searchController,
-                focusNode: _searchFocusNode,
-                onChanged: (value) => setState(() => _searchQuery = value),
-                style: TextStyle(
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                  fontSize: 13.5,
-                ),
-                decoration: InputDecoration(
-                  focusedBorder: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  fillColor: Colors.transparent,
-                  hintText: 'Cari menu, SKU, atau varian...',
-                  hintStyle: TextStyle(
-                    color: isDark
-                        ? const Color(0xFF94A3B8)
-                        : const Color(0xFF64748B),
-                    fontSize: 13.5,
-                  ),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-            if (_searchQuery.isNotEmpty)
-              IconButton(
-                icon: Icon(
-                  Icons.clear,
-                  size: 18,
+          child: Row(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Icon(
+                  Icons.search,
                   color: isDark
                       ? const Color(0xFF94A3B8)
                       : const Color(0xFF64748B),
+                  size: 20,
                 ),
-                onPressed: () {
-                  _searchController.clear();
-                  setState(() => _searchQuery = '');
-                },
               ),
-            IconButton(
-              icon: const Icon(
-                Icons.qr_code_scanner_rounded,
-                color: AppColors.primary,
-                size: 22,
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    fontSize: 13.5,
+                  ),
+                  decoration: InputDecoration(
+                    focusedBorder: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    fillColor: Colors.transparent,
+                    hintText: 'Cari menu, SKU, atau varian...',
+                    hintStyle: TextStyle(
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B),
+                      fontSize: 13.5,
+                    ),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
               ),
-              onPressed: _openBarcodeSearch,
-            ),
-          ],
+              if (_searchQuery.isNotEmpty)
+                IconButton(
+                  icon: Icon(
+                    Icons.clear,
+                    size: 18,
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
+                  ),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                ),
+              Container(
+                decoration: _isScanMode
+                    ? BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(10),
+                      )
+                    : null,
+                child: IconButton(
+                  icon: Icon(
+                    Icons.qr_code_scanner_rounded,
+                    color: _isScanMode ? Colors.white : AppColors.primary,
+                    size: 22,
+                  ),
+                  tooltip: _isScanMode
+                      ? 'Tutup Mode Scan / Kembali ke Produk'
+                      : 'Buka Mode Scan Kamera Cepat',
+                  onPressed: _toggleScanMode,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -595,117 +1066,121 @@ class _KasirPageState extends State<KasirPage> {
   // 3. Category Horizontal Pills & Grid/List View Toggle
   Widget _buildCategoryAndFilterBar() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: BlocBuilder<CategoryBloc, CategoryState>(
-              builder: (context, state) {
-                List<Category> categories = [];
-                if (state.isSuccess) {
-                  categories = state.categories;
-                }
+    return KeyedSubtree(
+      key: _categoryBarKey,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: BlocBuilder<CategoryBloc, CategoryState>(
+                builder: (context, state) {
+                  List<Category> categories = [];
+                  if (state.isSuccess) {
+                    categories = state.categories;
+                  }
 
-                return SizedBox(
-                  height: 38,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: categories.length + 1,
-                    itemBuilder: (context, index) {
-                      final isAll = index == 0;
-                      final category = isAll ? null : categories[index - 1];
-                      final id = isAll ? 'all' : category!.id;
-                      final name = isAll ? 'Semua' : category!.name;
-                      final isSelected = _selectedCategoryId == id;
+                  return SizedBox(
+                    height: 38,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: categories.length + 1,
+                      itemBuilder: (context, index) {
+                        final isAll = index == 0;
+                        final category = isAll ? null : categories[index - 1];
+                        final id = isAll ? 'all' : category!.id;
+                        final name = isAll ? 'Semua' : category!.name;
+                        final isSelected = _selectedCategoryId == id;
 
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: InkWell(
-                          onTap: () => setState(() => _selectedCategoryId = id),
-                          borderRadius: BorderRadius.circular(12),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? (isDark
-                                        ? Colors.white
-                                        : AppColors.darkCharcoal)
-                                  : (isDark
-                                        ? const Color(0xFF1E293B)
-                                        : Colors.white),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: InkWell(
+                            onTap: () =>
+                                setState(() => _selectedCategoryId = id),
+                            borderRadius: BorderRadius.circular(12),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
                                 color: isSelected
                                     ? (isDark
                                           ? Colors.white
                                           : AppColors.darkCharcoal)
                                     : (isDark
-                                          ? const Color(0xFF334155)
-                                          : const Color(0xFFE2E8F0)),
+                                          ? const Color(0xFF1E293B)
+                                          : Colors.white),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? (isDark
+                                            ? Colors.white
+                                            : AppColors.darkCharcoal)
+                                      : (isDark
+                                            ? const Color(0xFF334155)
+                                            : const Color(0xFFE2E8F0)),
+                                ),
                               ),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              name,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? (isDark
-                                          ? const Color(0xFF0F172A)
-                                          : Colors.white)
-                                    : (isDark
-                                          ? const Color(0xFFCBD5E1)
-                                          : const Color(0xFF334155)),
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.w500,
-                                fontSize: 13,
+                              alignment: Alignment.center,
+                              child: Text(
+                                name,
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? (isDark
+                                            ? const Color(0xFF0F172A)
+                                            : Colors.white)
+                                      : (isDark
+                                            ? const Color(0xFFCBD5E1)
+                                            : const Color(0xFF334155)),
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Grid vs List Toggle
-          Container(
-            height: 38,
-            padding: const EdgeInsets.all(2.5),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B) : Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isDark
-                    ? const Color(0xFF334155)
-                    : const Color(0xFFE2E8F0),
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
             ),
-            child: Row(
-              children: [
-                _buildViewToggleButton(
-                  icon: Icons.grid_view_rounded,
-                  isActive: _isGridView,
-                  onTap: () => setState(() => _isGridView = true),
+            const SizedBox(width: 8),
+            // Grid vs List Toggle
+            Container(
+              height: 38,
+              padding: const EdgeInsets.all(2.5),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
                 ),
-                const SizedBox(width: 2),
-                _buildViewToggleButton(
-                  icon: Icons.format_list_bulleted_rounded,
-                  isActive: !_isGridView,
-                  onTap: () => setState(() => _isGridView = false),
-                ),
-              ],
+              ),
+              child: Row(
+                children: [
+                  _buildViewToggleButton(
+                    icon: Icons.grid_view_rounded,
+                    isActive: _isGridView,
+                    onTap: () => setState(() => _isGridView = true),
+                  ),
+                  const SizedBox(width: 2),
+                  _buildViewToggleButton(
+                    icon: Icons.format_list_bulleted_rounded,
+                    isActive: !_isGridView,
+                    onTap: () => setState(() => _isGridView = false),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1296,6 +1771,15 @@ class _KasirPageState extends State<KasirPage> {
 
                 InkWell(
                   onTap: () {
+                    final shiftState = context.read<ShiftBloc>().state;
+                    if (!shiftState.hasActiveShift) {
+                      AppToast.showWarning(
+                        context,
+                        'Shift kasir belum dibuka. Masukkan modal awal terlebih dahulu.',
+                      );
+                      OpenShiftDialog.show(context);
+                      return;
+                    }
                     if (widget.onOpenOrders != null) {
                       widget.onOpenOrders!();
                     } else {
@@ -1344,53 +1828,417 @@ class _KasirPageState extends State<KasirPage> {
     );
   }
 
-  Future<void> _openBarcodeSearch() async {
-    final scannedCode = await BarcodeScannerPage.scan(
-      context,
-      title: 'Pindai Barcode / SKU',
-      instruction: 'Arahkan kamera ke barcode produk',
-    );
+  Widget _buildEmbeddedScannerView() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    if (scannedCode == null || scannedCode.trim().isEmpty) return;
-    final code = scannedCode.trim();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
+        final availableHeight = constraints.maxHeight;
 
-    if (!mounted) return;
-
-    // Search product by SKU or ID
-    final productState = context.read<ProductBloc>().state;
-    final products = productState.products;
-
-    final matched = products.where(
-      (p) =>
-          (p.sku != null &&
-              p.sku!.trim().toLowerCase() == code.toLowerCase()) ||
-          p.id.toLowerCase() == code.toLowerCase(),
-    );
-
-    if (matched.isNotEmpty) {
-      final product = matched.first;
-      if (product.stock <= 0) {
-        AppToast.showWarning(
-          context,
-          'Produk ${product.name} ditemukan, namun stok habis',
+        // Viewfinder size proportional to available area
+        final targetBoxSize = math.min(
+          math.min(availableWidth * 0.75, availableHeight * 0.65),
+          260.0,
         );
-      } else {
-        _onProductSelected(product);
-      }
-      setState(() {
-        _searchQuery = product.name;
-      });
-      _searchController.text = product.name;
-    } else {
-      setState(() {
-        _searchQuery = code;
-      });
-      _searchController.text = code;
-      AppToast.showWarning(
-        context,
-        'Produk dengan SKU/Barcode "$code" tidak ditemukan',
-      );
-    }
+        final boxSize = targetBoxSize < 140.0 ? 140.0 : targetBoxSize;
+        final isCompactWidth = availableWidth < 460;
+        final isShortScreen = availableHeight < 320;
+
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFCBD5E1),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Stack(
+              fit: StackFit.expand,
+              alignment: Alignment.center,
+              children: [
+                // 1. MobileScanner Camera
+                if (_embeddedScannerController != null)
+                  MobileScanner(
+                    controller: _embeddedScannerController!,
+                    onDetect: _handleEmbeddedBarcodeDetect,
+                  ),
+
+                // 2. Viewfinder Overlay with styled corners
+                Center(
+                  child: Container(
+                    width: boxSize,
+                    height: boxSize,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Stack(
+                      children: [
+                        // Top-left corner
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: const BoxDecoration(
+                              border: Border(
+                                top: BorderSide(
+                                  color: AppColors.primary,
+                                  width: 3.5,
+                                ),
+                                left: BorderSide(
+                                  color: AppColors.primary,
+                                  width: 3.5,
+                                ),
+                              ),
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(14),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Top-right corner
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: const BoxDecoration(
+                              border: Border(
+                                top: BorderSide(
+                                  color: AppColors.primary,
+                                  width: 3.5,
+                                ),
+                                right: BorderSide(
+                                  color: AppColors.primary,
+                                  width: 3.5,
+                                ),
+                              ),
+                              borderRadius: BorderRadius.only(
+                                topRight: Radius.circular(14),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Bottom-left corner
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: const BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: AppColors.primary,
+                                  width: 3.5,
+                                ),
+                                left: BorderSide(
+                                  color: AppColors.primary,
+                                  width: 3.5,
+                                ),
+                              ),
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(14),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Bottom-right corner
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: const BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: AppColors.primary,
+                                  width: 3.5,
+                                ),
+                                right: BorderSide(
+                                  color: AppColors.primary,
+                                  width: 3.5,
+                                ),
+                              ),
+                              borderRadius: BorderRadius.only(
+                                bottomRight: Radius.circular(14),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Subtle center horizontal guide line
+                        Center(
+                          child: Container(
+                            height: 1.5,
+                            margin: const EdgeInsets.symmetric(horizontal: 16),
+                            color: AppColors.primary.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 3. Top Floating Controls Header
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  right: 10,
+                  child: Row(
+                    children: [
+                      // Badge Continuous Scan Active
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isCompactWidth ? 8 : 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppColors.white.withValues(alpha: 0.5),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              isCompactWidth
+                                  ? 'Scan'
+                                  : (isShortScreen
+                                        ? 'Scan Aktif'
+                                        : 'Continuous Scan'),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+
+                      // Torch Button
+                      Material(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: () {
+                            setState(() {
+                              _isScannerTorchOn = !_isScannerTorchOn;
+                            });
+                            _embeddedScannerController?.toggleTorch();
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(7),
+                            child: Icon(
+                              _isScannerTorchOn
+                                  ? Icons.flash_on_rounded
+                                  : Icons.flash_off_rounded,
+                              color: _isScannerTorchOn
+                                  ? Colors.amber
+                                  : Colors.white,
+                              size: 19,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+
+                      // Switch Camera Button
+                      Material(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        shape: const CircleBorder(),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: () =>
+                              _embeddedScannerController?.switchCamera(),
+                          child: const Padding(
+                            padding: EdgeInsets.all(7),
+                            child: Icon(
+                              Icons.cameraswitch_outlined,
+                              color: Colors.white,
+                              size: 19,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+
+                      // Close Scanner Button -> return to product catalog
+                      Material(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(20),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: _toggleScanMode,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isCompactWidth ? 8 : 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.6),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.close_rounded,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                                if (!isCompactWidth && !isShortScreen) ...[
+                                  const SizedBox(width: 4),
+                                  const Text(
+                                    'Tutup',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 4. Bottom Scanned Product Notification Feedback Banner
+                Positioned(
+                  bottom: 12,
+                  left: 12,
+                  right: 12,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_lastScannedProductName != null)
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _lastScanSuccess
+                                ? const Color(
+                                    0xFF065F46,
+                                  ).withValues(alpha: 0.92)
+                                : const Color(
+                                    0xFF991B1B,
+                                  ).withValues(alpha: 0.92),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _lastScanSuccess
+                                  ? const Color(0xFF34D399)
+                                  : const Color(0xFFF87171),
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _lastScanSuccess
+                                    ? Icons.check_circle_rounded
+                                    : Icons.error_outline_rounded,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  _lastScannedProductName!,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      // Hint text
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'Arahkan barcode ke dalam kotak untuk memindai berturut-turut',
+                          style: TextStyle(color: Colors.white70, fontSize: 11),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildTabletLayout(NumberFormat currencyFormatter) {
@@ -1421,9 +2269,14 @@ class _KasirPageState extends State<KasirPage> {
                           : const Color(0xFFE2E8F0),
                     ),
                     Expanded(
-                      child: _isGridView
-                          ? _buildTabletProductGrid(currencyFormatter)
-                          : _buildProductList(currencyFormatter),
+                      child: _isScanMode
+                          ? _buildEmbeddedScannerView()
+                          : KeyedSubtree(
+                              key: _productCatalogKey,
+                              child: _isGridView
+                                  ? _buildTabletProductGrid(currencyFormatter)
+                                  : _buildProductList(currencyFormatter),
+                            ),
                     ),
                   ],
                 ),
@@ -1431,7 +2284,10 @@ class _KasirPageState extends State<KasirPage> {
             ),
 
             // 3. Right Sidebar: Order Details / Cart Panel
-            _buildTabletCartPanel(currencyFormatter),
+            KeyedSubtree(
+              key: _tabletCartPanelKey,
+              child: _buildTabletCartPanel(currencyFormatter),
+            ),
           ],
         );
       },
@@ -1441,120 +2297,119 @@ class _KasirPageState extends State<KasirPage> {
   // 1. Left Sidebar: Vertical Category Navigation
   Widget _buildTabletCategorySidebar(List<Category> categories) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      width: 92,
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        border: Border(
-          right: BorderSide(
-            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-            width: 1,
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isShort = screenHeight < 520;
+
+    return KeyedSubtree(
+      key: _categoryBarKey,
+      child: Container(
+        width: isShort ? 84 : 92,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          border: Border(
+            right: BorderSide(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              width: 1,
+            ),
           ),
         ),
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: () {
-              if (widget.onOpenDrawer != null) {
-                widget.onOpenDrawer!();
-              } else {
-                context
-                    .findRootAncestorStateOfType<ScaffoldState>()
-                    ?.openDrawer();
-              }
-            },
-            child: SvgPicture.asset(
-              "assets/icons/humberger_menu.svg",
-              height: 36,
+        child: Column(
+          children: [
+            SizedBox(height: isShort ? 8 : 16),
+            GestureDetector(
+              onTap: () {
+                if (widget.onOpenDrawer != null) {
+                  widget.onOpenDrawer!();
+                } else {
+                  context
+                      .findRootAncestorStateOfType<ScaffoldState>()
+                      ?.openDrawer();
+                }
+              },
+              child: SvgPicture.asset(
+                "assets/icons/humberger_menu.svg",
+                height: isShort ? 30 : 36,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          const SizedBox(height: 10),
-          Expanded(
-            child: ListView.builder(
-              itemCount: categories.length + 1,
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              itemBuilder: (context, index) {
-                final isAll = index == 0;
-                final cat = isAll ? null : categories[index - 1];
-                final id = isAll ? 'all' : cat!.id;
-                final name = isAll ? 'All Menu' : cat!.name;
-                final isSelected = _selectedCategoryId == id;
-                final icon = isAll
-                    ? Icons.restaurant_menu_rounded
-                    : _getCategoryIcon(name);
+            SizedBox(height: isShort ? 6 : 10),
+            Expanded(
+              child: ListView.builder(
+                itemCount: categories.length + 1,
+                padding: EdgeInsets.symmetric(vertical: isShort ? 2 : 4),
+                itemBuilder: (context, index) {
+                  final isAll = index == 0;
+                  final cat = isAll ? null : categories[index - 1];
+                  final id = isAll ? 'all' : cat!.id;
+                  final name = isAll ? 'All Menu' : cat!.name;
+                  final isSelected = _selectedCategoryId == id;
+                  final icon = isAll
+                      ? Icons.restaurant_menu_rounded
+                      : _getCategoryIcon(name);
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 4,
-                  ),
-                  child: InkWell(
-                    onTap: () => setState(() => _selectedCategoryId = id),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? (isDark
-                                  ? const Color(0xFF334155)
-                                  : Colors.grey.shade100)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        alignment: Alignment.center,
-                        children: [
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                icon,
-                                size: 26,
+                  return Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isShort ? 4 : 6,
+                      vertical: isShort ? 2 : 4,
+                    ),
+                    child: InkWell(
+                      onTap: () => setState(() => _selectedCategoryId = id),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          vertical: isShort ? 7 : 12,
+                          horizontal: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? (isDark
+                                    ? const Color(0xFF334155)
+                                    : Colors.grey.shade100)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              icon,
+                              size: isShort ? 22 : 26,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : (isDark
+                                        ? const Color(0xFF94A3B8)
+                                        : const Color(0xFF64748B)),
+                            ),
+                            SizedBox(height: isShort ? 3 : 6),
+                            Text(
+                              name,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: isShort ? 10 : 11,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
                                 color: isSelected
-                                    ? AppColors.primary
+                                    ? (isDark
+                                          ? Colors.white
+                                          : AppColors.textPrimary)
                                     : (isDark
                                           ? const Color(0xFF94A3B8)
-                                          : const Color(0xFF64748B)),
+                                          : const Color(0xFF334155)),
+                                height: 1.15,
                               ),
-                              const SizedBox(height: 6),
-                              Text(
-                                name,
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.w500,
-                                  color: isSelected
-                                      ? (isDark
-                                            ? Colors.white
-                                            : AppColors.textPrimary)
-                                      : (isDark
-                                            ? const Color(0xFF94A3B8)
-                                            : const Color(0xFF334155)),
-                                  height: 1.15,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1620,116 +2475,154 @@ class _KasirPageState extends State<KasirPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isCompact = isPortrait || constraints.maxWidth < 620;
+        final isUltraCompact = constraints.maxWidth < 480;
 
         return Container(
           color: isDark ? const Color(0xFF1E293B) : Colors.white,
           padding: EdgeInsets.symmetric(
-            horizontal: isCompact ? 12 : 16,
-            vertical: 10,
+            horizontal: isUltraCompact ? 8 : (isCompact ? 10 : 16),
+            vertical: isUltraCompact ? 7 : 10,
           ),
           child: Row(
             children: [
               // Center Search Box with Barcode Scan
               Expanded(
-                child: Container(
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? const Color(0xFF0F172A)
-                        : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
+                child: KeyedSubtree(
+                  key: _searchBarKey,
+                  child: Container(
+                    height: isUltraCompact ? 36 : 42,
+                    decoration: BoxDecoration(
                       color: isDark
-                          ? const Color(0xFF334155)
-                          : const Color(0xFFE2E8F0),
+                          ? const Color(0xFF0F172A)
+                          : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(
+                        isUltraCompact ? 10 : 12,
+                      ),
+                      border: Border.all(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Icon(
-                          Icons.search_rounded,
-                          color: isDark
-                              ? const Color(0xFF94A3B8)
-                              : const Color(0xFF64748B),
-                          size: 18,
-                        ),
-                      ),
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          focusNode: _searchFocusNode,
-                          onChanged: (val) =>
-                              setState(() => _searchQuery = val),
-                          style: TextStyle(
-                            color: isDark
-                                ? Colors.white
-                                : const Color(0xFF0F172A),
-                            fontSize: 13,
+                    child: Row(
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.only(
+                            left: isUltraCompact ? 8 : 10,
+                            right: isUltraCompact ? 4 : 8,
                           ),
-                          decoration: InputDecoration(
-                            fillColor: Colors.transparent,
-                            focusedBorder: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            errorBorder: InputBorder.none,
-                            disabledBorder: InputBorder.none,
-                            hintText: isCompact
-                                ? 'Cari...'
-                                : 'Cari produk atau SKU...',
-                            hintStyle: TextStyle(
-                              color: isDark
-                                  ? const Color(0xFF94A3B8)
-                                  : const Color(0xFF64748B),
-                              fontSize: 13,
-                            ),
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 10,
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (_searchQuery.isNotEmpty)
-                        IconButton(
-                          icon: Icon(
-                            Icons.clear,
-                            size: 16,
+                          child: Icon(
+                            Icons.search_rounded,
                             color: isDark
                                 ? const Color(0xFF94A3B8)
                                 : const Color(0xFF64748B),
+                            size: isUltraCompact ? 16 : 18,
                           ),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
                         ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.qr_code_scanner_rounded,
-                          color: AppColors.primary,
-                          size: 20,
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            focusNode: _searchFocusNode,
+                            onChanged: (val) =>
+                                setState(() => _searchQuery = val),
+                            style: TextStyle(
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF0F172A),
+                              fontSize: isUltraCompact ? 12 : 13,
+                            ),
+                            decoration: InputDecoration(
+                              fillColor: Colors.transparent,
+                              focusedBorder: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              errorBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                              hintText: isUltraCompact
+                                  ? 'Cari...'
+                                  : (isCompact
+                                        ? 'Cari produk...'
+                                        : 'Cari produk atau SKU...'),
+                              hintStyle: TextStyle(
+                                color: isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF64748B),
+                                fontSize: isUltraCompact ? 12 : 13,
+                              ),
+                              border: InputBorder.none,
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: isUltraCompact ? 6 : 10,
+                              ),
+                            ),
+                          ),
                         ),
-                        onPressed: _openBarcodeSearch,
-                        tooltip: 'Pindai Barcode / SKU',
-                      ),
-                    ],
+                        if (_searchQuery.isNotEmpty)
+                          SizedBox(
+                            width: isUltraCompact ? 24 : 28,
+                            height: isUltraCompact ? 24 : 28,
+                            child: IconButton(
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              icon: Icon(
+                                Icons.clear,
+                                size: isUltraCompact ? 14 : 16,
+                                color: isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF64748B),
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            ),
+                          ),
+                        Container(
+                          width: isUltraCompact ? 30 : 34,
+                          height: isUltraCompact ? 30 : 34,
+                          decoration: _isScanMode
+                              ? BoxDecoration(
+                                  color: AppColors.primary,
+                                  borderRadius: BorderRadius.circular(8),
+                                )
+                              : null,
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            icon: Icon(
+                              _isScanMode
+                                  ? Icons.close_rounded
+                                  : Icons.qr_code_scanner_rounded,
+                              color: _isScanMode
+                                  ? Colors.white
+                                  : AppColors.primary,
+                              size: isUltraCompact ? 18 : 20,
+                            ),
+                            onPressed: _toggleScanMode,
+                            tooltip: _isScanMode
+                                ? 'Tutup Mode Scan / Kembali ke Produk'
+                                : 'Pindai Barcode / SKU (Continuous)',
+                          ),
+                        ),
+                        SizedBox(width: isUltraCompact ? 4 : 6),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: isUltraCompact ? 5 : 8),
 
               // View Mode Toggle (Grid vs List)
               isCompact
                   ? Container(
-                      height: 38,
-                      width: 38,
+                      height: isUltraCompact ? 34 : 38,
+                      width: isUltraCompact ? 34 : 38,
                       decoration: BoxDecoration(
                         color: isDark
                             ? const Color(0xFF0F172A)
                             : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(
+                          isUltraCompact ? 8 : 10,
+                        ),
                         border: Border.all(
                           color: isDark
                               ? const Color(0xFF334155)
@@ -1738,11 +2631,12 @@ class _KasirPageState extends State<KasirPage> {
                       ),
                       child: IconButton(
                         padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                         icon: Icon(
                           _isGridView
                               ? Icons.format_list_bulleted_rounded
                               : Icons.grid_view_rounded,
-                          size: 18,
+                          size: isUltraCompact ? 16 : 18,
                           color: isDark
                               ? const Color(0xFF94A3B8)
                               : const Color(0xFF64748B),
@@ -1784,10 +2678,24 @@ class _KasirPageState extends State<KasirPage> {
                         ],
                       ),
                     ),
-              const SizedBox(width: 6),
-              _buildShiftBadge(isTablet: true, isCompact: isCompact),
-              const SizedBox(width: 6),
-              _buildOpenBillBadge(isTablet: true, isCompact: isCompact),
+              SizedBox(width: isUltraCompact ? 4 : 6),
+              _buildStaffSwitchBadge(
+                isTablet: true,
+                isCompact: isCompact,
+                isUltraCompact: isUltraCompact,
+              ),
+              SizedBox(width: isUltraCompact ? 4 : 6),
+              _buildShiftBadge(
+                isTablet: true,
+                isCompact: isCompact,
+                isUltraCompact: isUltraCompact,
+              ),
+              SizedBox(width: isUltraCompact ? 4 : 6),
+              _buildOpenBillBadge(
+                isTablet: true,
+                isCompact: isCompact,
+                isUltraCompact: isUltraCompact,
+              ),
             ],
           ),
         );
@@ -2077,6 +2985,11 @@ class _KasirPageState extends State<KasirPage> {
     return BlocBuilder<CartBloc, CartState>(
       builder: (context, cartState) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
+        final screenHeight = MediaQuery.of(context).size.height;
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isShortScreen = screenHeight < 520;
+        final cartPanelWidth = screenWidth < 900 ? 315.0 : 350.0;
+
         final subtotal = cartState.totalAmount;
         final tax = subtotal > 0 ? subtotal * 0.1 : 0.0;
         double discount = 0.0;
@@ -2093,7 +3006,7 @@ class _KasirPageState extends State<KasirPage> {
         );
 
         return Container(
-          width: 350,
+          width: cartPanelWidth,
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1E293B) : Colors.white,
             border: Border(
@@ -2107,64 +3020,123 @@ class _KasirPageState extends State<KasirPage> {
           ),
           child: Column(
             children: [
-              // 1. Quick Action Grid (2x2)
+              // 1. Quick Action Grid (1x4 on short screen, 2x2 on spacious tablet)
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildQuickActionButton(
-                            icon: "assets/icons/customer.svg",
-                            label: cartState.customer?.name ?? 'Customer',
-                            isActive: cartState.customer != null,
-                            onTap: () =>
-                                _showCustomerPicker(cartState.customer),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildQuickActionButton(
-                            icon: "assets/icons/tables.svg",
-                            label:
-                                _tableNumber != null && _tableNumber!.isNotEmpty
-                                ? 'Meja $_tableNumber'
-                                : 'Tables',
-                            isActive:
-                                _tableNumber != null &&
-                                _tableNumber!.isNotEmpty,
-                            onTap: _showTableDialog,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildQuickActionButton(
-                            icon: "assets/icons/discount.svg",
-                            label: _selectedPromo != null
-                                ? _selectedPromo!.name
-                                : 'Discount',
-                            isActive: _selectedPromo != null,
-                            onTap: _showPromoPicker,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildQuickActionButton(
-                            icon: "assets/icons/save_bill.svg",
-                            label: 'Save Bill',
-                            isActive: false,
-                            onTap: _showSaveBill,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                padding: EdgeInsets.fromLTRB(
+                  isShortScreen ? 10 : 14,
+                  isShortScreen ? 8 : 12,
+                  isShortScreen ? 10 : 14,
+                  isShortScreen ? 6 : 8,
                 ),
+                child: isShortScreen
+                    ? Row(
+                        children: [
+                          Expanded(
+                            child: _buildQuickActionButton(
+                              icon: "assets/icons/customer.svg",
+                              label: cartState.customer?.name ?? 'Customer',
+                              isActive: cartState.customer != null,
+                              onTap: () =>
+                                  _showCustomerPicker(cartState.customer),
+                              isCompact: true,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: _buildQuickActionButton(
+                              icon: "assets/icons/tables.svg",
+                              label:
+                                  _tableNumber != null &&
+                                      _tableNumber!.isNotEmpty
+                                  ? 'Meja $_tableNumber'
+                                  : 'Tables',
+                              isActive:
+                                  _tableNumber != null &&
+                                  _tableNumber!.isNotEmpty,
+                              onTap: _showTableDialog,
+                              isCompact: true,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: _buildQuickActionButton(
+                              icon: "assets/icons/discount.svg",
+                              label: _selectedPromo != null
+                                  ? _selectedPromo!.name
+                                  : 'Discount',
+                              isActive: _selectedPromo != null,
+                              onTap: _showPromoPicker,
+                              isCompact: true,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: _buildQuickActionButton(
+                              icon: "assets/icons/save_bill.svg",
+                              label: 'Save Bill',
+                              isActive: false,
+                              onTap: _showSaveBill,
+                              isCompact: true,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildQuickActionButton(
+                                  icon: "assets/icons/customer.svg",
+                                  label: cartState.customer?.name ?? 'Customer',
+                                  isActive: cartState.customer != null,
+                                  onTap: () =>
+                                      _showCustomerPicker(cartState.customer),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildQuickActionButton(
+                                  icon: "assets/icons/tables.svg",
+                                  label:
+                                      _tableNumber != null &&
+                                          _tableNumber!.isNotEmpty
+                                      ? 'Meja $_tableNumber'
+                                      : 'Tables',
+                                  isActive:
+                                      _tableNumber != null &&
+                                      _tableNumber!.isNotEmpty,
+                                  onTap: _showTableDialog,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildQuickActionButton(
+                                  icon: "assets/icons/discount.svg",
+                                  label: _selectedPromo != null
+                                      ? _selectedPromo!.name
+                                      : 'Discount',
+                                  isActive: _selectedPromo != null,
+                                  onTap: _showPromoPicker,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildQuickActionButton(
+                                  icon: "assets/icons/save_bill.svg",
+                                  label: 'Save Bill',
+                                  isActive: false,
+                                  onTap: _showSaveBill,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
               ),
 
               Divider(
@@ -2177,20 +3149,25 @@ class _KasirPageState extends State<KasirPage> {
 
               // 2. Order Details Header & Type Toggle
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+                padding: EdgeInsets.fromLTRB(
+                  isShortScreen ? 10 : 14,
+                  isShortScreen ? 6 : 10,
+                  isShortScreen ? 10 : 14,
+                  isShortScreen ? 4 : 6,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'Order Details',
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: isShortScreen ? 13.5 : 15,
                         fontWeight: FontWeight.bold,
                         color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
                     ),
                     Container(
-                      height: 32,
+                      height: isShortScreen ? 28 : 32,
                       decoration: BoxDecoration(
                         color: isDark
                             ? const Color(0xFF0F172A)
@@ -2204,8 +3181,14 @@ class _KasirPageState extends State<KasirPage> {
                       ),
                       child: Row(
                         children: [
-                          _buildOrderTypeToggle('Dine In'),
-                          _buildOrderTypeToggle('Take Away'),
+                          _buildOrderTypeToggle(
+                            'Dine In',
+                            isShortScreen: isShortScreen,
+                          ),
+                          _buildOrderTypeToggle(
+                            'Take Away',
+                            isShortScreen: isShortScreen,
+                          ),
                         ],
                       ),
                     ),
@@ -2218,45 +3201,50 @@ class _KasirPageState extends State<KasirPage> {
                 child: cartState.items.isEmpty
                     ? Center(
                         child: Padding(
-                          padding: const EdgeInsets.all(24),
+                          padding: EdgeInsets.all(isShortScreen ? 10 : 24),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              SvgPicture.asset("assets/icons/order.svg"),
-                              const SizedBox(height: 12),
+                              SvgPicture.asset(
+                                "assets/icons/order.svg",
+                                height: isShortScreen ? 34 : null,
+                              ),
+                              SizedBox(height: isShortScreen ? 6 : 12),
                               Text(
                                 'Belum Ada Pesanan',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: isShortScreen ? 12 : 14,
                                   fontWeight: FontWeight.bold,
                                   color: isDark
                                       ? Colors.white
                                       : const Color(0xFF0F172A),
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Sentuh menu di sebelah kiri untuk menambahkan pesanan',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: isDark
-                                      ? const Color(0xFF94A3B8)
-                                      : const Color(0xFF64748B),
+                              if (!isShortScreen) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Sentuh menu di sebelah kiri untuk menambahkan pesanan',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: isDark
+                                        ? const Color(0xFF94A3B8)
+                                        : const Color(0xFF64748B),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
                         ),
                       )
                     : ListView.separated(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isShortScreen ? 10 : 14,
+                          vertical: isShortScreen ? 4 : 8,
                         ),
                         itemCount: cartState.items.length,
                         separatorBuilder: (context, index) => Divider(
-                          height: 12,
+                          height: isShortScreen ? 8 : 12,
                           color: isDark
                               ? const Color(0xFF334155)
                               : const Color(0xFFF1F5F9),
@@ -2465,24 +3453,34 @@ class _KasirPageState extends State<KasirPage> {
                       color: isDark
                           ? const Color(0xFF94A3B8)
                           : const Color(0xFF64748B),
-                      fontSize: 12,
+                      fontSize: isShortScreen ? 11 : 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: isShortScreen ? 4 : 8),
               ],
 
               // 5. Order Summary Box
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 4, 14, 10),
+                padding: EdgeInsets.fromLTRB(
+                  isShortScreen ? 10 : 14,
+                  isShortScreen ? 2 : 4,
+                  isShortScreen ? 10 : 14,
+                  isShortScreen ? 6 : 10,
+                ),
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isShortScreen ? 10 : 12,
+                    vertical: isShortScreen ? 6 : 12,
+                  ),
                   decoration: BoxDecoration(
                     color: isDark
                         ? const Color(0xFF0F172A)
                         : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      isShortScreen ? 10 : 12,
+                    ),
                     border: Border.all(
                       color: isDark
                           ? const Color(0xFF334155)
@@ -2500,14 +3498,14 @@ class _KasirPageState extends State<KasirPage> {
                               color: isDark
                                   ? const Color(0xFF94A3B8)
                                   : const Color(0xFF64748B),
-                              fontSize: 12,
+                              fontSize: isShortScreen ? 11 : 12,
                             ),
                           ),
                           Text(
                             formatter.format(subtotal).trim(),
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              fontSize: 12,
+                              fontSize: isShortScreen ? 11 : 12,
                               color: isDark
                                   ? Colors.white
                                   : const Color(0xFF0F172A),
@@ -2515,7 +3513,7 @@ class _KasirPageState extends State<KasirPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 5),
+                      SizedBox(height: isShortScreen ? 3 : 5),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -2525,14 +3523,14 @@ class _KasirPageState extends State<KasirPage> {
                               color: isDark
                                   ? const Color(0xFF94A3B8)
                                   : const Color(0xFF64748B),
-                              fontSize: 12,
+                              fontSize: isShortScreen ? 11 : 12,
                             ),
                           ),
                           Text(
                             formatter.format(tax).trim(),
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              fontSize: 12,
+                              fontSize: isShortScreen ? 11 : 12,
                               color: isDark
                                   ? Colors.white
                                   : const Color(0xFF0F172A),
@@ -2541,7 +3539,7 @@ class _KasirPageState extends State<KasirPage> {
                         ],
                       ),
                       if (discount > 0) ...[
-                        const SizedBox(height: 5),
+                        SizedBox(height: isShortScreen ? 3 : 5),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -2551,7 +3549,7 @@ class _KasirPageState extends State<KasirPage> {
                                 color: isDark
                                     ? const Color(0xFF34D399)
                                     : const Color(0xFF059669),
-                                fontSize: 12,
+                                fontSize: isShortScreen ? 11 : 12,
                               ),
                             ),
                             Text(
@@ -2561,14 +3559,16 @@ class _KasirPageState extends State<KasirPage> {
                                     ? const Color(0xFF34D399)
                                     : const Color(0xFF059669),
                                 fontWeight: FontWeight.bold,
-                                fontSize: 12,
+                                fontSize: isShortScreen ? 11 : 12,
                               ),
                             ),
                           ],
                         ),
                       ],
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: EdgeInsets.symmetric(
+                          vertical: isShortScreen ? 4 : 8,
+                        ),
                         child: Divider(
                           height: 1,
                           color: isDark
@@ -2582,7 +3582,7 @@ class _KasirPageState extends State<KasirPage> {
                           Text(
                             'Total',
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: isShortScreen ? 13 : 15,
                               fontWeight: FontWeight.bold,
                               color: isDark
                                   ? Colors.white
@@ -2592,7 +3592,7 @@ class _KasirPageState extends State<KasirPage> {
                           Text(
                             formatter.format(grandTotal).trim(),
                             style: TextStyle(
-                              fontSize: 17,
+                              fontSize: isShortScreen ? 15 : 17,
                               fontWeight: FontWeight.w800,
                               color: isDark
                                   ? Colors.white
@@ -2608,44 +3608,51 @@ class _KasirPageState extends State<KasirPage> {
 
               // 6. Process Transaction & Hold Buttons
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                padding: EdgeInsets.fromLTRB(
+                  isShortScreen ? 10 : 14,
+                  0,
+                  isShortScreen ? 10 : 14,
+                  isShortScreen ? 8 : 14,
+                ),
                 child: Row(
                   children: [
                     SizedBox(
-                      height: 46,
-                      child: OutlinedButton.icon(
+                      height: isShortScreen ? 38 : 46,
+                      child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFFD97706),
                           side: const BorderSide(color: Color(0xFFF59E0B)),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(
+                              isShortScreen ? 10 : 12,
+                            ),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isShortScreen ? 10 : 14,
+                          ),
                         ),
                         onPressed: _showSaveBill,
-                        icon: const Icon(
-                          Icons.pause_circle_outline_rounded,
-                          size: 18,
-                        ),
-                        label: const Text(
+                        child: Text(
                           'Tahan',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                            fontSize: isShortScreen ? 12 : 13,
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: isShortScreen ? 6 : 8),
                     Expanded(
                       child: SizedBox(
-                        height: 46,
+                        height: isShortScreen ? 38 : 46,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(
+                                isShortScreen ? 10 : 12,
+                              ),
                             ),
                           ),
                           onPressed: () {
@@ -2654,6 +3661,15 @@ class _KasirPageState extends State<KasirPage> {
                                 context,
                                 'Keranjang masih kosong',
                               );
+                              return;
+                            }
+                            final shiftState = context.read<ShiftBloc>().state;
+                            if (!shiftState.hasActiveShift) {
+                              AppToast.showWarning(
+                                context,
+                                'Shift kasir belum dibuka. Masukkan modal awal terlebih dahulu.',
+                              );
+                              OpenShiftDialog.show(context);
                               return;
                             }
                             if (widget.onOpenOrders != null) {
@@ -2667,12 +3683,12 @@ class _KasirPageState extends State<KasirPage> {
                               );
                             }
                           },
-                          child: const Text(
+                          child: Text(
                             'Proses Transaksi',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontSize: isShortScreen ? 12.5 : 14,
                             ),
                           ),
                         ),
@@ -2688,27 +3704,31 @@ class _KasirPageState extends State<KasirPage> {
     );
   }
 
-  // Quick Action Button Component (ClaPos 2x2)
+  // Quick Action Button Component (ClaPos 2x2 or 1x4 compact)
   Widget _buildQuickActionButton({
     required String icon,
     required String label,
     required bool isActive,
     required VoidCallback onTap,
+    bool isCompact = false,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(isCompact ? 8 : 10),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 4 : 8,
+          vertical: isCompact ? 6 : 8,
+        ),
         decoration: BoxDecoration(
           color: isActive
               ? (isDark
                     ? const Color(0xFF064E3B).withValues(alpha: 0.4)
                     : const Color(0xFFF0FDF4))
               : (isDark ? const Color(0xFF0F172A) : Colors.white),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(isCompact ? 8 : 10),
           border: Border.all(
             color: isActive
                 ? (isDark
@@ -2721,14 +3741,15 @@ class _KasirPageState extends State<KasirPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SvgPicture.asset(icon, height: 28),
-            const SizedBox(height: 3),
+            SvgPicture.asset(icon, height: isCompact ? 18 : 28),
+            SizedBox(height: isCompact ? 2 : 3),
             Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: isCompact ? 10 : 11,
                 fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
                 color: isActive
                     ? (isDark ? const Color(0xFF34D399) : AppColors.primary)
@@ -2744,14 +3765,17 @@ class _KasirPageState extends State<KasirPage> {
   }
 
   // Order Type Toggle Button (Dine In / Take Away)
-  Widget _buildOrderTypeToggle(String type) {
+  Widget _buildOrderTypeToggle(String type, {bool isShortScreen = false}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = _orderType == type;
     return InkWell(
       onTap: () => setState(() => _orderType = type),
       borderRadius: BorderRadius.circular(7),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: EdgeInsets.symmetric(
+          horizontal: isShortScreen ? 8 : 10,
+          vertical: isShortScreen ? 4 : 6,
+        ),
         decoration: BoxDecoration(
           color: isSelected
               ? (isDark ? const Color(0xFF334155) : Colors.white)
@@ -2764,7 +3788,7 @@ class _KasirPageState extends State<KasirPage> {
         child: Text(
           type,
           style: TextStyle(
-            fontSize: 11.5,
+            fontSize: isShortScreen ? 10.5 : 11.5,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
             color: isSelected
                 ? AppColors.primary

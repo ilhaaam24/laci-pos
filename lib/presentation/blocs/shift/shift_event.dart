@@ -51,15 +51,28 @@ class CloseShift extends ShiftEvent {
   final String shiftId;
   final double actualCash;
   final String? notes;
+  final double? remainingCash;
+  final double? depositedCash;
+  final String? handoverNote;
 
   const CloseShift({
     required this.shiftId,
     required this.actualCash,
     this.notes,
+    this.remainingCash,
+    this.depositedCash,
+    this.handoverNote,
   });
 
   @override
-  List<Object?> get props => [shiftId, actualCash, notes];
+  List<Object?> get props => [
+        shiftId,
+        actualCash,
+        notes,
+        remainingCash,
+        depositedCash,
+        handoverNote,
+      ];
 }
 
 class LoadShiftHistory extends ShiftEvent {}

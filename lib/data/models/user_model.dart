@@ -10,6 +10,7 @@ class UserModel extends UserEntity {
     super.role,
     super.businessId,
     super.isEmailVerified,
+    super.pin,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -21,6 +22,7 @@ class UserModel extends UserEntity {
       photoUrl: data['photoUrl'],
       role: UserRole.fromString(data['role']),
       businessId: data['businessId'],
+      pin: data['pin']?.toString(),
     );
   }
 
@@ -31,6 +33,33 @@ class UserModel extends UserEntity {
       'photoUrl': photoUrl,
       'role': role.name,
       'businessId': businessId,
+      if (pin != null) 'pin': pin,
+    };
+  }
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      id: json['id'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      name: json['name'] as String?,
+      photoUrl: json['photoUrl'] as String?,
+      role: UserRole.fromString(json['role'] as String?),
+      businessId: json['businessId'] as String?,
+      isEmailVerified: json['isEmailVerified'] as bool? ?? false,
+      pin: json['pin']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'email': email,
+      'name': name,
+      'photoUrl': photoUrl,
+      'role': role.name,
+      'businessId': businessId,
+      'isEmailVerified': isEmailVerified,
+      'pin': pin,
     };
   }
 
@@ -43,6 +72,7 @@ class UserModel extends UserEntity {
       role: entity.role,
       businessId: entity.businessId,
       isEmailVerified: entity.isEmailVerified,
+      pin: entity.pin,
     );
   }
 
@@ -55,6 +85,7 @@ class UserModel extends UserEntity {
     UserRole? role,
     String? businessId,
     bool? isEmailVerified,
+    String? pin,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -64,6 +95,7 @@ class UserModel extends UserEntity {
       role: role ?? this.role,
       businessId: businessId ?? this.businessId,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+      pin: pin ?? this.pin,
     );
   }
 }

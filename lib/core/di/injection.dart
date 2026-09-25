@@ -66,6 +66,7 @@ import '../services/transaction_service.dart';
 import '../services/stock_service.dart';
 import '../services/notification_service.dart';
 import '../services/session_service.dart';
+import '../services/staff_auth_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -83,6 +84,9 @@ Future<void> initializeDependencies() async {
 
   // Services
   getIt.registerLazySingleton<SessionService>(() => SessionService());
+  getIt.registerLazySingleton<StaffAuthService>(
+    () => StaffAuthService(sessionService: getIt()),
+  );
   getIt.registerLazySingleton<ConnectivityService>(() => ConnectivityService());
 
   getIt.registerLazySingleton<ImageUploadService>(

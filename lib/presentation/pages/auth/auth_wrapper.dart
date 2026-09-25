@@ -171,7 +171,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 return const BusinessSetupPage();
               }
 
-              return const MainPage();
+              return MainPage(key: MainPage.globalKey);
             },
           );
         } else if (authState is Unauthenticated ||

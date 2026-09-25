@@ -22,6 +22,8 @@ abstract class AuthFirebaseDataSource {
 
   Future<void> signOut();
 
+  Future<void> deleteAccount();
+
   User? getCurrentUser();
 
   Stream<User?> get authStateChanges;
@@ -134,6 +136,19 @@ class AuthFirebaseDataSourceImpl implements AuthFirebaseDataSource {
       log('Error signing out from Google: $e');
     }
     return await _firebaseAuth.signOut();
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    final user = _firebaseAuth.currentUser;
+    if (user != null) {
+      try {
+        await _googleSignIn.signOut();
+      } catch (e) {
+        log('Error signing out from Google during deleteAccount: $e');
+      }
+      await user.delete();
+    }
   }
 
   @override

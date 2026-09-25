@@ -3,19 +3,30 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/di/injection.dart';
+import '../../../../core/services/session_service.dart';
 import '../../../../core/style/app_colors.dart';
 import '../../../../core/utils/app_toast.dart';
-import '../../../blocs/auth/auth_bloc.dart';
 import '../../../blocs/shift/shift_bloc.dart';
 
 class OpenShiftDialog extends StatefulWidget {
-  const OpenShiftDialog({super.key});
+  final double? initialAmount;
+  final String? handoverNote;
 
-  static Future<bool?> show(BuildContext context) {
+  const OpenShiftDialog({super.key, this.initialAmount, this.handoverNote});
+
+  static Future<bool?> show(
+    BuildContext context, {
+    double? initialAmount,
+    String? handoverNote,
+  }) {
     return showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => const OpenShiftDialog(),
+      builder: (ctx) => OpenShiftDialog(
+        initialAmount: initialAmount,
+        handoverNote: handoverNote,
+      ),
     );
   }
 
@@ -40,6 +51,26 @@ class _OpenShiftDialogState extends State<OpenShiftDialog> {
     300000,
     500000,
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialAmount != null && widget.initialAmount! >= 0) {
+      _cashController.text = widget.initialAmount!.toInt().toString();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final shiftState = context.read<ShiftBloc>().state;
+        final candidate = shiftState.lastClosedRemainingCash;
+        if (candidate != null &&
+            candidate >= 0 &&
+            _cashController.text.isEmpty) {
+          _cashController.text = candidate.toInt().toString();
+          setState(() {});
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -89,20 +120,28 @@ class _OpenShiftDialogState extends State<OpenShiftDialog> {
         ? const Color(0xFF94A3B8)
         : const Color(0xFF64748B);
 
-    final authState = context.read<AuthBloc>().state;
-    final cashierName = (authState is Authenticated)
-        ? (authState.user.name?.isNotEmpty == true
-              ? authState.user.name!
-              : authState.user.email)
-        : 'Kasir';
+    final currentUser = getIt<SessionService>().currentUser;
+    final cashierName = currentUser?.name?.isNotEmpty == true
+        ? currentUser!.name!
+        : (currentUser?.email ?? 'Kasir');
+
+    final shiftState = context.watch<ShiftBloc>().state;
+    final effectiveHandoverAmount =
+        widget.initialAmount ?? shiftState.lastClosedRemainingCash;
+    final effectiveHandoverNote =
+        widget.handoverNote ?? shiftState.lastClosedHandoverNote;
+    final lastClosedShift = shiftState.lastClosedShift;
 
     return Dialog(
       backgroundColor: surfaceColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 440),
-        child: Padding(
+        constraints: BoxConstraints(
+          maxWidth: 440,
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -146,6 +185,88 @@ class _OpenShiftDialogState extends State<OpenShiftDialog> {
               const SizedBox(height: 18),
               Divider(height: 1, color: borderColor),
               const SizedBox(height: 18),
+
+              // Banner Serah Terima Uang Laci jika ada shift sebelumnya
+              if (effectiveHandoverAmount != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF0369A1).withValues(alpha: 0.2)
+                        : const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF0284C7).withValues(alpha: 0.4)
+                          : const Color(0xFFBFDBFE),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFF0284C7,
+                          ).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.swap_horiz_rounded,
+                          size: 18,
+                          color: Color(0xFF0284C7),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              lastClosedShift != null
+                                  ? 'Serah Terima dari ${lastClosedShift.userName}'
+                                  : 'Serah Terima Kas Laci',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: isDark
+                                    ? Colors.lightBlueAccent
+                                    : const Color(0xFF1E40AF),
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              effectiveHandoverNote != null &&
+                                      effectiveHandoverNote.isNotEmpty
+                                  ? effectiveHandoverNote
+                                  : 'Uang fisik yang ditinggalkan di laci: ${_currencyFormatter.format(effectiveHandoverAmount)}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isDark
+                                    ? const Color(0xFF93C5FD)
+                                    : const Color(0xFF1E3A8A),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '💡 Hitung kembali uang fisik di laci sebelum membuka shift.',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontStyle: FontStyle.italic,
+                                color: isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
 
               // Modal Awal Title
               Text(
@@ -328,13 +449,9 @@ class _OpenShiftDialogState extends State<OpenShiftDialog> {
                   const SizedBox(width: 12),
                   Expanded(
                     flex: 2,
-                    child: ElevatedButton.icon(
+                    child: ElevatedButton(
                       onPressed: _submit,
-                      icon: const Icon(Icons.check_circle_outline, size: 18),
-                      label: const Text(
-                        'Buka Shift',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
+
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -343,6 +460,10 @@ class _OpenShiftDialogState extends State<OpenShiftDialog> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
+                      ),
+                      child: const Text(
+                        'Buka Shift',
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),

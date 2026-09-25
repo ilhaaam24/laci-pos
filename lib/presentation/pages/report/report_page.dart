@@ -11,11 +11,18 @@ import '../../../core/services/whatsapp_service.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
 import '../../../domain/entities/business_entity.dart';
+import '../../../domain/entities/shift_entity.dart';
 import '../../../domain/entities/transaction_entity.dart';
 import '../../blocs/business/business_bloc.dart';
 import '../../blocs/report/report_bloc.dart';
 import '../../blocs/transaction/transaction_bloc.dart';
 import '../../blocs/product/product_bloc.dart';
+import '../../blocs/shift/shift_bloc.dart';
+import '../../widgets/upgrade_pro_sheet.dart';
+import '../../widgets/pro_badge.dart';
+import '../kasir/widgets/close_shift_dialog.dart';
+import '../kasir/widgets/open_shift_dialog.dart';
+import '../kasir/widgets/staff_pin_dialog.dart';
 
 enum ReportPeriod { today, week, month, custom }
 
@@ -497,6 +504,14 @@ class _ReportPageState extends State<ReportPage> {
     Map<String, dynamic> reportMap,
     BusinessInfo? businessInfo,
   ) {
+    if (businessInfo?.isPro != true) {
+      showUpgradeProSheet(
+        context,
+        featureName: 'Export Laporan Rekap PDF & Excel',
+      );
+      return;
+    }
+
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 720;
 
@@ -667,12 +682,54 @@ class _ReportPageState extends State<ReportPage> {
     }
   }
 
-  void _showEndOfDayDialog({
+  Future<void> _showEndOfDayDialog({
     required double totalOmzet,
     required int totalTransactions,
     required double cashTotal,
     required double nonCashTotal,
-  }) {
+  }) async {
+    final shiftState = context.read<ShiftBloc>().state;
+    if (shiftState.hasActiveShift && shiftState.activeShift != null) {
+      final active = shiftState.activeShift!;
+      final summary =
+          shiftState.currentSummary ??
+          ShiftSummary(
+            shift: active,
+            startCash: active.startCash,
+            totalCashSales: active.totalCashSales,
+            totalQrisSales: 0,
+            totalDebitSales: 0,
+            totalTransferSales: 0,
+            totalSales: active.totalSales,
+            totalTransactions: active.totalTransactions,
+            totalCashIn: 0,
+            totalCashOut: 0,
+            cashMovements: const [],
+          );
+      final closeResult = await CloseShiftDialog.show(
+        context,
+        shift: active,
+        summary: summary,
+      );
+      if (closeResult != null && closeResult.isClosed && mounted) {
+        final curFmt = NumberFormat.currency(
+          locale: 'id_ID',
+          symbol: 'Rp ',
+          decimalDigits: 0,
+        );
+        await StaffPinDialog.show(
+          context,
+          isLockMode: true,
+          title: 'Shift Selesai • Masuk Kasir Baru',
+          subtitle: 'Masukkan 4 digit PIN kasir berikutnya',
+          pendingHandoverAmount: closeResult.remainingCashInDrawer,
+          pendingHandoverNote:
+              'Serah terima dari ${active.userName}: Ditinggalkan ${curFmt.format(closeResult.remainingCashInDrawer)} di laci (Setor: ${curFmt.format(closeResult.depositedCash)})',
+        );
+      }
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -686,13 +743,13 @@ class _ReportPageState extends State<ReportPage> {
           title: const Row(
             children: [
               Icon(
-                Icons.lock_clock_outlined,
-                color: AppColors.primary,
+                Icons.check_circle_outline_rounded,
+                color: Color(0xFF10B981),
                 size: 22,
               ),
               SizedBox(width: 8),
               Text(
-                'Tutup Kasir Harian',
+                'Shift Kasir Sudah Tutup',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -706,7 +763,7 @@ class _ReportPageState extends State<ReportPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Rekapitulasi Shift Kasir #01 • ${DateFormat('dd MMMM yyyy, HH:mm').format(DateTime.now())}',
+                'Rekapitulasi Harian Toko • ${DateFormat('dd MMMM yyyy').format(DateTime.now())}',
                 style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
               ),
               const SizedBox(height: 14),
@@ -720,7 +777,7 @@ class _ReportPageState extends State<ReportPage> {
                 child: Column(
                   children: [
                     _buildDialogRow(
-                      'Total Omzet',
+                      'Total Omzet Hari Ini',
                       _currencyFormatter.format(totalOmzet).trim(),
                       isBold: true,
                     ),
@@ -731,12 +788,12 @@ class _ReportPageState extends State<ReportPage> {
                     ),
                     const SizedBox(height: 6),
                     _buildDialogRow(
-                      'Uang Tunai di Laci',
+                      'Total Tunai',
                       _currencyFormatter.format(cashTotal).trim(),
                     ),
                     const SizedBox(height: 6),
                     _buildDialogRow(
-                      'Non-Tunai (QRIS/EDC)',
+                      'Total Non-Tunai',
                       _currencyFormatter.format(nonCashTotal).trim(),
                     ),
                   ],
@@ -744,7 +801,7 @@ class _ReportPageState extends State<ReportPage> {
               ),
               const SizedBox(height: 12),
               const Text(
-                'Pastikan fisik uang tunai di laci kasir telah sesuai dengan hitungan sistem sebelum menutup shift.',
+                'Shift kasir saat ini tidak ada yang aktif. Anda dapat membuka shift baru untuk memulai sesi transaksi berikutnya.',
                 style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
               ),
             ],
@@ -760,11 +817,11 @@ class _ReportPageState extends State<ReportPage> {
                 ),
               ),
               child: const Text(
-                'Batal',
+                'Tutup',
                 style: TextStyle(color: Color(0xFF64748B)),
               ),
             ),
-            ElevatedButton(
+            ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -775,13 +832,11 @@ class _ReportPageState extends State<ReportPage> {
               ),
               onPressed: () {
                 Navigator.pop(dialogContext);
-                AppToast.showSuccess(
-                  context,
-                  'Kasir berhasil ditutup untuk hari ini!',
-                );
+                OpenShiftDialog.show(context);
               },
-              child: const Text(
-                'Tutup',
+              icon: const Icon(Icons.lock_open_rounded, size: 16),
+              label: const Text(
+                'Buka Shift Baru',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -1964,16 +2019,12 @@ class _ReportPageState extends State<ReportPage> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFFF1F5F9)),
               ),
-              child: const Column(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.receipt_long_outlined,
-                    size: 32,
-                    color: Color(0xFF94A3B8),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
+                  SvgPicture.asset('assets/icons/product.svg'),
+                  const SizedBox(height: 8),
+                  const Text(
                     'Belum ada menu terjual pada periode ini',
                     style: TextStyle(
                       fontSize: 12.5,
@@ -2200,19 +2251,7 @@ class _ReportPageState extends State<ReportPage> {
               alignment: Alignment.center,
               child: Column(
                 children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF8FAFC),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.receipt_outlined,
-                      size: 24,
-                      color: Color(0xFF94A3B8),
-                    ),
-                  ),
+                  SvgPicture.asset("assets/icons/transaction.svg"),
                   const SizedBox(height: 10),
                   const Text(
                     'Belum Ada Transaksi',
@@ -3386,6 +3425,8 @@ class _ReportPageState extends State<ReportPage> {
                       color: Color(0xFF334155),
                     ),
                   ),
+                  const SizedBox(width: 6),
+                  const ProBadge(),
                 ],
               ],
             ),

@@ -9,4 +9,11 @@ abstract class UserRepository {
     String password,
     UserRole role,
   );
+  Future<Either<String, void>> addStaffWithPin({
+    required String name,
+    required UserRole role,
+    required String pin,
+    String? email,
+  });
+  Future<Either<String, void>> updateStaffPin(String uid, String newPin);
 }

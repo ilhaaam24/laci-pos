@@ -18,6 +18,9 @@ class BusinessInfoModel extends BusinessInfo {
     super.isServiceChargeEnabled = false,
     super.serviceChargeRate = 0.0,
     super.isPriceInclusiveTax = false,
+    super.subscriptionTier = 'free',
+    super.subscriptionExpiresAt,
+    super.subscriptionPlan,
   });
 
   factory BusinessInfoModel.fromFirestore(DocumentSnapshot doc) {
@@ -38,6 +41,11 @@ class BusinessInfoModel extends BusinessInfo {
       isServiceChargeEnabled: data['isServiceChargeEnabled'] ?? false,
       serviceChargeRate: (data['serviceChargeRate'] ?? 0.0).toDouble(),
       isPriceInclusiveTax: data['isPriceInclusiveTax'] ?? false,
+      subscriptionTier: data['subscriptionTier'] ?? 'free',
+      subscriptionExpiresAt: data['subscriptionExpiresAt'] != null
+          ? (data['subscriptionExpiresAt'] as Timestamp).toDate()
+          : null,
+      subscriptionPlan: data['subscriptionPlan'],
     );
   }
 
@@ -58,6 +66,9 @@ class BusinessInfoModel extends BusinessInfo {
       isServiceChargeEnabled: entity.isServiceChargeEnabled,
       serviceChargeRate: entity.serviceChargeRate,
       isPriceInclusiveTax: entity.isPriceInclusiveTax,
+      subscriptionTier: entity.subscriptionTier,
+      subscriptionExpiresAt: entity.subscriptionExpiresAt,
+      subscriptionPlan: entity.subscriptionPlan,
     );
   }
 
@@ -78,6 +89,9 @@ class BusinessInfoModel extends BusinessInfo {
       isServiceChargeEnabled: isServiceChargeEnabled,
       serviceChargeRate: serviceChargeRate,
       isPriceInclusiveTax: isPriceInclusiveTax,
+      subscriptionTier: subscriptionTier,
+      subscriptionExpiresAt: subscriptionExpiresAt,
+      subscriptionPlan: subscriptionPlan,
     );
   }
 
@@ -97,6 +111,11 @@ class BusinessInfoModel extends BusinessInfo {
       'isServiceChargeEnabled': isServiceChargeEnabled,
       'serviceChargeRate': serviceChargeRate,
       'isPriceInclusiveTax': isPriceInclusiveTax,
+      'subscriptionTier': subscriptionTier,
+      'subscriptionExpiresAt': subscriptionExpiresAt != null
+          ? Timestamp.fromDate(subscriptionExpiresAt!)
+          : null,
+      'subscriptionPlan': subscriptionPlan,
     };
   }
 
@@ -117,6 +136,9 @@ class BusinessInfoModel extends BusinessInfo {
       'isServiceChargeEnabled': isServiceChargeEnabled,
       'serviceChargeRate': serviceChargeRate,
       'isPriceInclusiveTax': isPriceInclusiveTax,
+      'subscriptionTier': subscriptionTier,
+      'subscriptionExpiresAt': subscriptionExpiresAt?.toIso8601String(),
+      'subscriptionPlan': subscriptionPlan,
     };
   }
 
@@ -141,6 +163,11 @@ class BusinessInfoModel extends BusinessInfo {
       isServiceChargeEnabled: json['isServiceChargeEnabled'] ?? false,
       serviceChargeRate: (json['serviceChargeRate'] ?? 0.0).toDouble(),
       isPriceInclusiveTax: json['isPriceInclusiveTax'] ?? false,
+      subscriptionTier: json['subscriptionTier'] ?? 'free',
+      subscriptionExpiresAt: json['subscriptionExpiresAt'] != null
+          ? DateTime.parse(json['subscriptionExpiresAt'])
+          : null,
+      subscriptionPlan: json['subscriptionPlan'],
     );
   }
 }

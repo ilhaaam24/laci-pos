@@ -1949,10 +1949,10 @@ class _PaymentDialogState extends State<PaymentDialog> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.credit_card_rounded,
                         size: 16,
-                        color: Color(0xFF7C3AED),
+                        color: AppColors.textPrimary,
                       ),
                       const SizedBox(width: 6),
                       Expanded(
@@ -1963,7 +1963,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                             fontWeight: FontWeight.w600,
                             color: isDark
                                 ? const Color(0xFFDDD6FE)
-                                : const Color(0xFF6D28D9),
+                                : AppColors.textPrimary,
                           ),
                         ),
                       ),

@@ -34,7 +34,9 @@ class _BusinessSetupPageState extends State<BusinessSetupPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark
+          ? const Color(0xFF0F172A)
+          : const Color(0xFFF8FAFC),
       body: BlocConsumer<BusinessBloc, BusinessState>(
         listener: (context, state) {
           if (state.isSuccess && state.message != null) {
@@ -87,7 +89,9 @@ class _BusinessSetupPageState extends State<BusinessSetupPage> {
                           controller: _nameController,
                           style: TextStyle(
                             fontSize: 14,
-                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
                           ),
                           decoration: InputDecoration(
                             hintText: 'Contoh: Kedai Kopi Maju',
@@ -182,15 +186,8 @@ class _BusinessSetupPageState extends State<BusinessSetupPage> {
     if (currentInfo == null) return;
 
     if (_formKey.currentState!.validate()) {
-      final updatedInfo = BusinessInfo(
-        id: currentInfo.id,
+      final updatedInfo = currentInfo.copyWith(
         businessName: _nameController.text.trim(),
-        address: currentInfo.address,
-        phone: currentInfo.phone,
-        email: currentInfo.email,
-        logoUrl: currentInfo.logoUrl,
-        qrisUrl: currentInfo.qrisUrl,
-        createdAt: currentInfo.createdAt,
         updatedAt: DateTime.now(),
       );
 

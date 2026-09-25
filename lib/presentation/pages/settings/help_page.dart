@@ -130,7 +130,7 @@ class _HelpPageState extends State<HelpPage> {
     final message = Uri.encodeComponent(
       'Halo Tim Bantuan Laci POS, saya memerlukan bantuan terkait aplikasi Laci POS di toko saya.',
     );
-    final whatsappUrl = Uri.parse('https://wa.me/6281234567890?text=$message');
+    final whatsappUrl = Uri.parse('https://wa.me/6281615697675?text=$message');
 
     try {
       if (await canLaunchUrl(whatsappUrl)) {

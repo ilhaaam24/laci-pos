@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:laci/data/models/shift_model.dart';
 import 'package:laci/domain/entities/shift_entity.dart';
+import 'package:laci/presentation/blocs/shift/shift_state.dart';
 
 void main() {
   group('Shift & Cash Movement Entities & Models Tests', () {
@@ -176,6 +177,31 @@ void main() {
       expect(closedShift.endCashExpected, 285000);
       expect(closedShift.endCashActual, 280000);
       expect(closedShift.cashDifference, -5000);
+    });
+
+    test('ShiftState hasActiveShift accurately reflects open vs closed shift', () {
+      final now = DateTime(2026, 9, 21, 8, 30);
+      final openShift = ShiftEntity(
+        id: 'shift-open',
+        userId: 'u1',
+        userName: 'Budi',
+        businessId: 'biz1',
+        startTime: now,
+        startCash: 100000,
+        status: ShiftStatus.open,
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      final stateWithOpenShift = ShiftState(activeShift: openShift);
+      expect(stateWithOpenShift.hasActiveShift, true);
+
+      final closedShift = openShift.copyWith(status: ShiftStatus.closed);
+      final stateWithClosedShift = ShiftState(activeShift: closedShift);
+      expect(stateWithClosedShift.hasActiveShift, false);
+
+      final stateWithNoShift = const ShiftState();
+      expect(stateWithNoShift.hasActiveShift, false);
     });
   });
 }

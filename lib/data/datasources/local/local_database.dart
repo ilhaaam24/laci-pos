@@ -192,6 +192,10 @@ class LocalBusinessInfo extends Table {
       real().withDefault(const Constant(0.0))();
   BoolColumn get isPriceInclusiveTax =>
       boolean().withDefault(const Constant(false))();
+  TextColumn get subscriptionTier =>
+      text().withDefault(const Constant('free'))();
+  DateTimeColumn get subscriptionExpiresAt => dateTime().nullable()();
+  TextColumn get subscriptionPlan => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -291,7 +295,7 @@ class LocalDatabase extends _$LocalDatabase {
   LocalDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration {
@@ -365,6 +369,21 @@ class LocalDatabase extends _$LocalDatabase {
           );
           // Add trackStock column to LocalProducts
           await m.addColumn(localProducts, localProducts.trackStock);
+        }
+        if (from < 9) {
+          // Add subscription columns to LocalBusinessInfo
+          await m.addColumn(
+            localBusinessInfo,
+            localBusinessInfo.subscriptionTier,
+          );
+          await m.addColumn(
+            localBusinessInfo,
+            localBusinessInfo.subscriptionExpiresAt,
+          );
+          await m.addColumn(
+            localBusinessInfo,
+            localBusinessInfo.subscriptionPlan,
+          );
         }
       },
     );

@@ -99,4 +99,79 @@ class UserRepositoryImpl implements UserRepository {
       return Left(e.toString());
     }
   }
+
+  @override
+  Future<Either<String, void>> addStaffWithPin({
+    required String name,
+    required UserRole role,
+    required String pin,
+    String? email,
+  }) async {
+    try {
+      final businessId = sessionService.businessId;
+      if (businessId == null) return const Left('Business ID tidak ditemukan');
+
+      final effectiveEmail = (email != null && email.trim().isNotEmpty)
+          ? email.trim()
+          : 'staff_${DateTime.now().millisecondsSinceEpoch}@${businessId.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '')}.local';
+      final generatedPassword = 'Staff_${DateTime.now().millisecondsSinceEpoch}!a';
+
+      final appName = 'staff_creator_${DateTime.now().millisecondsSinceEpoch}';
+      final secondaryApp = await Firebase.initializeApp(
+        name: appName,
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+
+      try {
+        final authInstance = auth.FirebaseAuth.instanceFor(app: secondaryApp);
+        final userCredential = await authInstance.createUserWithEmailAndPassword(
+          email: effectiveEmail,
+          password: generatedPassword,
+        );
+
+        final uid = userCredential.user?.uid;
+        if (uid == null) {
+          throw Exception('Gagal mendapatkan UID untuk staf baru');
+        }
+
+        final newUser = UserModel(
+          id: uid,
+          email: effectiveEmail,
+          name: name.trim(),
+          photoUrl: null,
+          role: role,
+          businessId: businessId,
+          pin: pin.trim(),
+        );
+
+        await dataSource.createUserProfile(newUser);
+        await secondaryApp.delete();
+        return const Right(null);
+      } catch (e) {
+        await secondaryApp.delete();
+        rethrow;
+      }
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
+
+  @override
+  Future<Either<String, void>> updateStaffPin(String uid, String newPin) async {
+    try {
+      final user = await dataSource.getUserProfile(uid);
+      if (user != null) {
+        if (user.businessId != sessionService.businessId) {
+          return const Left('Anda tidak memiliki izin untuk mengubah staf ini');
+        }
+
+        final updatedUser = user.copyWith(pin: newPin.trim());
+        await dataSource.updateUserProfile(updatedUser);
+        return const Right(null);
+      }
+      return const Left('Staf tidak ditemukan');
+    } catch (e) {
+      return Left(e.toString());
+    }
+  }
 }

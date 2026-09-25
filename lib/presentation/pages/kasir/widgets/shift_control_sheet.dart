@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/services/printer_service.dart';
 import '../../../../core/services/whatsapp_service.dart';
@@ -10,12 +9,11 @@ import '../../../../domain/entities/shift_entity.dart';
 import '../../../blocs/business/business_bloc.dart';
 import '../../../blocs/shift/shift_bloc.dart';
 import 'cash_movement_dialog.dart';
-import 'close_shift_dialog.dart';
 
 class ShiftControlSheet extends StatelessWidget {
   const ShiftControlSheet({super.key});
 
-  static Future<void> show(BuildContext context) {
+  static Future<dynamic> show(BuildContext context) {
     // Refresh shift summary on open
     context.read<ShiftBloc>().add(LoadShiftSummary());
 
@@ -115,11 +113,6 @@ class ShiftControlSheet extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 8, 16, 12),
                 child: Row(
                   children: [
-                    SvgPicture.asset(
-                      "assets/icons/shift_aktif.svg",
-                      height: 36,
-                    ),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,15 +125,6 @@ class ShiftControlSheet extends StatelessWidget {
                                   fontSize: 17,
                                   fontWeight: FontWeight.bold,
                                   color: textColor,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF10B981),
-                                  shape: BoxShape.circle,
                                 ),
                               ),
                             ],
@@ -433,7 +417,7 @@ class ShiftControlSheet extends StatelessWidget {
                     ],
 
                     // X-Report / Print temporary
-                    OutlinedButton.icon(
+                    OutlinedButton(
                       onPressed: () async {
                         final printer = PrinterService();
                         if (printer.isConnected && summary != null) {
@@ -467,11 +451,7 @@ class ShiftControlSheet extends StatelessWidget {
                           }
                         }
                       },
-                      icon: const Icon(Icons.receipt_long_rounded, size: 18),
-                      label: const Text(
-                        'Cetak Rekap Sementara (X-Report)',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
+
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         side: BorderSide(color: borderColor),
@@ -479,27 +459,23 @@ class ShiftControlSheet extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
+                      child: const Text(
+                        'Cetak Rekap Sementara',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 10),
 
                     // Tutup Shift Button (Z-Report)
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        Navigator.pop(context); // Close sheet
-                        if (summary != null) {
-                          await CloseShiftDialog.show(
-                            context,
-                            shift: shift,
-                            summary: summary,
-                          );
-                        }
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context, 'close_shift');
                       },
-                      icon: const Icon(Icons.lock_clock_rounded, size: 18),
-                      label: const Text(
-                        'Tutup Shift (Z-Report)',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
+
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.darkBackground,
                         foregroundColor: Colors.white,
@@ -508,6 +484,10 @@ class ShiftControlSheet extends StatelessWidget {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
+                      ),
+                      child: const Text(
+                        'Tutup Shift',
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],

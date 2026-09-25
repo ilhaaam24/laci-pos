@@ -222,15 +222,13 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
           double.tryParse(_serviceRateController.text.replaceAll(',', '.')) ??
               0.0;
 
-      final updatedInfo = BusinessInfo(
-        id: currentInfo.id,
+      final updatedInfo = currentInfo.copyWith(
         businessName: _nameController.text.trim(),
         address: _addressController.text.trim(),
         phone: _phoneController.text.trim(),
         email: _emailController.text.trim(),
         logoUrl: _logoUrl != null && _logoUrl!.isNotEmpty ? _logoUrl : null,
         qrisUrl: _qrisUrl != null && _qrisUrl!.isNotEmpty ? _qrisUrl : null,
-        createdAt: currentInfo.createdAt,
         updatedAt: DateTime.now(),
         isTaxEnabled: _isTaxEnabled,
         taxRate: _isTaxEnabled ? taxRate : 0.0,

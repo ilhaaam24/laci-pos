@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import '../../../core/di/injection.dart';
+import '../../../core/services/staff_auth_service.dart';
 import '../../../domain/entities/user_entity.dart';
 import '../../../domain/repositories/user_repository.dart';
 
@@ -18,6 +20,33 @@ class InviteUser extends UsersEvent {
   InviteUser(this.email, this.password, this.role);
   @override
   List<Object?> get props => [email, password, role];
+}
+
+class CreateStaffWithPin extends UsersEvent {
+  final String name;
+  final UserRole role;
+  final String pin;
+  final String? email;
+
+  CreateStaffWithPin({
+    required this.name,
+    required this.role,
+    required this.pin,
+    this.email,
+  });
+
+  @override
+  List<Object?> get props => [name, role, pin, email];
+}
+
+class UpdateStaffPin extends UsersEvent {
+  final String uid;
+  final String newPin;
+
+  UpdateStaffPin({required this.uid, required this.newPin});
+
+  @override
+  List<Object?> get props => [uid, newPin];
 }
 
 class UpdateUserRole extends UsersEvent {
@@ -68,6 +97,8 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
     on<LoadUsers>(_onLoadUsers);
     on<UpdateUserRole>(_onUpdateUserRole);
     on<InviteUser>(_onInviteUser);
+    on<CreateStaffWithPin>(_onCreateStaffWithPin);
+    on<UpdateStaffPin>(_onUpdateStaffPin);
   }
 
   Future<void> _onLoadUsers(LoadUsers event, Emitter<UsersState> emit) async {
@@ -75,8 +106,12 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
     final result = await repository.getUsers();
     result.fold(
       (error) => emit(state.copyWith(message: error, isLoading: false)),
-      (users) =>
-          emit(state.copyWith(users: users, isLoading: false, isSuccess: true)),
+      (users) {
+        try {
+          getIt<StaffAuthService>().cacheStaffList(users);
+        } catch (_) {}
+        emit(state.copyWith(users: users, isLoading: false, isSuccess: true));
+      },
     );
   }
 
@@ -112,6 +147,53 @@ class UsersBloc extends Bloc<UsersEvent, UsersState> {
           ),
         );
         add(LoadUsers()); // Refresh list
+      },
+    );
+  }
+
+  Future<void> _onCreateStaffWithPin(
+    CreateStaffWithPin event,
+    Emitter<UsersState> emit,
+  ) async {
+    emit(state.copyWith(isLoading: true));
+    final result = await repository.addStaffWithPin(
+      name: event.name,
+      role: event.role,
+      pin: event.pin,
+      email: event.email,
+    );
+    result.fold(
+      (error) => emit(state.copyWith(message: error, isLoading: false)),
+      (_) {
+        emit(
+          state.copyWith(
+            isLoading: false,
+            isSuccess: true,
+            message: 'Staf baru "${event.name}" dengan PIN berhasil ditambahkan!',
+          ),
+        );
+        add(LoadUsers()); // Refresh list and cache
+      },
+    );
+  }
+
+  Future<void> _onUpdateStaffPin(
+    UpdateStaffPin event,
+    Emitter<UsersState> emit,
+  ) async {
+    emit(state.copyWith(isLoading: true));
+    final result = await repository.updateStaffPin(event.uid, event.newPin);
+    result.fold(
+      (error) => emit(state.copyWith(message: error, isLoading: false)),
+      (_) {
+        emit(
+          state.copyWith(
+            isLoading: false,
+            isSuccess: true,
+            message: 'PIN staf berhasil diperbarui!',
+          ),
+        );
+        add(LoadUsers()); // Refresh list and cache
       },
     );
   }

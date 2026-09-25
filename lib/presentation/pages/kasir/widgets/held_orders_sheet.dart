@@ -355,24 +355,7 @@ class _HeldOrdersSheetState extends State<HeldOrdersSheet> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(
-                                      0xFF334155,
-                                    ).withValues(alpha: 0.3)
-                                  : const Color(0xFFF1F5F9),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.receipt_long_outlined,
-                              size: 48,
-                              color: isDark
-                                  ? const Color(0xFF64748B)
-                                  : const Color(0xFF94A3B8),
-                            ),
-                          ),
+                          SvgPicture.asset("assets/icons/struk.svg"),
                           const SizedBox(height: 14),
                           Text(
                             'Tidak Ada Pesanan Tertahan',

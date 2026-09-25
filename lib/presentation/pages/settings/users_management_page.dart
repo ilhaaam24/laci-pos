@@ -6,6 +6,8 @@ import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
 import '../../../domain/entities/user_entity.dart';
 import '../../blocs/users/users_bloc.dart';
+import '../../blocs/business/business_bloc.dart';
+import '../../widgets/upgrade_pro_sheet.dart';
 
 class UsersManagementPage extends StatefulWidget {
   const UsersManagementPage({super.key});
@@ -25,7 +27,9 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark
+          ? const Color(0xFF0F172A)
+          : const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
         elevation: 0,
@@ -143,7 +147,21 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
         focusElevation: 0,
         hoverElevation: 0,
         highlightElevation: 0,
-        onPressed: () => _showAddUserDialog(context),
+        onPressed: () {
+          final bState = context.read<BusinessBloc>().state;
+          final isPro = bState.businessInfo?.isPro ?? false;
+          final usersCount = context.read<UsersBloc>().state.users.length;
+
+          if (!isPro && usersCount >= 1) {
+            showUpgradeProSheet(
+              context,
+              featureName: 'Manajemen Multi-Kasir & Staf',
+            );
+            return;
+          }
+
+          _showAddUserDialog(context);
+        },
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -355,7 +373,9 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                         style: TextStyle(
                           fontSize: 14.5,
                           fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -394,7 +414,81 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.pin_rounded,
+                      size: 13,
+                      color: user.pin != null
+                          ? (isDark
+                                ? const Color(0xFF34D399)
+                                : const Color(0xFF059669))
+                          : (isDark
+                                ? const Color(0xFFFBBF24)
+                                : const Color(0xFFD97706)),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      user.pin != null ? 'PIN: ••••' : 'PIN belum diset',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: user.pin != null
+                            ? (isDark
+                                  ? const Color(0xFF34D399)
+                                  : const Color(0xFF059669))
+                            : (isDark
+                                  ? const Color(0xFFFBBF24)
+                                  : const Color(0xFFD97706)),
+                      ),
+                    ),
+                  ],
+                ),
               ],
+            ),
+          ),
+
+          // Edit PIN Button
+          InkWell(
+            onTap: () => _showEditPinDialog(context, user),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              margin: const EdgeInsets.only(right: 6),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF0F172A)
+                    : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.key_rounded,
+                    size: 13,
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF475569),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'PIN',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF475569),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 
@@ -405,7 +499,9 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                color: isDark
+                    ? const Color(0xFF0F172A)
+                    : const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isDark
@@ -424,7 +520,7 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Ubah',
+                    'Peran',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -442,13 +538,152 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
     );
   }
 
+  void _showEditPinDialog(BuildContext context, UserEntity user) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final pinController = TextEditingController(text: user.pin ?? '');
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
+        ),
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        elevation: 0,
+        title: Row(
+          children: [
+            const Icon(Icons.key_rounded, color: AppColors.primary, size: 22),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Atur PIN: ${user.name ?? user.email.split('@').first}',
+                style: TextStyle(
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Masukkan 4 digit PIN baru untuk akses kasir cepat staf ini:',
+              style: TextStyle(
+                fontSize: 12.5,
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: pinController,
+              keyboardType: TextInputType.number,
+              maxLength: 4,
+              obscureText: true,
+              style: TextStyle(
+                fontSize: 20,
+                letterSpacing: 8,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+              ),
+              textAlign: TextAlign.center,
+              decoration: InputDecoration(
+                counterText: '',
+                hintText: '••••',
+                hintStyle: TextStyle(
+                  letterSpacing: 8,
+                  color: isDark
+                      ? const Color(0xFF64748B)
+                      : const Color(0xFF94A3B8),
+                ),
+                filled: true,
+                fillColor: isDark
+                    ? const Color(0xFF0F172A)
+                    : const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                    color: isDark
+                        ? const Color(0xFF334155)
+                        : const Color(0xFFE2E8F0),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              'Batal',
+              style: TextStyle(
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final pin = pinController.text.trim();
+              if (pin.length != 4 || int.tryParse(pin) == null) {
+                AppToast.showWarning(
+                  context,
+                  'PIN harus terdiri dari 4 digit angka',
+                );
+                return;
+              }
+              context.read<UsersBloc>().add(
+                UpdateStaffPin(uid: user.id, newPin: pin),
+              );
+              Navigator.pop(dialogCtx);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Simpan PIN',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // 3. Add User Dialog (Clean, Modern, NO SHADOW)
   void _showAddUserDialog(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final nameController = TextEditingController();
+    final pinController = TextEditingController();
     final emailController = TextEditingController();
-    final passwordController = TextEditingController();
     UserRole selectedRole = UserRole.kasir;
-    bool obscurePassword = true;
 
     showDialog(
       context: context,
@@ -462,23 +697,13 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
           ),
           backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
           elevation: 0,
-          title: Row(
-            children: [
-              const Icon(
-                Icons.person_add_alt_1_rounded,
-                color: AppColors.primary,
-                size: 22,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Tambah Staf Baru',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                ),
-              ),
-            ],
+          title: Text(
+            'Tambah Staf Baru',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
+            ),
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -486,7 +711,7 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Email Staf',
+                  'Nama Staf / Kasir *',
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.bold,
@@ -497,15 +722,158 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                 ),
                 const SizedBox(height: 6),
                 TextField(
+                  controller: nameController,
+                  textCapitalization: TextCapitalization.words,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    fontSize: 13.5,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'contoh: Budi, Siti, Rian',
+                    hintStyle: TextStyle(
+                      fontSize: 13,
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF94A3B8),
+                    ),
+                    prefixIcon: Icon(
+                      Icons.badge_outlined,
+                      size: 20,
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF94A3B8),
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFFF8FAFC),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                Text(
+                  'PIN Masuk Kasir (4 Digit) *',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.bold,
+                    color: isDark
+                        ? const Color(0xFFCBD5E1)
+                        : const Color(0xFF334155),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: pinController,
+                  keyboardType: TextInputType.number,
+                  maxLength: 4,
+                  obscureText: true,
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    fontSize: 16,
+                    letterSpacing: 4,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    hintText: '4 digit angka (misal: 1234)',
+                    hintStyle: TextStyle(
+                      fontSize: 13,
+                      letterSpacing: 0,
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF94A3B8),
+                    ),
+                    prefixIcon: Icon(
+                      Icons.pin_rounded,
+                      size: 20,
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF94A3B8),
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFFF8FAFC),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: isDark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // 3. Email Staf (Opsional)
+                Row(
+                  children: [
+                    Text(
+                      'Email Staf',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.bold,
+                        color: isDark
+                            ? const Color(0xFFCBD5E1)
+                            : const Color(0xFF334155),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '(Opsional)',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                TextField(
                   controller: emailController,
                   style: TextStyle(
                     color: isDark ? Colors.white : const Color(0xFF0F172A),
                     fontSize: 13.5,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'contoh: stafkasir@gmail.com',
+                    hintText: 'Kosongkan jika staf hanya pakai PIN',
                     hintStyle: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12.5,
                       color: isDark
                           ? const Color(0xFF94A3B8)
                           : const Color(0xFF94A3B8),
@@ -544,83 +912,6 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                   ),
                   keyboardType: TextInputType.emailAddress,
                 ),
-                const SizedBox(height: 14),
-
-                Text(
-                  'Password Login',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.bold,
-                    color: isDark
-                        ? const Color(0xFFCBD5E1)
-                        : const Color(0xFF334155),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: passwordController,
-                  obscureText: obscurePassword,
-                  style: TextStyle(
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
-                    fontSize: 13.5,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Minimal 6 karakter',
-                    hintStyle: TextStyle(
-                      fontSize: 13,
-                      color: isDark
-                          ? const Color(0xFF94A3B8)
-                          : const Color(0xFF94A3B8),
-                    ),
-                    prefixIcon: Icon(
-                      Icons.lock_outline_rounded,
-                      size: 20,
-                      color: isDark
-                          ? const Color(0xFF94A3B8)
-                          : const Color(0xFF94A3B8),
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                        size: 20,
-                        color: isDark
-                            ? const Color(0xFF94A3B8)
-                            : const Color(0xFF64748B),
-                      ),
-                      onPressed: () {
-                        setDialogState(
-                          () => obscurePassword = !obscurePassword,
-                        );
-                      },
-                    ),
-                    filled: true,
-                    fillColor: isDark
-                        ? const Color(0xFF0F172A)
-                        : const Color(0xFFF8FAFC),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(
-                        color: isDark
-                            ? const Color(0xFF334155)
-                            : const Color(0xFFE2E8F0),
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(
-                        color: isDark
-                            ? const Color(0xFF334155)
-                            : const Color(0xFFE2E8F0),
-                      ),
-                    ),
-                  ),
-                ),
                 const SizedBox(height: 16),
 
                 Text(
@@ -636,7 +927,9 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                 const SizedBox(height: 8),
 
                 // Selectable Role Cards
-                ...[UserRole.kasir, UserRole.manager].map((role) {
+                ...[UserRole.kasir, UserRole.manager, UserRole.admin].map((
+                  role,
+                ) {
                   final isSelected = selectedRole == role;
                   final info = _getRoleDescription(role);
 
@@ -650,15 +943,15 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                         color: isSelected
                             ? AppColors.primary
                             : (isDark
-                                ? const Color(0xFF0F172A)
-                                : const Color(0xFFF8FAFC)),
+                                  ? const Color(0xFF0F172A)
+                                  : const Color(0xFFF8FAFC)),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: isSelected
                               ? AppColors.primary
                               : (isDark
-                                  ? const Color(0xFF334155)
-                                  : const Color(0xFFE2E8F0)),
+                                    ? const Color(0xFF334155)
+                                    : const Color(0xFFE2E8F0)),
                         ),
                       ),
                       child: Row(
@@ -671,8 +964,8 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                             color: isSelected
                                 ? AppColors.white
                                 : (isDark
-                                    ? const Color(0xFF94A3B8)
-                                    : const Color(0xFF94A3B8)),
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF94A3B8)),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -687,8 +980,8 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                                     color: isSelected
                                         ? AppColors.white
                                         : (isDark
-                                            ? Colors.white
-                                            : const Color(0xFF0F172A)),
+                                              ? Colors.white
+                                              : const Color(0xFF0F172A)),
                                   ),
                                 ),
                                 Text(
@@ -698,8 +991,8 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                                     color: isSelected
                                         ? AppColors.white
                                         : (isDark
-                                            ? const Color(0xFF94A3B8)
-                                            : const Color(0xFF64748B)),
+                                              ? const Color(0xFF94A3B8)
+                                              : const Color(0xFF64748B)),
                                   ),
                                 ),
                               ],
@@ -746,23 +1039,34 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                 ),
               ),
               onPressed: () {
+                final name = nameController.text.trim();
+                final pin = pinController.text.trim();
                 final email = emailController.text.trim();
-                final password = passwordController.text;
-                if (email.isNotEmpty &&
-                    email.contains('@') &&
-                    password.length >= 6) {
-                  context.read<UsersBloc>().add(
-                    InviteUser(email, password, selectedRole),
-                  );
-                  Navigator.pop(dialogContext);
-                } else if (password.length < 6) {
-                  AppToast.showError(context, 'Password minimal 6 karakter');
-                } else {
-                  AppToast.showError(context, 'Format email tidak valid');
+
+                if (name.isEmpty) {
+                  AppToast.showWarning(context, 'Nama staf wajib diisi');
+                  return;
                 }
+                if (pin.length != 4 || int.tryParse(pin) == null) {
+                  AppToast.showWarning(
+                    context,
+                    'PIN harus terdiri dari 4 digit angka',
+                  );
+                  return;
+                }
+
+                context.read<UsersBloc>().add(
+                  CreateStaffWithPin(
+                    name: name,
+                    role: selectedRole,
+                    pin: pin,
+                    email: email.isNotEmpty ? email : null,
+                  ),
+                );
+                Navigator.pop(dialogContext);
               },
               child: const Text(
-                'Tambah',
+                'Tambah Staf',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -833,18 +1137,18 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                     decoration: BoxDecoration(
                       color: isSelected
                           ? (isDark
-                              ? const Color(0xFF064E3B).withValues(alpha: 0.3)
-                              : const Color(0xFFE6F4F2))
+                                ? const Color(0xFF064E3B).withValues(alpha: 0.3)
+                                : const Color(0xFFE6F4F2))
                           : (isDark
-                              ? const Color(0xFF0F172A)
-                              : const Color(0xFFF8FAFC)),
+                                ? const Color(0xFF0F172A)
+                                : const Color(0xFFF8FAFC)),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: isSelected
                             ? AppColors.primary
                             : (isDark
-                                ? const Color(0xFF334155)
-                                : const Color(0xFFE2E8F0)),
+                                  ? const Color(0xFF334155)
+                                  : const Color(0xFFE2E8F0)),
                       ),
                     ),
                     child: Row(
@@ -857,8 +1161,8 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                           color: isSelected
                               ? AppColors.primary
                               : (isDark
-                                  ? const Color(0xFF94A3B8)
-                                  : const Color(0xFF94A3B8)),
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF94A3B8)),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -873,8 +1177,8 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                                   color: isSelected
                                       ? AppColors.primary
                                       : (isDark
-                                          ? Colors.white
-                                          : const Color(0xFF0F172A)),
+                                            ? Colors.white
+                                            : const Color(0xFF0F172A)),
                                 ),
                               ),
                               Text(

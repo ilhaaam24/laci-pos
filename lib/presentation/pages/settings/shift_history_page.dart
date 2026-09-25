@@ -39,9 +39,13 @@ class _ShiftHistoryPageState extends State<ShiftHistoryPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surfaceColor = isDark ? const Color(0xFF1E293B) : Colors.white;
     final cardBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
     final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final mutedColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final mutedColor = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
 
     final diff = shift.cashDifference ?? 0;
 
@@ -113,15 +117,15 @@ class _ShiftHistoryPageState extends State<ShiftHistoryPage> {
                       color: diff == 0
                           ? const Color(0xFF10B981).withValues(alpha: 0.12)
                           : diff > 0
-                              ? const Color(0xFF0284C7).withValues(alpha: 0.12)
-                              : const Color(0xFFEF4444).withValues(alpha: 0.12),
+                          ? const Color(0xFF0284C7).withValues(alpha: 0.12)
+                          : const Color(0xFFEF4444).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: diff == 0
                             ? const Color(0xFF10B981)
                             : diff > 0
-                                ? const Color(0xFF0284C7)
-                                : const Color(0xFFEF4444),
+                            ? const Color(0xFF0284C7)
+                            : const Color(0xFFEF4444),
                       ),
                     ),
                     child: Row(
@@ -139,16 +143,16 @@ class _ShiftHistoryPageState extends State<ShiftHistoryPage> {
                           diff == 0
                               ? 'PAS (Rp 0)'
                               : diff > 0
-                                  ? 'LEBIH +${_currencyFormatter.format(diff)}'
-                                  : 'KURANG ${_currencyFormatter.format(diff)}',
+                              ? 'LEBIH +${_currencyFormatter.format(diff)}'
+                              : 'KURANG ${_currencyFormatter.format(diff)}',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: diff == 0
                                 ? const Color(0xFF10B981)
                                 : diff > 0
-                                    ? const Color(0xFF0284C7)
-                                    : const Color(0xFFEF4444),
+                                ? const Color(0xFF0284C7)
+                                : const Color(0xFFEF4444),
                           ),
                         ),
                       ],
@@ -167,44 +171,107 @@ class _ShiftHistoryPageState extends State<ShiftHistoryPage> {
                     ),
                     child: Column(
                       children: [
-                        _buildRow('Modal Awal', _currencyFormatter.format(shift.startCash), textColor, mutedColor),
+                        _buildRow(
+                          'Modal Awal',
+                          _currencyFormatter.format(shift.startCash),
+                          textColor,
+                          mutedColor,
+                        ),
                         const SizedBox(height: 8),
-                        _buildRow('Total Transaksi', '${summary.totalTransactions} nota', textColor, mutedColor),
+                        _buildRow(
+                          'Total Transaksi',
+                          '${summary.totalTransactions} nota',
+                          textColor,
+                          mutedColor,
+                        ),
                         const SizedBox(height: 8),
-                        _buildRow('Penjualan Tunai', _currencyFormatter.format(summary.totalCashSales), textColor, mutedColor),
+                        _buildRow(
+                          'Penjualan Tunai',
+                          _currencyFormatter.format(summary.totalCashSales),
+                          textColor,
+                          mutedColor,
+                        ),
                         if (summary.totalQrisSales > 0) ...[
                           const SizedBox(height: 8),
-                          _buildRow('QRIS', _currencyFormatter.format(summary.totalQrisSales), textColor, mutedColor),
+                          _buildRow(
+                            'QRIS',
+                            _currencyFormatter.format(summary.totalQrisSales),
+                            textColor,
+                            mutedColor,
+                          ),
                         ],
                         if (summary.totalDebitSales > 0) ...[
                           const SizedBox(height: 8),
-                          _buildRow('Debit EDC', _currencyFormatter.format(summary.totalDebitSales), textColor, mutedColor),
+                          _buildRow(
+                            'Debit EDC',
+                            _currencyFormatter.format(summary.totalDebitSales),
+                            textColor,
+                            mutedColor,
+                          ),
                         ],
                         if (summary.totalTransferSales > 0) ...[
                           const SizedBox(height: 8),
-                          _buildRow('Transfer Bank', _currencyFormatter.format(summary.totalTransferSales), textColor, mutedColor),
+                          _buildRow(
+                            'Transfer Bank',
+                            _currencyFormatter.format(
+                              summary.totalTransferSales,
+                            ),
+                            textColor,
+                            mutedColor,
+                          ),
                         ],
                         const SizedBox(height: 10),
                         Divider(height: 1, color: borderColor),
                         const SizedBox(height: 10),
-                        _buildRow('TOTAL OMSET', _currencyFormatter.format(summary.totalSales), AppColors.primary, textColor, isBold: true),
+                        _buildRow(
+                          'TOTAL OMSET',
+                          _currencyFormatter.format(summary.totalSales),
+                          AppColors.primary,
+                          textColor,
+                          isBold: true,
+                        ),
                         const SizedBox(height: 10),
                         Divider(height: 1, color: borderColor),
                         const SizedBox(height: 10),
-                        _buildRow('Kas Masuk', '+ ${_currencyFormatter.format(summary.totalCashIn)}', const Color(0xFF10B981), mutedColor),
+                        _buildRow(
+                          'Kas Masuk',
+                          '+ ${_currencyFormatter.format(summary.totalCashIn)}',
+                          const Color(0xFF10B981),
+                          mutedColor,
+                        ),
                         const SizedBox(height: 8),
-                        _buildRow('Kas Keluar', '- ${_currencyFormatter.format(summary.totalCashOut)}', const Color(0xFFEF4444), mutedColor),
+                        _buildRow(
+                          'Kas Keluar',
+                          '- ${_currencyFormatter.format(summary.totalCashOut)}',
+                          const Color(0xFFEF4444),
+                          mutedColor,
+                        ),
                         const SizedBox(height: 10),
                         Divider(height: 1, color: borderColor),
                         const SizedBox(height: 10),
-                        _buildRow('Uang Laci Seharusnya', _currencyFormatter.format(summary.expectedCashInDrawer), textColor, textColor, isBold: true),
+                        _buildRow(
+                          'Uang Laci Seharusnya',
+                          _currencyFormatter.format(
+                            summary.expectedCashInDrawer,
+                          ),
+                          textColor,
+                          textColor,
+                          isBold: true,
+                        ),
                         const SizedBox(height: 8),
-                        _buildRow('Uang Fisik Dihitung', _currencyFormatter.format(shift.endCashActual ?? 0), textColor, textColor, isBold: true),
+                        _buildRow(
+                          'Uang Fisik Dihitung',
+                          _currencyFormatter.format(shift.endCashActual ?? 0),
+                          textColor,
+                          textColor,
+                          isBold: true,
+                        ),
                       ],
                     ),
                   ),
 
-                  if (shift.notes != null && shift.notes!.trim().isNotEmpty) ...[
+                  if (shift.notes != null &&
+                      shift.notes!.trim().isNotEmpty) ...[
                     const SizedBox(height: 14),
                     Text(
                       'Catatan: ${shift.notes!.trim()}',
@@ -223,17 +290,26 @@ class _ShiftHistoryPageState extends State<ShiftHistoryPage> {
                     onPressed: () async {
                       final printer = PrinterService();
                       if (printer.isConnected) {
-                        final bInfo = context.read<BusinessBloc>().state.businessInfo;
+                        final bInfo = context
+                            .read<BusinessBloc>()
+                            .state
+                            .businessInfo;
                         await printer.printShiftReport(
                           shift: shift,
                           summary: summary,
                           businessInfo: bInfo,
                         );
                         if (ctx.mounted) {
-                          AppToast.showSuccess(ctx, 'Struk shift dicetak ulang');
+                          AppToast.showSuccess(
+                            ctx,
+                            'Struk shift dicetak ulang',
+                          );
                         }
                       } else {
-                        AppToast.showWarning(ctx, 'Printer Bluetooth belum terhubung');
+                        AppToast.showWarning(
+                          ctx,
+                          'Printer Bluetooth belum terhubung',
+                        );
                       }
                     },
                     icon: const Icon(Icons.print_rounded, size: 18),
@@ -253,14 +329,21 @@ class _ShiftHistoryPageState extends State<ShiftHistoryPage> {
                   const SizedBox(height: 10),
                   OutlinedButton.icon(
                     onPressed: () async {
-                      final bInfo = context.read<BusinessBloc>().state.businessInfo;
+                      final bInfo = context
+                          .read<BusinessBloc>()
+                          .state
+                          .businessInfo;
                       await WhatsappService.shareShiftReport(
                         shift: shift,
                         summary: summary,
                         businessInfo: bInfo,
                       );
                     },
-                    icon: const Icon(Icons.send_rounded, size: 18, color: Color(0xFF25D366)),
+                    icon: const Icon(
+                      Icons.send_rounded,
+                      size: 18,
+                      color: Color(0xFF25D366),
+                    ),
                     label: const Text(
                       'Bagikan ke WhatsApp',
                       style: TextStyle(
@@ -320,9 +403,13 @@ class _ShiftHistoryPageState extends State<ShiftHistoryPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
     final surfaceColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
     final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final mutedColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final mutedColor = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -426,12 +513,14 @@ class _ShiftHistoryPageState extends State<ShiftHistoryPage> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  isOpen ? 'Shift Sedang Berjalan' : 'Shift Selesai',
+                                  isOpen
+                                      ? 'Shift Sedang Berjalan'
+                                      : 'Shift Selesai',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                     color: isOpen
-                                        ? const Color(0xFF10B981)
+                                        ? AppColors.primary
                                         : mutedColor,
                                   ),
                                 ),
@@ -444,32 +533,38 @@ class _ShiftHistoryPageState extends State<ShiftHistoryPage> {
                               ),
                               decoration: BoxDecoration(
                                 color: isOpen
-                                    ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                                    ? AppColors.primary
                                     : diff == 0
-                                        ? const Color(0xFF10B981).withValues(alpha: 0.12)
-                                        : diff > 0
-                                            ? const Color(0xFF0284C7).withValues(alpha: 0.12)
-                                            : const Color(0xFFEF4444).withValues(alpha: 0.12),
+                                    ? const Color(
+                                        0xFF10B981,
+                                      ).withValues(alpha: 0.12)
+                                    : diff > 0
+                                    ? const Color(
+                                        0xFF0284C7,
+                                      ).withValues(alpha: 0.12)
+                                    : const Color(
+                                        0xFFEF4444,
+                                      ).withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 isOpen
                                     ? 'Aktif'
                                     : diff == 0
-                                        ? 'Pas'
-                                        : diff > 0
-                                            ? '+${_currencyFormatter.format(diff)}'
-                                            : _currencyFormatter.format(diff),
+                                    ? 'Pas'
+                                    : diff > 0
+                                    ? '+${_currencyFormatter.format(diff)}'
+                                    : _currencyFormatter.format(diff),
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                   color: isOpen
-                                      ? const Color(0xFF10B981)
+                                      ? AppColors.white
                                       : diff == 0
-                                          ? const Color(0xFF10B981)
-                                          : diff > 0
-                                              ? const Color(0xFF0284C7)
-                                              : const Color(0xFFEF4444),
+                                      ? const Color(0xFF10B981)
+                                      : diff > 0
+                                      ? const Color(0xFF0284C7)
+                                      : const Color(0xFFEF4444),
                                 ),
                               ),
                             ),
@@ -506,7 +601,10 @@ class _ShiftHistoryPageState extends State<ShiftHistoryPage> {
                               children: [
                                 Text(
                                   'Modal Awal',
-                                  style: TextStyle(fontSize: 11, color: mutedColor),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: mutedColor,
+                                  ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
@@ -524,7 +622,10 @@ class _ShiftHistoryPageState extends State<ShiftHistoryPage> {
                               children: [
                                 Text(
                                   'Total Omset',
-                                  style: TextStyle(fontSize: 11, color: mutedColor),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: mutedColor,
+                                  ),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(

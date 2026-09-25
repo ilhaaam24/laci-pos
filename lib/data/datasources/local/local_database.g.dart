@@ -6334,6 +6334,40 @@ class $LocalBusinessInfoTable extends LocalBusinessInfo
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _subscriptionTierMeta = const VerificationMeta(
+    'subscriptionTier',
+  );
+  @override
+  late final GeneratedColumn<String> subscriptionTier = GeneratedColumn<String>(
+    'subscription_tier',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('free'),
+  );
+  static const VerificationMeta _subscriptionExpiresAtMeta =
+      const VerificationMeta('subscriptionExpiresAt');
+  @override
+  late final GeneratedColumn<DateTime> subscriptionExpiresAt =
+      GeneratedColumn<DateTime>(
+        'subscription_expires_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _subscriptionPlanMeta = const VerificationMeta(
+    'subscriptionPlan',
+  );
+  @override
+  late final GeneratedColumn<String> subscriptionPlan = GeneratedColumn<String>(
+    'subscription_plan',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -6353,6 +6387,9 @@ class $LocalBusinessInfoTable extends LocalBusinessInfo
     isServiceChargeEnabled,
     serviceChargeRate,
     isPriceInclusiveTax,
+    subscriptionTier,
+    subscriptionExpiresAt,
+    subscriptionPlan,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6491,6 +6528,33 @@ class $LocalBusinessInfoTable extends LocalBusinessInfo
         ),
       );
     }
+    if (data.containsKey('subscription_tier')) {
+      context.handle(
+        _subscriptionTierMeta,
+        subscriptionTier.isAcceptableOrUnknown(
+          data['subscription_tier']!,
+          _subscriptionTierMeta,
+        ),
+      );
+    }
+    if (data.containsKey('subscription_expires_at')) {
+      context.handle(
+        _subscriptionExpiresAtMeta,
+        subscriptionExpiresAt.isAcceptableOrUnknown(
+          data['subscription_expires_at']!,
+          _subscriptionExpiresAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('subscription_plan')) {
+      context.handle(
+        _subscriptionPlanMeta,
+        subscriptionPlan.isAcceptableOrUnknown(
+          data['subscription_plan']!,
+          _subscriptionPlanMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -6568,6 +6632,18 @@ class $LocalBusinessInfoTable extends LocalBusinessInfo
         DriftSqlType.bool,
         data['${effectivePrefix}is_price_inclusive_tax'],
       )!,
+      subscriptionTier: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subscription_tier'],
+      )!,
+      subscriptionExpiresAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}subscription_expires_at'],
+      ),
+      subscriptionPlan: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subscription_plan'],
+      ),
     );
   }
 
@@ -6596,6 +6672,9 @@ class LocalBusinessInfoData extends DataClass
   final bool isServiceChargeEnabled;
   final double serviceChargeRate;
   final bool isPriceInclusiveTax;
+  final String subscriptionTier;
+  final DateTime? subscriptionExpiresAt;
+  final String? subscriptionPlan;
   const LocalBusinessInfoData({
     required this.id,
     required this.businessName,
@@ -6614,6 +6693,9 @@ class LocalBusinessInfoData extends DataClass
     required this.isServiceChargeEnabled,
     required this.serviceChargeRate,
     required this.isPriceInclusiveTax,
+    required this.subscriptionTier,
+    this.subscriptionExpiresAt,
+    this.subscriptionPlan,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -6647,6 +6729,15 @@ class LocalBusinessInfoData extends DataClass
     map['is_service_charge_enabled'] = Variable<bool>(isServiceChargeEnabled);
     map['service_charge_rate'] = Variable<double>(serviceChargeRate);
     map['is_price_inclusive_tax'] = Variable<bool>(isPriceInclusiveTax);
+    map['subscription_tier'] = Variable<String>(subscriptionTier);
+    if (!nullToAbsent || subscriptionExpiresAt != null) {
+      map['subscription_expires_at'] = Variable<DateTime>(
+        subscriptionExpiresAt,
+      );
+    }
+    if (!nullToAbsent || subscriptionPlan != null) {
+      map['subscription_plan'] = Variable<String>(subscriptionPlan);
+    }
     return map;
   }
 
@@ -6681,6 +6772,13 @@ class LocalBusinessInfoData extends DataClass
       isServiceChargeEnabled: Value(isServiceChargeEnabled),
       serviceChargeRate: Value(serviceChargeRate),
       isPriceInclusiveTax: Value(isPriceInclusiveTax),
+      subscriptionTier: Value(subscriptionTier),
+      subscriptionExpiresAt: subscriptionExpiresAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(subscriptionExpiresAt),
+      subscriptionPlan: subscriptionPlan == null && nullToAbsent
+          ? const Value.absent()
+          : Value(subscriptionPlan),
     );
   }
 
@@ -6711,6 +6809,11 @@ class LocalBusinessInfoData extends DataClass
       isPriceInclusiveTax: serializer.fromJson<bool>(
         json['isPriceInclusiveTax'],
       ),
+      subscriptionTier: serializer.fromJson<String>(json['subscriptionTier']),
+      subscriptionExpiresAt: serializer.fromJson<DateTime?>(
+        json['subscriptionExpiresAt'],
+      ),
+      subscriptionPlan: serializer.fromJson<String?>(json['subscriptionPlan']),
     );
   }
   @override
@@ -6734,6 +6837,11 @@ class LocalBusinessInfoData extends DataClass
       'isServiceChargeEnabled': serializer.toJson<bool>(isServiceChargeEnabled),
       'serviceChargeRate': serializer.toJson<double>(serviceChargeRate),
       'isPriceInclusiveTax': serializer.toJson<bool>(isPriceInclusiveTax),
+      'subscriptionTier': serializer.toJson<String>(subscriptionTier),
+      'subscriptionExpiresAt': serializer.toJson<DateTime?>(
+        subscriptionExpiresAt,
+      ),
+      'subscriptionPlan': serializer.toJson<String?>(subscriptionPlan),
     };
   }
 
@@ -6755,6 +6863,9 @@ class LocalBusinessInfoData extends DataClass
     bool? isServiceChargeEnabled,
     double? serviceChargeRate,
     bool? isPriceInclusiveTax,
+    String? subscriptionTier,
+    Value<DateTime?> subscriptionExpiresAt = const Value.absent(),
+    Value<String?> subscriptionPlan = const Value.absent(),
   }) => LocalBusinessInfoData(
     id: id ?? this.id,
     businessName: businessName ?? this.businessName,
@@ -6774,6 +6885,13 @@ class LocalBusinessInfoData extends DataClass
         isServiceChargeEnabled ?? this.isServiceChargeEnabled,
     serviceChargeRate: serviceChargeRate ?? this.serviceChargeRate,
     isPriceInclusiveTax: isPriceInclusiveTax ?? this.isPriceInclusiveTax,
+    subscriptionTier: subscriptionTier ?? this.subscriptionTier,
+    subscriptionExpiresAt: subscriptionExpiresAt.present
+        ? subscriptionExpiresAt.value
+        : this.subscriptionExpiresAt,
+    subscriptionPlan: subscriptionPlan.present
+        ? subscriptionPlan.value
+        : this.subscriptionPlan,
   );
   LocalBusinessInfoData copyWithCompanion(LocalBusinessInfoCompanion data) {
     return LocalBusinessInfoData(
@@ -6808,6 +6926,15 @@ class LocalBusinessInfoData extends DataClass
       isPriceInclusiveTax: data.isPriceInclusiveTax.present
           ? data.isPriceInclusiveTax.value
           : this.isPriceInclusiveTax,
+      subscriptionTier: data.subscriptionTier.present
+          ? data.subscriptionTier.value
+          : this.subscriptionTier,
+      subscriptionExpiresAt: data.subscriptionExpiresAt.present
+          ? data.subscriptionExpiresAt.value
+          : this.subscriptionExpiresAt,
+      subscriptionPlan: data.subscriptionPlan.present
+          ? data.subscriptionPlan.value
+          : this.subscriptionPlan,
     );
   }
 
@@ -6830,7 +6957,10 @@ class LocalBusinessInfoData extends DataClass
           ..write('taxName: $taxName, ')
           ..write('isServiceChargeEnabled: $isServiceChargeEnabled, ')
           ..write('serviceChargeRate: $serviceChargeRate, ')
-          ..write('isPriceInclusiveTax: $isPriceInclusiveTax')
+          ..write('isPriceInclusiveTax: $isPriceInclusiveTax, ')
+          ..write('subscriptionTier: $subscriptionTier, ')
+          ..write('subscriptionExpiresAt: $subscriptionExpiresAt, ')
+          ..write('subscriptionPlan: $subscriptionPlan')
           ..write(')'))
         .toString();
   }
@@ -6854,6 +6984,9 @@ class LocalBusinessInfoData extends DataClass
     isServiceChargeEnabled,
     serviceChargeRate,
     isPriceInclusiveTax,
+    subscriptionTier,
+    subscriptionExpiresAt,
+    subscriptionPlan,
   );
   @override
   bool operator ==(Object other) =>
@@ -6875,7 +7008,10 @@ class LocalBusinessInfoData extends DataClass
           other.taxName == this.taxName &&
           other.isServiceChargeEnabled == this.isServiceChargeEnabled &&
           other.serviceChargeRate == this.serviceChargeRate &&
-          other.isPriceInclusiveTax == this.isPriceInclusiveTax);
+          other.isPriceInclusiveTax == this.isPriceInclusiveTax &&
+          other.subscriptionTier == this.subscriptionTier &&
+          other.subscriptionExpiresAt == this.subscriptionExpiresAt &&
+          other.subscriptionPlan == this.subscriptionPlan);
 }
 
 class LocalBusinessInfoCompanion
@@ -6897,6 +7033,9 @@ class LocalBusinessInfoCompanion
   final Value<bool> isServiceChargeEnabled;
   final Value<double> serviceChargeRate;
   final Value<bool> isPriceInclusiveTax;
+  final Value<String> subscriptionTier;
+  final Value<DateTime?> subscriptionExpiresAt;
+  final Value<String?> subscriptionPlan;
   final Value<int> rowid;
   const LocalBusinessInfoCompanion({
     this.id = const Value.absent(),
@@ -6916,6 +7055,9 @@ class LocalBusinessInfoCompanion
     this.isServiceChargeEnabled = const Value.absent(),
     this.serviceChargeRate = const Value.absent(),
     this.isPriceInclusiveTax = const Value.absent(),
+    this.subscriptionTier = const Value.absent(),
+    this.subscriptionExpiresAt = const Value.absent(),
+    this.subscriptionPlan = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalBusinessInfoCompanion.insert({
@@ -6936,6 +7078,9 @@ class LocalBusinessInfoCompanion
     this.isServiceChargeEnabled = const Value.absent(),
     this.serviceChargeRate = const Value.absent(),
     this.isPriceInclusiveTax = const Value.absent(),
+    this.subscriptionTier = const Value.absent(),
+    this.subscriptionExpiresAt = const Value.absent(),
+    this.subscriptionPlan = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        businessName = Value(businessName),
@@ -6959,6 +7104,9 @@ class LocalBusinessInfoCompanion
     Expression<bool>? isServiceChargeEnabled,
     Expression<double>? serviceChargeRate,
     Expression<bool>? isPriceInclusiveTax,
+    Expression<String>? subscriptionTier,
+    Expression<DateTime>? subscriptionExpiresAt,
+    Expression<String>? subscriptionPlan,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -6981,6 +7129,10 @@ class LocalBusinessInfoCompanion
       if (serviceChargeRate != null) 'service_charge_rate': serviceChargeRate,
       if (isPriceInclusiveTax != null)
         'is_price_inclusive_tax': isPriceInclusiveTax,
+      if (subscriptionTier != null) 'subscription_tier': subscriptionTier,
+      if (subscriptionExpiresAt != null)
+        'subscription_expires_at': subscriptionExpiresAt,
+      if (subscriptionPlan != null) 'subscription_plan': subscriptionPlan,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -7003,6 +7155,9 @@ class LocalBusinessInfoCompanion
     Value<bool>? isServiceChargeEnabled,
     Value<double>? serviceChargeRate,
     Value<bool>? isPriceInclusiveTax,
+    Value<String>? subscriptionTier,
+    Value<DateTime?>? subscriptionExpiresAt,
+    Value<String?>? subscriptionPlan,
     Value<int>? rowid,
   }) {
     return LocalBusinessInfoCompanion(
@@ -7024,6 +7179,10 @@ class LocalBusinessInfoCompanion
           isServiceChargeEnabled ?? this.isServiceChargeEnabled,
       serviceChargeRate: serviceChargeRate ?? this.serviceChargeRate,
       isPriceInclusiveTax: isPriceInclusiveTax ?? this.isPriceInclusiveTax,
+      subscriptionTier: subscriptionTier ?? this.subscriptionTier,
+      subscriptionExpiresAt:
+          subscriptionExpiresAt ?? this.subscriptionExpiresAt,
+      subscriptionPlan: subscriptionPlan ?? this.subscriptionPlan,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -7084,6 +7243,17 @@ class LocalBusinessInfoCompanion
     if (isPriceInclusiveTax.present) {
       map['is_price_inclusive_tax'] = Variable<bool>(isPriceInclusiveTax.value);
     }
+    if (subscriptionTier.present) {
+      map['subscription_tier'] = Variable<String>(subscriptionTier.value);
+    }
+    if (subscriptionExpiresAt.present) {
+      map['subscription_expires_at'] = Variable<DateTime>(
+        subscriptionExpiresAt.value,
+      );
+    }
+    if (subscriptionPlan.present) {
+      map['subscription_plan'] = Variable<String>(subscriptionPlan.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -7110,6 +7280,9 @@ class LocalBusinessInfoCompanion
           ..write('isServiceChargeEnabled: $isServiceChargeEnabled, ')
           ..write('serviceChargeRate: $serviceChargeRate, ')
           ..write('isPriceInclusiveTax: $isPriceInclusiveTax, ')
+          ..write('subscriptionTier: $subscriptionTier, ')
+          ..write('subscriptionExpiresAt: $subscriptionExpiresAt, ')
+          ..write('subscriptionPlan: $subscriptionPlan, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -12532,6 +12705,9 @@ typedef $$LocalBusinessInfoTableCreateCompanionBuilder =
       Value<bool> isServiceChargeEnabled,
       Value<double> serviceChargeRate,
       Value<bool> isPriceInclusiveTax,
+      Value<String> subscriptionTier,
+      Value<DateTime?> subscriptionExpiresAt,
+      Value<String?> subscriptionPlan,
       Value<int> rowid,
     });
 typedef $$LocalBusinessInfoTableUpdateCompanionBuilder =
@@ -12553,6 +12729,9 @@ typedef $$LocalBusinessInfoTableUpdateCompanionBuilder =
       Value<bool> isServiceChargeEnabled,
       Value<double> serviceChargeRate,
       Value<bool> isPriceInclusiveTax,
+      Value<String> subscriptionTier,
+      Value<DateTime?> subscriptionExpiresAt,
+      Value<String?> subscriptionPlan,
       Value<int> rowid,
     });
 
@@ -12647,6 +12826,21 @@ class $$LocalBusinessInfoTableFilterComposer
 
   ColumnFilters<bool> get isPriceInclusiveTax => $composableBuilder(
     column: $table.isPriceInclusiveTax,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get subscriptionTier => $composableBuilder(
+    column: $table.subscriptionTier,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get subscriptionExpiresAt => $composableBuilder(
+    column: $table.subscriptionExpiresAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get subscriptionPlan => $composableBuilder(
+    column: $table.subscriptionPlan,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -12744,6 +12938,21 @@ class $$LocalBusinessInfoTableOrderingComposer
     column: $table.isPriceInclusiveTax,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get subscriptionTier => $composableBuilder(
+    column: $table.subscriptionTier,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get subscriptionExpiresAt => $composableBuilder(
+    column: $table.subscriptionExpiresAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get subscriptionPlan => $composableBuilder(
+    column: $table.subscriptionPlan,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalBusinessInfoTableAnnotationComposer
@@ -12819,6 +13028,21 @@ class $$LocalBusinessInfoTableAnnotationComposer
     column: $table.isPriceInclusiveTax,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get subscriptionTier => $composableBuilder(
+    column: $table.subscriptionTier,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get subscriptionExpiresAt => $composableBuilder(
+    column: $table.subscriptionExpiresAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get subscriptionPlan => $composableBuilder(
+    column: $table.subscriptionPlan,
+    builder: (column) => column,
+  );
 }
 
 class $$LocalBusinessInfoTableTableManager
@@ -12878,6 +13102,9 @@ class $$LocalBusinessInfoTableTableManager
                 Value<bool> isServiceChargeEnabled = const Value.absent(),
                 Value<double> serviceChargeRate = const Value.absent(),
                 Value<bool> isPriceInclusiveTax = const Value.absent(),
+                Value<String> subscriptionTier = const Value.absent(),
+                Value<DateTime?> subscriptionExpiresAt = const Value.absent(),
+                Value<String?> subscriptionPlan = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalBusinessInfoCompanion(
                 id: id,
@@ -12897,6 +13124,9 @@ class $$LocalBusinessInfoTableTableManager
                 isServiceChargeEnabled: isServiceChargeEnabled,
                 serviceChargeRate: serviceChargeRate,
                 isPriceInclusiveTax: isPriceInclusiveTax,
+                subscriptionTier: subscriptionTier,
+                subscriptionExpiresAt: subscriptionExpiresAt,
+                subscriptionPlan: subscriptionPlan,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -12918,6 +13148,9 @@ class $$LocalBusinessInfoTableTableManager
                 Value<bool> isServiceChargeEnabled = const Value.absent(),
                 Value<double> serviceChargeRate = const Value.absent(),
                 Value<bool> isPriceInclusiveTax = const Value.absent(),
+                Value<String> subscriptionTier = const Value.absent(),
+                Value<DateTime?> subscriptionExpiresAt = const Value.absent(),
+                Value<String?> subscriptionPlan = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalBusinessInfoCompanion.insert(
                 id: id,
@@ -12937,6 +13170,9 @@ class $$LocalBusinessInfoTableTableManager
                 isServiceChargeEnabled: isServiceChargeEnabled,
                 serviceChargeRate: serviceChargeRate,
                 isPriceInclusiveTax: isPriceInclusiveTax,
+                subscriptionTier: subscriptionTier,
+                subscriptionExpiresAt: subscriptionExpiresAt,
+                subscriptionPlan: subscriptionPlan,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

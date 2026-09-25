@@ -12,11 +12,19 @@ import 'checkout/checkout_page.dart';
 import 'report/report_page.dart';
 import 'settings/settings_page.dart';
 import '../blocs/shift/shift_bloc.dart';
+import 'package:intl/intl.dart';
+import '../../domain/entities/shift_entity.dart';
+import 'kasir/widgets/close_shift_dialog.dart';
 import 'kasir/widgets/open_shift_dialog.dart';
 import 'kasir/widgets/shift_control_sheet.dart';
+import '../../core/di/injection.dart';
+import '../../core/services/staff_auth_service.dart';
+import 'kasir/widgets/staff_pin_dialog.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
+
+  static final GlobalKey<MainPageState> globalKey = GlobalKey<MainPageState>();
 
   static final GlobalKey<ScaffoldState> scaffoldKey =
       GlobalKey<ScaffoldState>();
@@ -25,12 +33,25 @@ class MainPage extends StatefulWidget {
     scaffoldKey.currentState?.openDrawer();
   }
 
+  static void switchToKasir() {
+    globalKey.currentState?.switchToKasir();
+  }
+
   @override
-  State<MainPage> createState() => _MainPageState();
+  State<MainPage> createState() => MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class MainPageState extends State<MainPage> {
   int _currentIndex = 0;
+  final GlobalKey _ordersTabKey = GlobalKey();
+
+  void switchToKasir() {
+    if (mounted) {
+      setState(() {
+        _currentIndex = 0;
+      });
+    }
+  }
 
   void _navigateToOrders() {
     setState(() {
@@ -51,7 +72,12 @@ class _MainPageState extends State<MainPage> {
           label: 'Kasir',
           visible: role.canAccessPOS,
         ),
-        KasirPage(onOpenOrders: _navigateToOrders, onOpenDrawer: _openDrawer),
+        KasirPage(
+          key: KasirPage.globalKey,
+          onOpenOrders: _navigateToOrders,
+          onOpenDrawer: _openDrawer,
+          ordersTabKey: _ordersTabKey,
+        ),
       ),
       (
         _PageItem(
@@ -171,47 +197,36 @@ class _MainPageState extends State<MainPage> {
                       );
 
                       if (isOrders) {
-                        iconWidget = BlocBuilder<CartBloc, CartState>(
-                          builder: (context, cartState) {
-                            final count = cartState.items.fold(
-                              0,
-                              (sum, i) => sum + i.quantity,
+                        final ordersBadgeWidget =
+                            BlocBuilder<CartBloc, CartState>(
+                              builder: (context, cartState) {
+                                final count = cartState.items.fold(
+                                  0,
+                                  (sum, i) => sum + i.quantity,
+                                );
+                                return Badge(
+                                  isLabelVisible: count > 0,
+                                  label: Text(
+                                    '$count',
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  backgroundColor: AppColors.primary,
+                                  child: SvgPicture.asset(
+                                    item.icon,
+                                    height: 28,
+                                  ),
+                                );
+                              },
                             );
-                            return Badge(
-                              isLabelVisible: count > 0,
-                              label: Text(
-                                '$count',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              backgroundColor: AppColors.primary,
-                              child: SvgPicture.asset(item.icon, height: 28),
-                            );
-                          },
-                        );
 
-                        activeIconWidget = BlocBuilder<CartBloc, CartState>(
-                          builder: (context, cartState) {
-                            final count = cartState.items.fold(
-                              0,
-                              (sum, i) => sum + i.quantity,
-                            );
-                            return Badge(
-                              isLabelVisible: count > 0,
-                              label: Text(
-                                '$count',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              backgroundColor: AppColors.primary,
-                              child: SvgPicture.asset(item.icon, height: 28),
-                            );
-                          },
+                        iconWidget = KeyedSubtree(
+                          key: _ordersTabKey,
+                          child: ordersBadgeWidget,
                         );
+                        activeIconWidget = ordersBadgeWidget;
                       }
 
                       return BottomNavigationBarItem(
@@ -466,54 +481,11 @@ class _MainPageState extends State<MainPage> {
                   ),
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: isOpen
-                        ? (isDark
-                              ? const Color(0xFF064E3B).withValues(alpha: 0.4)
-                              : const Color(0xFFECFDF5))
-                        : (isDark
-                              ? const Color(0xFF78350F).withValues(alpha: 0.4)
-                              : const Color(0xFFFFFBEB)),
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isOpen
-                          ? (isDark
-                                ? const Color(0xFF059669)
-                                : const Color(
-                                    0xFF10B981,
-                                  ).withValues(alpha: 0.3))
-                          : (isDark
-                                ? const Color(0xFFD97706)
-                                : const Color(
-                                    0xFFF59E0B,
-                                  ).withValues(alpha: 0.3)),
-                    ),
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: isOpen
-                              ? const Color(0xFF10B981).withValues(alpha: 0.15)
-                              : const Color(0xFFF59E0B).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          isOpen
-                              ? Icons.lock_open_rounded
-                              : Icons.lock_clock_rounded,
-                          color: isOpen
-                              ? (isDark
-                                    ? const Color(0xFF34D399)
-                                    : const Color(0xFF059669))
-                              : (isDark
-                                    ? const Color(0xFFFBBF24)
-                                    : const Color(0xFFD97706)),
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -526,9 +498,7 @@ class _MainPageState extends State<MainPage> {
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                                 color: isOpen
-                                    ? (isDark
-                                          ? const Color(0xFF6EE7B7)
-                                          : const Color(0xFF065F46))
+                                    ? AppColors.white
                                     : (isDark
                                           ? const Color(0xFFFCD34D)
                                           : const Color(0xFF92400E)),
@@ -540,13 +510,7 @@ class _MainPageState extends State<MainPage> {
                                   : 'Buka shift untuk catat laci',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: isOpen
-                                    ? (isDark
-                                          ? const Color(0xFFA7F3D0)
-                                          : const Color(0xFF047857))
-                                    : (isDark
-                                          ? const Color(0xFFFDE68A)
-                                          : const Color(0xFFB45309)),
+                                color: AppColors.white,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -555,15 +519,67 @@ class _MainPageState extends State<MainPage> {
                         ),
                       ),
                       TextButton(
-                        onPressed: () {
+                        onPressed: () async {
                           Navigator.pop(context);
                           if (isOpen) {
-                            ShiftControlSheet.show(context);
+                            final action = await ShiftControlSheet.show(
+                              context,
+                            );
+                            if (action == 'close_shift' && context.mounted) {
+                              final shiftState = context
+                                  .read<ShiftBloc>()
+                                  .state;
+                              final active = shiftState.activeShift;
+                              if (active != null) {
+                                final summary =
+                                    shiftState.currentSummary ??
+                                    ShiftSummary(
+                                      shift: active,
+                                      startCash: active.startCash,
+                                      totalCashSales: active.totalCashSales,
+                                      totalQrisSales: 0,
+                                      totalDebitSales: 0,
+                                      totalTransferSales: 0,
+                                      totalSales: active.totalSales,
+                                      totalTransactions:
+                                          active.totalTransactions,
+                                      totalCashIn: 0,
+                                      totalCashOut: 0,
+                                      cashMovements: const [],
+                                    );
+                                final closeResult = await CloseShiftDialog.show(
+                                  context,
+                                  shift: active,
+                                  summary: summary,
+                                );
+                                if (closeResult != null &&
+                                    closeResult.isClosed &&
+                                    context.mounted) {
+                                  final curFmt = NumberFormat.currency(
+                                    locale: 'id_ID',
+                                    symbol: 'Rp ',
+                                    decimalDigits: 0,
+                                  );
+                                  await StaffPinDialog.show(
+                                    context,
+                                    isLockMode: true,
+                                    title: 'Shift Selesai • Masuk Kasir Baru',
+                                    subtitle:
+                                        'Masukkan 4 digit PIN kasir berikutnya',
+                                    pendingHandoverAmount:
+                                        closeResult.remainingCashInDrawer,
+                                    pendingHandoverNote:
+                                        'Serah terima dari ${active.userName}: Ditinggalkan ${curFmt.format(closeResult.remainingCashInDrawer)} di laci (Setor: ${curFmt.format(closeResult.depositedCash)})',
+                                  );
+                                }
+                              }
+                            }
                           } else {
                             OpenShiftDialog.show(context);
                           }
                         },
                         style: TextButton.styleFrom(
+                          backgroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
                             vertical: 4,
@@ -595,76 +611,132 @@ class _MainPageState extends State<MainPage> {
             // 3. User Profile Footer
             Builder(
               builder: (context) {
-                final displayName = (user.name != null && user.name!.isNotEmpty)
-                    ? user.name!
-                    : user.email;
+                final staffService = getIt<StaffAuthService>();
 
-                return Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(
-                        color: isDark
-                            ? const Color(0xFF334155)
-                            : const Color(0xFFF1F5F9),
-                        width: 1.0,
-                      ),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundColor: const Color(0xFF004D40),
-                        backgroundImage: user.photoUrl != null
-                            ? NetworkImage(user.photoUrl!)
-                            : null,
-                        child: user.photoUrl == null
-                            ? Text(
-                                displayName.isNotEmpty
-                                    ? displayName[0].toUpperCase()
-                                    : 'U',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              displayName,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: isDark
-                                    ? Colors.white
-                                    : const Color(0xFF0F172A),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              user.role.name.toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w600,
-                                color: isDark
-                                    ? const Color(0xFF94A3B8)
-                                    : const Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
+                return ValueListenableBuilder<UserEntity?>(
+                  valueListenable: staffService.activeStaffNotifier,
+                  builder: (context, activeStaff, _) {
+                    final effectiveUser = activeStaff ?? user;
+                    final displayName =
+                        (effectiveUser.name != null &&
+                            effectiveUser.name!.isNotEmpty)
+                        ? effectiveUser.name!
+                        : effectiveUser.email;
+                    final isStaffActive = activeStaff != null;
+
+                    return Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                            color: isDark
+                                ? const Color(0xFF334155)
+                                : const Color(0xFFF1F5F9),
+                            width: 1.0,
+                          ),
                         ),
                       ),
-                    ],
-                  ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: isStaffActive
+                                ? AppColors.primary
+                                : const Color(0xFF004D40),
+                            backgroundImage: effectiveUser.photoUrl != null
+                                ? NetworkImage(effectiveUser.photoUrl!)
+                                : null,
+                            child: effectiveUser.photoUrl == null
+                                ? Text(
+                                    displayName.isNotEmpty
+                                        ? displayName[0].toUpperCase()
+                                        : 'U',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  displayName,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark
+                                        ? Colors.white
+                                        : const Color(0xFF0F172A),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      effectiveUser.role.name.toUpperCase(),
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark
+                                            ? const Color(0xFF94A3B8)
+                                            : const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                    if (isStaffActive) ...[
+                                      const SizedBox(width: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                          vertical: 1,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.15,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'PIN STAF',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.lock_person_rounded,
+                              size: 20,
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
+                            ),
+                            tooltip: 'Kunci / Ganti Staf',
+                            onPressed: () {
+                              Navigator.pop(context);
+                              StaffPinDialog.show(context);
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 );
               },
             ),

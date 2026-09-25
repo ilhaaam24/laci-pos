@@ -409,7 +409,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                               fontWeight: FontWeight.w600,
                               color: isDark
                                   ? const Color(0xFF93C5FD)
-                                  : const Color(0xFF4338CA),
+                                  : AppColors.textPrimary,
                             ),
                           ),
                           const SizedBox(width: 2),
@@ -418,7 +418,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             size: 14,
                             color: isDark
                                 ? const Color(0xFF93C5FD)
-                                : const Color(0xFF4338CA),
+                                : AppColors.textPrimary,
                           ),
                         ],
                       ),
@@ -541,26 +541,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.table_restaurant_rounded,
-                        color: isDark
-                            ? const Color(0xFF60A5FA)
-                            : const Color(0xFF2563EB),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Pilih Nomor Meja',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: isDark
-                              ? Colors.white
-                              : const Color(0xFF0F172A),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    'Pilih Nomor Meja',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -630,6 +617,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
+                          elevation: 0,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 18,
                             vertical: 14,
@@ -1074,15 +1062,24 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                 ),
                                 InkWell(
                                   onTap: () {
-                                    final cartState = context.read<CartBloc>().state;
+                                    final cartState = context
+                                        .read<CartBloc>()
+                                        .state;
                                     final currentTotalQty = cartState.items
-                                        .where((i) =>
-                                            i.productId == item.productId &&
-                                            (item.selectedVariant == null ||
-                                                i.selectedVariant?.id == item.selectedVariant?.id))
-                                        .fold<int>(0, (sum, i) => sum + i.quantity);
+                                        .where(
+                                          (i) =>
+                                              i.productId == item.productId &&
+                                              (item.selectedVariant == null ||
+                                                  i.selectedVariant?.id ==
+                                                      item.selectedVariant?.id),
+                                        )
+                                        .fold<int>(
+                                          0,
+                                          (sum, i) => sum + i.quantity,
+                                        );
 
-                                    if (item.maxStock != null && currentTotalQty >= item.maxStock!) {
+                                    if (item.maxStock != null &&
+                                        currentTotalQty >= item.maxStock!) {
                                       AppToast.showWarning(
                                         context,
                                         'Maksimal stok ${item.displayName} tercapai (${item.maxStock})',
@@ -1104,11 +1101,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                     child: Icon(
                                       Icons.add,
                                       size: 15,
-                                      color: (item.maxStock != null && item.quantity >= item.maxStock!)
-                                          ? (isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1))
+                                      color:
+                                          (item.maxStock != null &&
+                                              item.quantity >= item.maxStock!)
+                                          ? (isDark
+                                                ? const Color(0xFF475569)
+                                                : const Color(0xFFCBD5E1))
                                           : (isDark
-                                              ? const Color(0xFF94A3B8)
-                                              : const Color(0xFF475569)),
+                                                ? const Color(0xFF94A3B8)
+                                                : const Color(0xFF475569)),
                                     ),
                                   ),
                                 ),
@@ -1467,7 +1468,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         SizedBox(
           width: double.infinity,
           height: 48,
-          child: OutlinedButton.icon(
+          child: OutlinedButton(
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFFD97706),
               side: const BorderSide(color: Color(0xFFF59E0B)),
@@ -1476,11 +1477,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ),
             ),
             onPressed: _handleHoldOrder,
-            icon: const Icon(Icons.pause_circle_outline_rounded, size: 20),
-            label: Text(
+            child: Text(
               state.heldOrderId != null
-                  ? 'Perbarui Tahan Pesanan (Open Bill)'
-                  : 'Tahan Pesanan (Open Bill)',
+                  ? 'Perbarui Tahan Pesanan'
+                  : 'Tahan Pesanan',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
           ),

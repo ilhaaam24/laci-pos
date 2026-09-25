@@ -45,6 +45,7 @@ class UserEntity extends Equatable {
   final UserRole role;
   final String? businessId;
   final bool isEmailVerified;
+  final String? pin;
 
   const UserEntity({
     required this.id,
@@ -54,6 +55,7 @@ class UserEntity extends Equatable {
     this.role = UserRole.owner,
     this.businessId,
     this.isEmailVerified = false,
+    this.pin,
   });
 
   UserEntity copyWith({
@@ -64,6 +66,7 @@ class UserEntity extends Equatable {
     UserRole? role,
     String? businessId,
     bool? isEmailVerified,
+    String? pin,
   }) {
     return UserEntity(
       id: id ?? this.id,
@@ -73,6 +76,7 @@ class UserEntity extends Equatable {
       role: role ?? this.role,
       businessId: businessId ?? this.businessId,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+      pin: pin ?? this.pin,
     );
   }
 
@@ -85,5 +89,6 @@ class UserEntity extends Equatable {
     role,
     businessId,
     isEmailVerified,
+    pin,
   ];
 }

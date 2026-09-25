@@ -38,10 +38,36 @@ class BusinessLocalDataSource {
       isServiceChargeEnabled: result.isServiceChargeEnabled,
       serviceChargeRate: result.serviceChargeRate,
       isPriceInclusiveTax: result.isPriceInclusiveTax,
+      subscriptionTier: result.subscriptionTier,
+      subscriptionExpiresAt: result.subscriptionExpiresAt,
+      subscriptionPlan: result.subscriptionPlan,
     );
   }
 
   Future<void> upsertBusinessInfo(BusinessInfoModel business) async {
+    final existing = await getBusinessInfo(business.id);
+
+    // Conflict resolution: "Highest Entitlement Wins"
+    // Never allow an incoming sync or stale record to downgrade an active Pro subscription
+    var finalTier = business.subscriptionTier;
+    var finalExpiresAt = business.subscriptionExpiresAt;
+    var finalPlan = business.subscriptionPlan;
+
+    if (existing != null && existing.isPro) {
+      if (!business.isPro) {
+        // Local has active Pro, incoming is not Pro -> preserve local Pro
+        finalTier = existing.subscriptionTier;
+        finalExpiresAt = existing.subscriptionExpiresAt;
+        finalPlan = existing.subscriptionPlan;
+      } else if (existing.subscriptionExpiresAt != null &&
+          business.subscriptionExpiresAt != null &&
+          existing.subscriptionExpiresAt!.isAfter(business.subscriptionExpiresAt!)) {
+        // Both are Pro, but local expires later -> preserve the later expiration date
+        finalExpiresAt = existing.subscriptionExpiresAt;
+        finalPlan = existing.subscriptionPlan;
+      }
+    }
+
     await db
         .into(db.localBusinessInfo)
         .insertOnConflictUpdate(
@@ -61,6 +87,9 @@ class BusinessLocalDataSource {
             isServiceChargeEnabled: Value(business.isServiceChargeEnabled),
             serviceChargeRate: Value(business.serviceChargeRate),
             isPriceInclusiveTax: Value(business.isPriceInclusiveTax),
+            subscriptionTier: Value(finalTier),
+            subscriptionExpiresAt: Value(finalExpiresAt),
+            subscriptionPlan: Value(finalPlan),
             syncStatus: const Value('synced'),
             lastSyncAt: Value(DateTime.now()),
           ),
