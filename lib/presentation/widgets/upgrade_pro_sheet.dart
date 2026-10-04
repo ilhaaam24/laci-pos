@@ -63,7 +63,7 @@ class _UpgradeProContentState extends State<UpgradeProContent> {
     final message = Uri.encodeComponent(
       'Halo Admin Laci POS, saya ingin berlangganan Laci POS Pro paket $plan. Bagaimana cara pembayarannya?',
     );
-    final url = Uri.parse('https://wa.me/6281234567890?text=$message');
+    final url = Uri.parse('https://wa.me/6281615697675?text=$message');
 
     try {
       if (await canLaunchUrl(url)) {

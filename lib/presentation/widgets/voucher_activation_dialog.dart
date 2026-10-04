@@ -111,7 +111,7 @@ class _VoucherActivationDialogState extends State<VoucherActivationDialog> {
     const message =
         'Halo Admin Laci POS, saya ingin membeli kode voucher lisensi Laci POS Pro.';
     final url = Uri.parse(
-      'https://wa.me/6281234567890?text=${Uri.encodeComponent(message)}',
+      'https://wa.me/6281615697675?text=${Uri.encodeComponent(message)}',
     );
 
     try {
