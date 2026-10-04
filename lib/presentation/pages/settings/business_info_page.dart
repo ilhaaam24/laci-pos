@@ -8,6 +8,8 @@ import '../../../domain/entities/business_entity.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
 import '../../../core/di/injection.dart';
+import '../../widgets/pro_badge.dart';
+import '../../widgets/upgrade_pro_sheet.dart';
 
 class BusinessInfoPage extends StatefulWidget {
   const BusinessInfoPage({super.key});
@@ -314,7 +316,13 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                     isDark: isDark,
                     children: [
                       // Logo Toko / Usaha
-                      _buildLabel('Logo Usaha', isDark: isDark),
+                      Row(
+                        children: [
+                          _buildLabel('Logo Usaha', isDark: isDark),
+                          const SizedBox(width: 8),
+                          const ProBadge(),
+                        ],
+                      ),
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -333,7 +341,23 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                             GestureDetector(
                               onTap: _isUploadingLogo
                                   ? null
-                                  : _showLogoPickerSheet,
+                                  : () {
+                                      final isPro = context
+                                              .read<BusinessBloc>()
+                                              .state
+                                              .businessInfo
+                                              ?.isPro ??
+                                          false;
+                                      if (!isPro) {
+                                        showUpgradeProSheet(
+                                          context,
+                                          featureName:
+                                              'Logo Toko & Bebas Watermark',
+                                        );
+                                        return;
+                                      }
+                                      _showLogoPickerSheet();
+                                    },
                               child: Stack(
                                 children: [
                                   Container(
@@ -465,7 +489,14 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Format PNG/JPG. Ditampilkan pada profil toko dan aplikasi.',
+                                    (context
+                                                .watch<BusinessBloc>()
+                                                .state
+                                                .businessInfo
+                                                ?.isPro ??
+                                            false)
+                                        ? 'Format PNG/JPG. Ditampilkan pada profil toko dan struk penjualan.'
+                                        : 'Cetak logo toko di struk & profil toko membutuhkan paket Pro.',
                                     style: TextStyle(
                                       fontSize: 11,
                                       color: isDark

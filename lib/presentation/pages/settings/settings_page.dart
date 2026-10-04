@@ -287,47 +287,70 @@ class _SettingsPageState extends State<SettingsPage> {
               // 4. Section: Sistem & Informasi
               _buildSectionHeader('SISTEM & INFORMASI'),
               _buildCardGroup([
-                _buildTile(
-                  icon: "assets/icons/sync.svg",
-                  title: 'Sinkronisasi Data',
-                  subtitle: 'Sinkronkan database lokal dengan cloud',
-                  customTrailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SyncStatusIndicator(),
-                      const SizedBox(width: 4),
-                      TextButton(
-                        onPressed: () {
-                          getIt<SyncService>().fullSync();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Memulai sinkronisasi data...'),
-                              duration: Duration(seconds: 2),
+                BlocBuilder<BusinessBloc, BusinessState>(
+                  builder: (context, bState) {
+                    final isPro = bState.businessInfo?.isPro ?? false;
+                    return _buildTile(
+                      icon: "assets/icons/sync.svg",
+                      title: 'Sinkronisasi Data',
+                      badge: !isPro ? const ProBadge() : null,
+                      subtitle: isPro
+                          ? 'Sinkronkan database lokal dengan cloud'
+                          : 'Fitur Pro: Cadangkan database lokal ke cloud',
+                      customTrailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SyncStatusIndicator(),
+                          const SizedBox(width: 4),
+                          TextButton(
+                            onPressed: () {
+                              if (!isPro) {
+                                showUpgradeProSheet(
+                                  context,
+                                  featureName:
+                                      'Cloud Backup & Multi-Perangkat',
+                                );
+                                return;
+                              }
+                              getIt<SyncService>().fullSync();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Memulai sinkronisasi data...'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              visualDensity: VisualDensity.compact,
                             ),
-                          );
-                        },
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                        child: const Text(
-                          'Sinkronkan',
-                          style: TextStyle(
-                            color: AppColors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12.5,
+                            child: const Text(
+                              'Sinkronkan',
+                              style: TextStyle(
+                                color: AppColors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12.5,
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                  onTap: () {
-                    getIt<SyncService>().fullSync();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Memulai sinkronisasi data...'),
-                        duration: Duration(seconds: 2),
-                      ),
+                      onTap: () {
+                        if (!isPro) {
+                          showUpgradeProSheet(
+                            context,
+                            featureName: 'Cloud Backup & Multi-Perangkat',
+                          );
+                          return;
+                        }
+                        getIt<SyncService>().fullSync();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Memulai sinkronisasi data...'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -600,11 +623,17 @@ class _SettingsPageState extends State<SettingsPage> {
 
     if (isPro) {
       final remainingDays = businessInfo?.remainingProDays ?? 0;
-      final planLabel = businessInfo?.subscriptionPlan == 'yearly'
-          ? 'Paket Tahunan'
-          : businessInfo?.subscriptionPlan == 'monthly'
-          ? 'Paket Bulanan'
-          : 'Lisensi Pro';
+      final isLifetime =
+          businessInfo?.subscriptionPlan == 'lifetime' || remainingDays > 3650;
+      final planLabel = isLifetime
+          ? 'Lisensi Lifetime'
+          : businessInfo?.subscriptionPlan == 'yearly'
+              ? 'Paket Tahunan'
+              : businessInfo?.subscriptionPlan == 'monthly'
+                  ? 'Paket Bulanan'
+                  : 'Lisensi Pro';
+      final expiryLabel =
+          isLifetime ? 'Aktif Selamanya' : 'Sisa masa aktif: $remainingDays hari';
 
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -670,7 +699,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '$planLabel • Sisa masa aktif: $remainingDays hari',
+                    '$planLabel • $expiryLabel',
                     style: TextStyle(
                       fontSize: 11.5,
                       color: isDark
@@ -826,6 +855,7 @@ class _SettingsPageState extends State<SettingsPage> {
     Color? iconBgColor,
     required String title,
     required String subtitle,
+    Widget? badge,
     String? trailingText,
     Widget? customTrailing,
     required VoidCallback onTap,
@@ -867,13 +897,21 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : const Color(0xFF0F172A),
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        ),
+                      ),
+                      if (badge != null) ...[
+                        const SizedBox(width: 8),
+                        badge,
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 2),
                   Text(

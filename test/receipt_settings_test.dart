@@ -37,6 +37,7 @@ void main() {
       expect(cfg.showCustomerName, isTrue);
       expect(cfg.showTableNumber, isTrue);
       expect(cfg.showItemNotes, isTrue);
+      expect(cfg.showWatermark, isTrue);
     });
 
     test(
@@ -58,6 +59,7 @@ void main() {
           showCustomerName: false,
           showTableNumber: false,
           showItemNotes: false,
+          showWatermark: false,
         );
 
         await service.saveConfig(newConfig);
@@ -83,6 +85,7 @@ void main() {
         expect(service.config.showCustomerName, isFalse);
         expect(service.config.showTableNumber, isFalse);
         expect(service.config.showItemNotes, isFalse);
+        expect(service.config.showWatermark, isFalse);
 
         final prefs = await SharedPreferences.getInstance();
         expect(prefs.getBool('pref_receipt_show_logo'), isFalse);
@@ -95,12 +98,14 @@ void main() {
           equals('Sampai Jumpa Kembali!'),
         );
         expect(prefs.getBool('pref_receipt_show_address'), isFalse);
+        expect(prefs.getBool('pref_receipt_show_watermark'), isFalse);
 
         // Test resetToDefault
         await service.resetToDefault();
         expect(service.config.showLogo, isTrue);
         expect(service.config.headerMessage, isEmpty);
         expect(service.config.showAddress, isTrue);
+        expect(service.config.showWatermark, isTrue);
       },
     );
   });
@@ -197,6 +202,133 @@ void main() {
         expect(find.text('MATUR NUWUN!'), findsOneWidget);
         expect(find.text('Simpan bukti bayar ini.'), findsOneWidget);
         expect(find.text('Free WiFi: KopiRoti123'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Free tier always displays Laci POS watermark even if showWatermark is toggled off',
+      (tester) async {
+        final now = DateTime(2026, 9, 22, 14, 0);
+        final transaction = TransactionEntity(
+          id: 'trx_watermark_01',
+          transactionCode: 'INV-WM-001',
+          customerName: 'Budi',
+          subtotal: 10000,
+          totalAmount: 10000,
+          amountPaid: 10000,
+          changeAmount: 0,
+          createdAt: now,
+          createdBy: 'Kasir',
+          payments: [
+            PaymentDetail(
+              type: PaymentType.cash,
+              amount: 10000,
+              timestamp: now,
+            ),
+          ],
+          items: const [
+            TransactionItem(
+              id: 'item_1',
+              productId: 'p1',
+              productName: 'Es Teh Manis',
+              quantity: 1,
+              price: 10000,
+              costPrice: 3000,
+              subtotal: 10000,
+            ),
+          ],
+        );
+
+        final freeBusiness = BusinessInfo(
+          id: 'biz_free',
+          businessName: 'Warung Bu Siti',
+          subscriptionTier: 'free',
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        const configWithWatermarkOff = ReceiptConfig(showWatermark: false);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: ReceiptImageWidget(
+                  transaction: transaction,
+                  businessInfo: freeBusiness,
+                  config: configWithWatermarkOff,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Even though showWatermark is false, Free tier MUST show watermark
+        expect(find.text('LACI POS - Sistem Kasir Modern'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Pro tier can hide Laci POS watermark when showWatermark is false',
+      (tester) async {
+        final now = DateTime(2026, 9, 22, 14, 0);
+        final transaction = TransactionEntity(
+          id: 'trx_watermark_02',
+          transactionCode: 'INV-WM-002',
+          customerName: 'Andi',
+          subtotal: 15000,
+          totalAmount: 15000,
+          amountPaid: 15000,
+          changeAmount: 0,
+          createdAt: now,
+          createdBy: 'Kasir',
+          payments: [
+            PaymentDetail(
+              type: PaymentType.cash,
+              amount: 15000,
+              timestamp: now,
+            ),
+          ],
+          items: const [
+            TransactionItem(
+              id: 'item_1',
+              productId: 'p1',
+              productName: 'Kopi Tubruk',
+              quantity: 1,
+              price: 15000,
+              costPrice: 5000,
+              subtotal: 15000,
+            ),
+          ],
+        );
+
+        final proBusiness = BusinessInfo(
+          id: 'biz_pro',
+          businessName: 'Cafe Modern Pro',
+          subscriptionTier: 'pro',
+          subscriptionExpiresAt: DateTime.now().add(const Duration(days: 30)),
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        const configWithWatermarkOff = ReceiptConfig(showWatermark: false);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: ReceiptImageWidget(
+                  transaction: transaction,
+                  businessInfo: proBusiness,
+                  config: configWithWatermarkOff,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Pro tier can hide watermark
+        expect(find.text('LACI POS - Sistem Kasir Modern'), findsNothing);
       },
     );
   });

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:laci/core/constants/sync_status.dart';
 import 'package:laci/core/di/injection.dart';
 import 'package:laci/core/services/sync_service.dart';
 import 'package:laci/core/style/app_colors.dart';
+import '../blocs/business/business_bloc.dart';
+import 'upgrade_pro_sheet.dart';
 
 /// A widget that displays the current synchronization status.
 /// It listens to the SyncService and shows different icons/colors
@@ -12,6 +15,24 @@ class SyncStatusIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final businessInfo = context.watch<BusinessBloc>().state.businessInfo;
+    final isPro = businessInfo?.isPro ?? false;
+
+    if (!isPro) {
+      return IconButton(
+        onPressed: () => showUpgradeProSheet(
+          context,
+          featureName: 'Cloud Backup & Multi-Perangkat',
+        ),
+        tooltip: 'Fitur Pro: Cloud Backup & Multi-Perangkat',
+        icon: const Icon(
+          Icons.cloud_queue_rounded,
+          color: Colors.grey,
+          size: 20,
+        ),
+      );
+    }
+
     final syncService = getIt<SyncService>();
 
     return StreamBuilder<AppSyncState>(

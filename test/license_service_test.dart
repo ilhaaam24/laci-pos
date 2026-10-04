@@ -5,13 +5,23 @@ import 'package:laci/domain/entities/business_entity.dart';
 
 class _FakeIapService extends IapService {
   @override
-  Future<void> initialize() async {}
+  Future<void> initialize({String? appUserId}) async {}
+
+  @override
+  Future<void> identifyUser(String businessId) async {}
+
+  @override
+  Future<void> logout() async {}
 
   @override
   Future<bool> purchaseSubscription(String productId) async => true;
 
   @override
   Future<bool> restorePurchases() async => true;
+
+  @override
+  Future<DateTime?> getExpirationDate() async =>
+      DateTime.now().add(const Duration(days: 30));
 
   @override
   void dispose() {}

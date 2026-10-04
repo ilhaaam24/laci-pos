@@ -2,6 +2,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/business_entity.dart';
 import '../../../domain/repositories/business_repository.dart';
+import '../../../core/services/iap_service.dart';
+import '../../../core/di/injection.dart';
 
 // Events
 abstract class BusinessEvent extends Equatable {
@@ -78,9 +80,14 @@ class BusinessBloc extends Bloc<BusinessEvent, BusinessState> {
       (error) => emit(
         state.copyWith(isLoading: false, message: error, isSuccess: false),
       ),
-      (info) => emit(
-        state.copyWith(isLoading: false, businessInfo: info, isSuccess: true),
-      ),
+      (info) {
+        try {
+          getIt<IapService>().identifyUser(info.id);
+        } catch (_) {}
+        emit(
+          state.copyWith(isLoading: false, businessInfo: info, isSuccess: true),
+        );
+      },
     );
   }
 

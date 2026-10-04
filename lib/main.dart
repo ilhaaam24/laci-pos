@@ -26,6 +26,7 @@ import 'core/services/notification_service.dart';
 import 'core/services/printer_service.dart';
 import 'core/services/receipt_settings_service.dart';
 import 'core/services/held_order_service.dart';
+import 'core/services/iap_service.dart';
 import 'presentation/pages/auth/auth_wrapper.dart';
 
 void main() async {
@@ -50,6 +51,7 @@ void main() async {
   if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
     await BackgroundService.init();
     await getIt<NotificationService>().init();
+    await getIt<IapService>().initialize();
   }
 
   FlutterNativeSplash.remove();

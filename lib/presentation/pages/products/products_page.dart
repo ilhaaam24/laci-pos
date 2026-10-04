@@ -90,10 +90,10 @@ class _ProductsPageState extends State<ProductsPage> {
           final currentProductCount =
               context.read<ProductBloc>().state.products.length;
 
-          if (!isPro && currentProductCount >= 50) {
+          if (!isPro && currentProductCount >= 150) {
             showUpgradeProSheet(
               context,
-              featureName: 'Katalog Produk Lebih dari 50 Item',
+              featureName: 'Katalog Produk Lebih dari 150 Item',
             );
             return;
           }

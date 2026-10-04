@@ -42,8 +42,8 @@ class ReceiptImageWidget extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Store Logo / Icon
-            if (cfg.showLogo) ...[
+            // Store Logo / Icon (Fitur PRO)
+            if (cfg.showLogo && (businessInfo?.isPro ?? false)) ...[
               Center(
                 child: _buildLogoWidget(cfg),
               ),
@@ -326,27 +326,29 @@ class ReceiptImageWidget extends StatelessWidget {
               ),
               const SizedBox(height: 6),
             ],
-            Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 3,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(
-                  'LACI POS - Sistem Kasir Modern',
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
-                    letterSpacing: 0.3,
+            // Watermark Laci POS (Fitur PRO: Free selalu menampilkan watermark)
+            if (!(businessInfo?.isPro ?? false) || cfg.showWatermark)
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    'LACI POS - Sistem Kasir Modern',
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF64748B),
+                      letterSpacing: 0.3,
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),

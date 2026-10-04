@@ -36,7 +36,7 @@ void main() {
   });
 
   group('UpgradeProContent Widget Tests', () {
-    testWidgets('Renders all feature items and default Yearly plan', (tester) async {
+    testWidgets('Renders header, Free vs PRO comparison, and Lifetime pricing card', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -47,23 +47,34 @@ void main() {
 
       expect(find.text('Laci POS'), findsOneWidget);
       expect(find.text('PRO'), findsOneWidget);
-      expect(find.text('Katalog Produk Tanpa Batas'), findsOneWidget);
-      expect(find.text('Multi-Kasir & PIN Cepat'), findsOneWidget);
-      expect(find.text('Laporan Laba Kotor & Analisis HPP'), findsOneWidget);
-      expect(find.text('Export Dokumen Excel & PDF'), findsOneWidget);
-      expect(find.text('Logo Toko & Bebas Watermark'), findsOneWidget);
-      expect(find.text('Cloud Backup & Multi-Perangkat'), findsOneWidget);
 
-      // Verify Pricing
-      expect(find.text('Tahunan'), findsOneWidget);
-      expect(find.textContaining('30%'), findsOneWidget);
-      expect(find.text('Rp 249.000'), findsOneWidget);
-      expect(find.text('Bulanan'), findsOneWidget);
-      expect(find.text('Rp 29.000'), findsOneWidget);
+      // Verify Comparison Table
+      expect(find.text('FITUR BISNIS'), findsOneWidget);
+      expect(find.text('FREE'), findsOneWidget);
+      expect(find.text('PRO 👑'), findsOneWidget);
+
+      expect(find.text('Katalog Produk'), findsOneWidget);
+      expect(find.text('Maks 150'), findsOneWidget);
+      expect(find.text('Tanpa Batas 🚀'), findsOneWidget);
+
+      expect(find.text('Multi-Kasir & PIN'), findsOneWidget);
+      expect(find.text('1 Kasir'), findsOneWidget);
+      expect(find.text('Banyak Staf 👥'), findsOneWidget);
+
+      expect(find.text('Laporan Laba & HPP'), findsOneWidget);
+      expect(find.text('Export Excel & PDF'), findsOneWidget);
+      expect(find.text('Logo & Bebas Watermark'), findsOneWidget);
+      expect(find.text('Cloud Backup & Sync'), findsOneWidget);
+
+      // Verify Lifetime Pricing
+      expect(find.text('SEKALI BAYAR • AKTIF SELAMANYA'), findsOneWidget);
+      expect(find.text('Hemat 67%'), findsOneWidget);
+      expect(find.text('Rp 49.000'), findsOneWidget);
+      expect(find.text('Rp 149.000'), findsOneWidget);
 
       // Default CTA button
       expect(
-        find.text('Upgrade Sekarang (Rp 249.000 / Tahun)'),
+        find.text('Beli Lisensi via WhatsApp (Rp 49.000)'),
         findsOneWidget,
       );
     });
@@ -86,32 +97,46 @@ void main() {
       expect(find.byIcon(Icons.lock_rounded), findsOneWidget);
     });
 
-    testWidgets('Toggling to Monthly changes CTA button label', (tester) async {
+    testWidgets('Renders and triggers voucher activation button when callback provided', (tester) async {
+      bool voucherTapped = false;
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
           home: Scaffold(
-            body: UpgradeProContent(),
+            body: UpgradeProContent(
+              onVoucherTap: () => voucherTapped = true,
+            ),
           ),
         ),
       );
 
-      // Tap Monthly card
-      await tester.tap(find.text('Bulanan'));
+      final voucherBtn = find.text('Sudah Punya Kode Voucher? Aktivasi di Sini');
+      expect(voucherBtn, findsOneWidget);
+
+      await tester.ensureVisible(voucherBtn);
+      await tester.tap(voucherBtn);
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('Upgrade Sekarang (Rp 29.000 / Bulan)'),
-        findsOneWidget,
-      );
-
-      // Tap Yearly card back
-      await tester.tap(find.text('Tahunan'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('Upgrade Sekarang (Rp 249.000 / Tahun)'),
-        findsOneWidget,
-      );
+      expect(voucherTapped, isTrue);
     });
+
+    for (final width in [320.0, 360.0, 375.0, 390.0, 414.0]) {
+      testWidgets('Renders UpgradeProContent on width $width without overflow', (tester) async {
+        tester.view.physicalSize = Size(width, 844.0);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: UpgradeProContent(
+                featureName: 'Katalog Produk Lebih dari 150 Item',
+                onVoucherTap: () {},
+              ),
+            ),
+          ),
+        );
+        expect(tester.takeException(), isNull);
+      });
+    }
   });
 }

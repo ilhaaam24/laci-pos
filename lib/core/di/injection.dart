@@ -14,6 +14,7 @@ import 'package:laci/data/datasources/local/promo_local_datasource.dart';
 import 'package:laci/data/datasources/local/stock_log_local_datasource.dart';
 import 'package:laci/data/datasources/local/transaction_local_datasource.dart';
 import 'package:laci/data/datasources/local/shift_local_datasource.dart';
+import 'package:laci/core/services/iap_service.dart';
 
 // Data Sources
 import '../../data/datasources/firebase/product_firebase_datasource.dart';
@@ -100,6 +101,7 @@ Future<void> initializeDependencies() async {
   getIt.registerLazySingleton<ReceiptService>(() => ReceiptService());
 
   getIt.registerLazySingleton<NotificationService>(() => NotificationService());
+  getIt.registerLazySingleton<IapService>(() => NoopIapService());
 
   // Local Data Sources
   getIt.registerLazySingleton<ProductLocalDataSource>(

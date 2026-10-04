@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import 'package:esc_pos_utils_plus/esc_pos_utils_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -34,7 +35,8 @@ class PrinterService {
 
   String _paperSize = '58';
   String get paperSizeString => _paperSize;
-  PaperSize get paperSize => _paperSize == '80' ? PaperSize.mm80 : PaperSize.mm58;
+  PaperSize get paperSize =>
+      _paperSize == '80' ? PaperSize.mm80 : PaperSize.mm58;
 
   bool _autoReconnect = true;
   bool get autoReconnect => _autoReconnect;
@@ -57,7 +59,12 @@ class PrinterService {
       if (_autoReconnect &&
           _savedMacAddress != null &&
           _savedMacAddress!.isNotEmpty) {
-        await tryAutoConnect();
+        unawaited(
+          tryAutoConnect().timeout(
+            const Duration(seconds: 2),
+            onTimeout: () => false,
+          ),
+        );
       }
     } catch (_) {}
   }
@@ -309,7 +316,11 @@ class PrinterService {
 
     bytes += generator.hr();
     bytes += generator.row([
-      PosColumn(text: 'TOTAL SEMENTARA', width: 8, styles: const PosStyles(bold: true)),
+      PosColumn(
+        text: 'TOTAL SEMENTARA',
+        width: 8,
+        styles: const PosStyles(bold: true),
+      ),
       PosColumn(
         text: order.totalAmount.toInt().toString(),
         width: 4,
@@ -472,8 +483,7 @@ class PrinterService {
     }
 
     // Auto-kick cash drawer for cash transactions
-    final hasCash =
-        transaction.payments.any((p) => p.type == PaymentType.cash);
+    final hasCash = transaction.payments.any((p) => p.type == PaymentType.cash);
     if (_autoDrawerKick && (hasCash || transaction.payments.isEmpty)) {
       bytes += generator.drawer();
     }
@@ -498,6 +508,20 @@ class PrinterService {
         styles: const PosStyles(align: PosAlign.center),
       );
     }
+
+    // Watermark Laci POS (Fitur PRO: Free selalu tampil, Pro dapat menyembunyikan)
+    final isPro = businessInfo?.isPro ?? false;
+    if (!isPro || cfg.showWatermark) {
+      bytes += generator.feed(1);
+      bytes += generator.text(
+        'LACI POS - Sistem Kasir Modern',
+        styles: const PosStyles(
+          align: PosAlign.center,
+          fontType: PosFontType.fontB,
+        ),
+      );
+    }
+
     bytes += generator.feed(2);
     bytes += generator.cut();
 
@@ -683,8 +707,8 @@ class PrinterService {
       final diffText = diff == 0
           ? 'PAS (Rp 0)'
           : diff > 0
-              ? 'LEBIH +${curFmt.format(diff)}'
-              : 'KURANG ${curFmt.format(diff)}';
+          ? 'LEBIH +${curFmt.format(diff)}'
+          : 'KURANG ${curFmt.format(diff)}';
 
       bytes += generator.row([
         PosColumn(

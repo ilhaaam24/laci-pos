@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ReceiptConfig {
   final bool showLogo;
   final String? customLogoPath;
+  final bool showWatermark;
   final String headerMessage;
   final String footerMessage;
   final String footerNote;
@@ -18,6 +19,7 @@ class ReceiptConfig {
   const ReceiptConfig({
     this.showLogo = true,
     this.customLogoPath,
+    this.showWatermark = true,
     this.headerMessage = '',
     this.footerMessage = 'TERIMA KASIH TELAH BERBELANJA!',
     this.footerNote = 'Simpan struk digital ini sebagai bukti transaksi yang sah.',
@@ -33,6 +35,7 @@ class ReceiptConfig {
   ReceiptConfig copyWith({
     bool? showLogo,
     String? customLogoPath,
+    bool? showWatermark,
     String? headerMessage,
     String? footerMessage,
     String? footerNote,
@@ -47,6 +50,7 @@ class ReceiptConfig {
     return ReceiptConfig(
       showLogo: showLogo ?? this.showLogo,
       customLogoPath: customLogoPath ?? this.customLogoPath,
+      showWatermark: showWatermark ?? this.showWatermark,
       headerMessage: headerMessage ?? this.headerMessage,
       footerMessage: footerMessage ?? this.footerMessage,
       footerNote: footerNote ?? this.footerNote,
@@ -72,6 +76,7 @@ class ReceiptSettingsService {
 
   static const String _kShowLogo = 'pref_receipt_show_logo';
   static const String _kCustomLogoPath = 'pref_receipt_custom_logo_path';
+  static const String _kShowWatermark = 'pref_receipt_show_watermark';
   static const String _kHeaderMessage = 'pref_receipt_header_msg';
   static const String _kFooterMessage = 'pref_receipt_footer_msg';
   static const String _kFooterNote = 'pref_receipt_footer_note';
@@ -93,6 +98,7 @@ class ReceiptSettingsService {
       _config = ReceiptConfig(
         showLogo: prefs.getBool(_kShowLogo) ?? true,
         customLogoPath: prefs.getString(_kCustomLogoPath),
+        showWatermark: prefs.getBool(_kShowWatermark) ?? true,
         headerMessage: prefs.getString(_kHeaderMessage) ?? '',
         footerMessage: prefs.getString(_kFooterMessage) ??
             'TERIMA KASIH TELAH BERBELANJA!',
@@ -121,6 +127,7 @@ class ReceiptSettingsService {
       } else {
         await prefs.remove(_kCustomLogoPath);
       }
+      await prefs.setBool(_kShowWatermark, newConfig.showWatermark);
       await prefs.setString(_kHeaderMessage, newConfig.headerMessage);
       await prefs.setString(_kFooterMessage, newConfig.footerMessage);
       await prefs.setString(_kFooterNote, newConfig.footerNote);

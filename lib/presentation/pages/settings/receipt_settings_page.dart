@@ -11,6 +11,8 @@ import '../../../domain/entities/business_entity.dart';
 import '../../../domain/entities/product_variant.dart';
 import '../../../domain/entities/transaction_entity.dart';
 import '../../blocs/business/business_bloc.dart';
+import '../../widgets/pro_badge.dart';
+import '../../widgets/upgrade_pro_sheet.dart';
 import '../checkout/widgets/receipt_image_widget.dart';
 
 class ReceiptSettingsPage extends StatefulWidget {
@@ -26,6 +28,7 @@ class _ReceiptSettingsPageState extends State<ReceiptSettingsPage> {
 
   late bool _showLogo;
   String? _customLogoPath;
+  late bool _showWatermark;
   late TextEditingController _headerMsgController;
   late TextEditingController _footerMsgController;
   late TextEditingController _footerNoteController;
@@ -47,6 +50,7 @@ class _ReceiptSettingsPageState extends State<ReceiptSettingsPage> {
     final cfg = _receiptService.config;
     _showLogo = cfg.showLogo;
     _customLogoPath = cfg.customLogoPath;
+    _showWatermark = cfg.showWatermark;
     _headerMsgController = TextEditingController(text: cfg.headerMessage);
     _footerMsgController = TextEditingController(text: cfg.footerMessage);
     _footerNoteController = TextEditingController(text: cfg.footerNote);
@@ -72,6 +76,7 @@ class _ReceiptSettingsPageState extends State<ReceiptSettingsPage> {
   ReceiptConfig get _currentConfig => ReceiptConfig(
     showLogo: _showLogo,
     customLogoPath: _customLogoPath,
+    showWatermark: _showWatermark,
     headerMessage: _headerMsgController.text,
     footerMessage: _footerMsgController.text,
     footerNote: _footerNoteController.text,
@@ -150,6 +155,7 @@ class _ReceiptSettingsPageState extends State<ReceiptSettingsPage> {
       setState(() {
         _showLogo = cfg.showLogo;
         _customLogoPath = cfg.customLogoPath;
+        _showWatermark = cfg.showWatermark;
         _headerMsgController.text = cfg.headerMessage;
         _footerMsgController.text = cfg.footerMessage;
         _footerNoteController.text = cfg.footerNote;
@@ -215,6 +221,7 @@ class _ReceiptSettingsPageState extends State<ReceiptSettingsPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final businessInfo = context.watch<BusinessBloc>().state.businessInfo;
+    final isPro = businessInfo?.isPro ?? false;
 
     return Scaffold(
       backgroundColor: isDark
@@ -254,8 +261,8 @@ class _ReceiptSettingsPageState extends State<ReceiptSettingsPage> {
                 : 'Tampilkan Preview',
             icon: Icon(
               _showLivePreview
-                  ? Icons.visibility_rounded
-                  : Icons.visibility_off_rounded,
+                ? Icons.visibility_rounded
+                : Icons.visibility_off_rounded,
               color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
             ),
             onPressed: () =>
@@ -307,8 +314,8 @@ class _ReceiptSettingsPageState extends State<ReceiptSettingsPage> {
             const SizedBox(height: 20),
           ],
 
-          // 2. Logo Section
-          _buildLogoConfigCard(businessInfo, isDark),
+          // 2. Logo Section (Fitur PRO)
+          _buildLogoConfigCard(businessInfo, isDark, isPro),
           const SizedBox(height: 16),
 
           // 3. Header & Store Info
@@ -321,6 +328,10 @@ class _ReceiptSettingsPageState extends State<ReceiptSettingsPage> {
 
           // 5. Footer & Notes Section
           _buildFooterConfigCard(isDark),
+          const SizedBox(height: 16),
+
+          // 6. Watermark Section (Fitur PRO)
+          _buildWatermarkConfigCard(isDark, isPro),
           const SizedBox(height: 30),
         ],
       ),
@@ -355,7 +366,7 @@ class _ReceiptSettingsPageState extends State<ReceiptSettingsPage> {
     );
   }
 
-  Widget _buildLogoConfigCard(BusinessInfo? businessInfo, bool isDark) {
+  Widget _buildLogoConfigCard(BusinessInfo? businessInfo, bool isDark, bool isPro) {
     final hasCustomLogo =
         _customLogoPath != null && File(_customLogoPath!).existsSync();
     final hasStoreLogo =
@@ -395,6 +406,8 @@ class _ReceiptSettingsPageState extends State<ReceiptSettingsPage> {
                       : const Color(0xFF64748B),
                 ),
               ),
+              const SizedBox(width: 8),
+              const ProBadge(),
             ],
           ),
           const SizedBox(height: 14),
@@ -409,7 +422,9 @@ class _ReceiptSettingsPageState extends State<ReceiptSettingsPage> {
               ),
             ),
             subtitle: Text(
-              'Tampilkan logo toko pada bagian atas struk digital & fisik',
+              isPro
+                  ? 'Tampilkan logo toko pada bagian atas struk digital & fisik'
+                  : 'Cetak logo toko di struk membutuhkan paket Pro',
               style: TextStyle(
                 fontSize: 12,
                 color: isDark
@@ -417,11 +432,20 @@ class _ReceiptSettingsPageState extends State<ReceiptSettingsPage> {
                     : const Color(0xFF64748B),
               ),
             ),
-            value: _showLogo,
+            value: isPro ? _showLogo : false,
             activeThumbColor: AppColors.primary,
-            onChanged: (val) => setState(() => _showLogo = val),
+            onChanged: (val) {
+              if (!isPro) {
+                showUpgradeProSheet(
+                  context,
+                  featureName: 'Logo Toko & Bebas Watermark',
+                );
+                return;
+              }
+              setState(() => _showLogo = val);
+            },
           ),
-          if (_showLogo) ...[
+          if (_showLogo && isPro) ...[
             const Divider(height: 24),
             Row(
               children: [
@@ -481,7 +505,16 @@ class _ReceiptSettingsPageState extends State<ReceiptSettingsPage> {
                         runSpacing: 6,
                         children: [
                           OutlinedButton.icon(
-                            onPressed: () => _pickLogo(ImageSource.gallery),
+                            onPressed: () {
+                              if (!isPro) {
+                                showUpgradeProSheet(
+                                  context,
+                                  featureName: 'Logo Toko & Bebas Watermark',
+                                );
+                                return;
+                              }
+                              _pickLogo(ImageSource.gallery);
+                            },
                             icon: const Icon(
                               Icons.photo_library_outlined,
                               size: 16,
@@ -498,7 +531,16 @@ class _ReceiptSettingsPageState extends State<ReceiptSettingsPage> {
                             ),
                           ),
                           OutlinedButton.icon(
-                            onPressed: () => _pickLogo(ImageSource.camera),
+                            onPressed: () {
+                              if (!isPro) {
+                                showUpgradeProSheet(
+                                  context,
+                                  featureName: 'Logo Toko & Bebas Watermark',
+                                );
+                                return;
+                              }
+                              _pickLogo(ImageSource.camera);
+                            },
                             icon: const Icon(
                               Icons.camera_alt_outlined,
                               size: 16,
@@ -517,7 +559,7 @@ class _ReceiptSettingsPageState extends State<ReceiptSettingsPage> {
                           if (hasCustomLogo)
                             TextButton.icon(
                               onPressed: () =>
-                                  setState(() => _customLogoPath = null),
+                                   setState(() => _customLogoPath = null),
                               icon: const Icon(
                                 Icons.close_rounded,
                                 size: 16,
@@ -539,6 +581,84 @@ class _ReceiptSettingsPageState extends State<ReceiptSettingsPage> {
               ],
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWatermarkConfigCard(bool isDark, bool isPro) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.branding_watermark_outlined,
+                size: 20,
+                color: isDark
+                    ? const Color(0xFF60A5FA)
+                    : const Color(0xFF2563EB),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'WATERMARK STRUK',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                  color: isDark
+                      ? const Color(0xFF94A3B8)
+                      : const Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const ProBadge(),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              'Tampilkan Watermark Laci POS',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+              ),
+            ),
+            subtitle: Text(
+              isPro
+                  ? 'Matikan opsi ini untuk mencetak struk bersih tanpa watermark "LACI POS - Sistem Kasir Modern".'
+                  : 'Struk akun Free menyertakan watermark. Upgrade ke Pro untuk bebas watermark.',
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
+              ),
+            ),
+            value: isPro ? _showWatermark : true,
+            activeThumbColor: AppColors.primary,
+            onChanged: (val) {
+              if (!isPro) {
+                showUpgradeProSheet(
+                  context,
+                  featureName: 'Logo Toko & Bebas Watermark',
+                );
+                return;
+              }
+              setState(() => _showWatermark = val);
+            },
+          ),
         ],
       ),
     );
