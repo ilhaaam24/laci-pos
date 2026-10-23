@@ -1,0 +1,135 @@
+{
+  "project_info": {
+    "project_number": "747380789752",
+    "firebase_url": "https://chatify-9b6ef-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "chatify-9b6ef",
+    "storage_bucket": "chatify-9b6ef.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:747380789752:android:cd16fba6158feee2a1460d",
+        "android_client_info": {
+          "package_name": "com.example.laci"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "747380789752-gpu0fjfv3k45a5o1aktjqs4b244j3mm4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3UlJo-GvmU49LhS9FkaMPvPPoLtqNUm0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "747380789752-gpu0fjfv3k45a5o1aktjqs4b244j3mm4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "747380789752-0j2nv54qgo8incgi7p0safloasu2dv9h.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.laci"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:747380789752:android:44fe9cd850d6300da1460d",
+        "android_client_info": {
+          "package_name": "com.example.pinggoapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "747380789752-reectdft13t0kfeohe4o5hrc0rob8rf1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.pinggoapp",
+            "certificate_hash": "bbbf5492f535e841c56d0bf20f76f574eb6ff0f9"
+          }
+        },
+        {
+          "client_id": "747380789752-gpu0fjfv3k45a5o1aktjqs4b244j3mm4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3UlJo-GvmU49LhS9FkaMPvPPoLtqNUm0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "747380789752-gpu0fjfv3k45a5o1aktjqs4b244j3mm4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "747380789752-0j2nv54qgo8incgi7p0safloasu2dv9h.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.laci"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:747380789752:android:62605f1840c2b3b6a1460d",
+        "android_client_info": {
+          "package_name": "com.ilhaaam24.lacipos"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "747380789752-jvhq5ru6t6pk6fh59tuu7erh1u3d2d85.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ilhaaam24.lacipos",
+            "certificate_hash": "6f615d3082a70a96f0316ff3beb76b8432c87125"
+          }
+        },
+        {
+          "client_id": "747380789752-gpu0fjfv3k45a5o1aktjqs4b244j3mm4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3UlJo-GvmU49LhS9FkaMPvPPoLtqNUm0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "747380789752-gpu0fjfv3k45a5o1aktjqs4b244j3mm4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "747380789752-0j2nv54qgo8incgi7p0safloasu2dv9h.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.laci"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
