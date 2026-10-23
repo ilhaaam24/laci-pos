@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../domain/entities/transaction_entity.dart';
 
 class PaymentState extends Equatable {
   final double subtotal;
@@ -6,11 +7,14 @@ class PaymentState extends Equatable {
   final double taxAmount;
   final double discountAmount;
   final double totalAmount;
-  final double amountPaid;
+  final double amountPaid; // Keep for the current input field if needed, or total paid
   final double changeAmount;
-  final String paymentMethod;
+  final List<PaymentDetail> payments;
   final bool isValid;
   final String? errorMessage;
+
+  double get totalPaid => payments.fold(0, (sum, p) => sum + p.amount);
+  double get remainingAmount => totalAmount - totalPaid;
 
   const PaymentState({
     this.subtotal = 0,
@@ -20,7 +24,7 @@ class PaymentState extends Equatable {
     this.totalAmount = 0,
     this.amountPaid = 0,
     this.changeAmount = 0,
-    this.paymentMethod = 'Cash',
+    this.payments = const [],
     this.isValid = false,
     this.errorMessage,
   });
@@ -33,7 +37,7 @@ class PaymentState extends Equatable {
     double? totalAmount,
     double? amountPaid,
     double? changeAmount,
-    String? paymentMethod,
+    List<PaymentDetail>? payments,
     bool? isValid,
     String? errorMessage,
   }) {
@@ -45,7 +49,7 @@ class PaymentState extends Equatable {
       totalAmount: totalAmount ?? this.totalAmount,
       amountPaid: amountPaid ?? this.amountPaid,
       changeAmount: changeAmount ?? this.changeAmount,
-      paymentMethod: paymentMethod ?? this.paymentMethod,
+      payments: payments ?? this.payments,
       isValid: isValid ?? this.isValid,
       errorMessage: errorMessage,
     );
@@ -60,7 +64,7 @@ class PaymentState extends Equatable {
     totalAmount,
     amountPaid,
     changeAmount,
-    paymentMethod,
+    payments,
     isValid,
     errorMessage,
   ];

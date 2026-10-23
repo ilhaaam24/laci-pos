@@ -1,11 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:laci/core/themes/theme.dart';
-
+import 'package:laci/firebase_options.dart';
 import 'core/di/injection.dart';
-
 import 'presentation/blocs/product/product_bloc.dart';
 import 'presentation/blocs/category/category_bloc.dart';
 import 'presentation/blocs/customer/customer_bloc.dart';
@@ -15,21 +16,45 @@ import 'presentation/blocs/cart/cart_bloc.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
 import 'presentation/blocs/report/report_bloc.dart';
 import 'presentation/blocs/promo/promo_bloc.dart';
-
+import 'presentation/blocs/users/users_bloc.dart';
+import 'presentation/blocs/shift/shift_bloc.dart';
+import 'package:flutter/foundation.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'core/services/background_service.dart';
+import 'core/services/notification_service.dart';
+import 'core/services/printer_service.dart';
+import 'core/services/receipt_settings_service.dart';
+import 'core/services/held_order_service.dart';
+import 'core/services/iap_service.dart';
 import 'presentation/pages/auth/auth_wrapper.dart';
-import 'core/style/app_theme.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
-  // Initialize Firebase
-  await Firebase.initializeApp();
+  await initializeDateFormatting('id_ID', null);
 
-  // Initialize Google Sign In
-  await GoogleSignIn.instance.initialize();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Initialize Dependencies
+  await GoogleSignIn.instance.initialize(
+    clientId: Platform.isAndroid
+        ? DefaultFirebaseOptions.currentPlatform.androidClientId
+        : DefaultFirebaseOptions.currentPlatform.iosClientId,
+  );
+
   await initializeDependencies();
+  await PrinterService().init();
+  await ReceiptSettingsService().init();
+  await HeldOrderService().init();
+
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    await BackgroundService.init();
+    await getIt<NotificationService>().init();
+    await getIt<IapService>().initialize();
+  }
+
+  FlutterNativeSplash.remove();
 
   runApp(const MyApp());
 }
@@ -59,6 +84,8 @@ class MyApp extends StatelessWidget {
               getIt<ReportBloc>()..add(LoadDailyReport(DateTime.now())),
         ),
         BlocProvider(create: (_) => getIt<PromoBloc>()..add(LoadPromos())),
+        BlocProvider(create: (_) => getIt<UsersBloc>()),
+        BlocProvider(create: (_) => getIt<ShiftBloc>()..add(CheckActiveShift())),
       ],
       child: MaterialApp(
         title: 'Laci POS',

@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart' as f_store;
 import '../../../core/constants/firebase_collections.dart';
 import '../../models/transaction_model.dart';
-import '../../models/stock_log_model.dart';
-import '../../../domain/entities/stock_log_entity.dart';
+import '../../../core/services/notification_service.dart';
+
+import '../../../core/services/session_service.dart';
 
 abstract class TransactionFirebaseDataSource {
   Future<String> createTransaction(TransactionModel transaction);
@@ -17,21 +18,34 @@ abstract class TransactionFirebaseDataSource {
 class TransactionFirebaseDataSourceImpl
     implements TransactionFirebaseDataSource {
   final f_store.FirebaseFirestore firestore;
+  final NotificationService notificationService;
+  final SessionService sessionService;
 
-  TransactionFirebaseDataSourceImpl({required this.firestore});
+  TransactionFirebaseDataSourceImpl({
+    required this.firestore,
+    required this.notificationService,
+    required this.sessionService,
+  });
 
   f_store.CollectionReference get _collection =>
       firestore.collection(FirebaseCollections.transactions);
 
+  String get _businessId => sessionService.businessId ?? '';
+
   @override
   Future<String> createTransaction(TransactionModel transaction) async {
+    if (_businessId.isEmpty) {
+      throw Exception('Business ID is missing. Please re-login.');
+    }
     try {
       // Start a batch write
       final batch = firestore.batch();
 
       // Create transaction document
       final transactionRef = _collection.doc(transaction.id);
-      batch.set(transactionRef, transaction.toFirestore());
+      final data = transaction.toFirestore();
+      data['businessId'] = _businessId;
+      batch.set(transactionRef, data);
 
       // Create transaction items as subcollection
       for (var item in transaction.items) {
@@ -40,40 +54,10 @@ class TransactionFirebaseDataSourceImpl
             .doc();
 
         // Convert TransactionItem to TransactionItemModel to get toMap()
-        final itemModel = TransactionItemModel.fromEntity(item);
+        final itemModel = TransactionItemModel.fromEntity(
+          item,
+        ).copyWith(businessId: _businessId);
         batch.set(itemRef, itemModel.toMap());
-
-        // Update product stock with logging
-        final productRef = firestore
-            .collection(FirebaseCollections.products)
-            .doc(item.productId);
-        
-        final productDoc = await productRef.get();
-        int previousStock = 0;
-        if (productDoc.exists) {
-          previousStock = (productDoc.data() as Map<String, dynamic>)['stock'] ?? 0;
-        }
-        int newStock = previousStock - item.quantity;
-
-        batch.update(productRef, {
-          'stock': newStock,
-          'updatedAt': f_store.FieldValue.serverTimestamp(),
-        });
-
-        // Create Stock Log
-        final logRef = firestore.collection(FirebaseCollections.stockLogs).doc();
-        final stockLog = StockLogModel(
-          id: logRef.id,
-          productId: item.productId,
-          productName: item.productName,
-          type: StockLogType.sale,
-          quantity: -item.quantity,
-          previousStock: previousStock,
-          newStock: newStock,
-          reason: 'Transaksi ${transaction.transactionCode}',
-          createdAt: DateTime.now(),
-        );
-        batch.set(logRef, stockLog.toFirestore());
       }
 
       await batch.commit();
@@ -86,6 +70,7 @@ class TransactionFirebaseDataSourceImpl
   @override
   Stream<List<TransactionModel>> getTransactions() {
     return _collection
+        .where('businessId', isEqualTo: _businessId)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .asyncMap((snapshot) async {
@@ -102,16 +87,16 @@ class TransactionFirebaseDataSourceImpl
 
   @override
   Future<TransactionModel> getTransactionById(String id) async {
-    try {
-      final doc = await _collection.doc(id).get();
-      if (!doc.exists) {
-        throw Exception('Transaction not found');
-      }
-      final items = await _getTransactionItems(id);
-      return TransactionModel.fromFirestore(doc, items);
-    } catch (e) {
-      throw Exception('Failed to fetch transaction: $e');
+    final doc = await _collection.doc(id).get();
+    if (!doc.exists) {
+      throw Exception('Transaction not found');
     }
+    final items = await _getTransactionItems(id);
+    final transaction = TransactionModel.fromFirestore(doc, items);
+    if (transaction.businessId != _businessId) {
+      throw Exception('Unauthorized access to transaction');
+    }
+    return transaction;
   }
 
   @override
@@ -120,6 +105,7 @@ class TransactionFirebaseDataSourceImpl
     DateTime endDate,
   ) {
     return _collection
+        .where('businessId', isEqualTo: _businessId)
         .where(
           'createdAt',
           isGreaterThanOrEqualTo: f_store.Timestamp.fromDate(startDate),

@@ -1,162 +1,405 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
+
 import '../../blocs/category/category_bloc.dart';
 import '../../../domain/entities/category_entity.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
 import 'add_edit_category_page.dart';
 
-class CategoriesPage extends StatelessWidget {
+class CategoriesPage extends StatefulWidget {
   const CategoriesPage({super.key});
 
   @override
+  State<CategoriesPage> createState() => _CategoriesPageState();
+}
+
+class _CategoriesPageState extends State<CategoriesPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final subtextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Kelola Kategori')),
+      backgroundColor: bgColor,
+      appBar: AppBar(
+        backgroundColor: cardColor,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: textColor),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Kelola Kategori',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: borderColor),
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
+        elevation: 0,
+        highlightElevation: 0,
+        backgroundColor: AppColors.primary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const AddEditCategoryPage()),
           );
         },
-        backgroundColor: Colors.orange.shade700,
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
-      body: BlocConsumer<CategoryBloc, CategoryState>(
-        listener: (context, state) {
-          if (state.isSuccess && state.message != null) {
-            AppToast.showSuccess(context, state.message!);
-          }
-          if (state is CategoryError) {
-            AppToast.showError(context, state.message!);
-          }
-        },
-        builder: (context, state) {
-          if (state.isLoading && state.categories.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (state.categories.isEmpty) {
-            return _buildEmptyState(context);
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-            itemCount: state.categories.length,
-            itemBuilder: (context, index) {
-              final category = state.categories[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                elevation: 0,
-                shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade300),
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  leading: CircleAvatar(
-                    backgroundColor: Colors.orange.shade50,
-                    child: const Icon(Icons.category, color: Colors.orange),
-                  ),
-                  title: Text(
-                    category.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      category.description?.isNotEmpty == true
-                          ? category.description!
-                          : 'Tidak ada deskripsi',
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.edit_outlined,
-                          color: Colors.blue,
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  AddEditCategoryPage(category: category),
-                            ),
-                          );
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.delete_outline,
-                          color: AppColors.error,
-                        ),
-                        onPressed: () => _showDeleteDialog(context, category),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      body: Column(
         children: [
-          Icon(
-            Icons.category_outlined,
-            size: 100,
-            color: Colors.orange.withValues(alpha: 0.2),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Belum ada kategori',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
+          _buildSearchBar(cardColor, bgColor, borderColor, textColor, subtextColor),
+          Expanded(
+            child: BlocConsumer<CategoryBloc, CategoryState>(
+              listener: (context, state) {
+                if (state.isSuccess && state.message != null) {
+                  AppToast.showSuccess(context, state.message!);
+                }
+                if (state is CategoryError) {
+                  AppToast.showError(context, state.message!);
+                }
+              },
+              builder: (context, state) {
+                if (state.isLoading && state.categories.isEmpty) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.primary,
+                      ),
+                    ),
+                  );
+                }
+
+                final filteredCategories = state.categories
+                    .where(
+                      (c) => c.name.toLowerCase().contains(
+                        _searchQuery.toLowerCase(),
+                      ),
+                    )
+                    .toList();
+
+                if (filteredCategories.isEmpty) {
+                  return _buildEmptyState(cardColor, borderColor, textColor, subtextColor);
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
+                  itemCount: filteredCategories.length,
+                  itemBuilder: (context, index) {
+                    final category = filteredCategories[index];
+                    return _buildCategoryCard(category, cardColor, borderColor, textColor, subtextColor);
+                  },
+                );
+              },
             ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Tambahkan kategori untuk mengelompokkan produk Anda',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textDisabled),
           ),
         ],
       ),
     );
   }
 
-  void _showDeleteDialog(BuildContext context, Category category) {
+  Widget _buildSearchBar(
+    Color cardColor,
+    Color searchBg,
+    Color borderColor,
+    Color textColor,
+    Color subtextColor,
+  ) {
+    return Container(
+      color: cardColor,
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: searchBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor),
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value;
+            });
+          },
+          style: TextStyle(fontSize: 14, color: textColor),
+          decoration: InputDecoration(
+            hintText: 'Cari kategori...',
+            hintStyle: TextStyle(fontSize: 14, color: subtextColor),
+            prefixIcon: Icon(
+              Icons.search,
+              color: subtextColor,
+              size: 20,
+            ),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: Icon(
+                      Icons.clear,
+                      size: 18,
+                      color: subtextColor,
+                    ),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {
+                        _searchQuery = '';
+                      });
+                    },
+                  )
+                : null,
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryCard(
+    Category category,
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+    Color subtextColor,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AddEditCategoryPage(category: category),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              SvgPicture.asset(
+                "assets/icons/category.svg",
+                width: 32,
+                height: 32,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      category.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: textColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      category.description?.isNotEmpty == true
+                          ? category.description!
+                          : 'Tidak ada deskripsi',
+                      style: TextStyle(
+                        color: subtextColor,
+                        fontSize: 13,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              _buildPopupMenu(category, cardColor, borderColor, textColor),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPopupMenu(
+    Category category,
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+  ) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, color: Color(0xFF64748B), size: 20),
+      color: cardColor,
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: borderColor),
+      ),
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit_outlined, size: 18, color: textColor),
+              const SizedBox(width: 10),
+              Text(
+                'Edit Kategori',
+                style: TextStyle(fontSize: 13, color: textColor),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline, size: 18, color: Color(0xFFDC2626)),
+              SizedBox(width: 10),
+              Text(
+                'Hapus',
+                style: TextStyle(fontSize: 13, color: Color(0xFFDC2626)),
+              ),
+            ],
+          ),
+        ),
+      ],
+      onSelected: (value) {
+        if (value == 'edit') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AddEditCategoryPage(category: category),
+            ),
+          );
+        } else if (value == 'delete') {
+          _showDeleteDialog(context, category, cardColor, borderColor, textColor);
+        }
+      },
+    );
+  }
+
+  Widget _buildEmptyState(
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+    Color subtextColor,
+  ) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: cardColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: borderColor),
+              ),
+              child: const Icon(
+                Icons.category_outlined,
+                size: 34,
+                color: Color(0xFF94A3B8),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _searchQuery.isNotEmpty
+                  ? 'Kategori tidak ditemukan'
+                  : 'Belum ada kategori',
+              style: TextStyle(
+                color: textColor,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _searchQuery.isNotEmpty
+                  ? 'Coba gunakan kata kunci pencarian lainnya'
+                  : 'Buat kategori untuk mengelompokkan produk Anda',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: subtextColor, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteDialog(
+    BuildContext context,
+    Category category,
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+  ) {
+    final subtextColor = Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Hapus Kategori'),
-        content: Text('Hapus kategori "${category.name}"?'),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: cardColor,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: borderColor),
+        ),
+        title: Text(
+          'Hapus Kategori?',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
+        ),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus "${category.name}"? Produk dalam kategori ini akan kehilangan kaitannya.',
+          style: TextStyle(fontSize: 14, color: subtextColor),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(
+          OutlinedButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Batal'),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: borderColor),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              'Batal',
+              style: TextStyle(color: subtextColor),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -164,10 +407,19 @@ class CategoriesPage extends StatelessWidget {
               Navigator.pop(dialogContext);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
+              elevation: 0,
+              backgroundColor: const Color(0xFFDC2626),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-            child: const Text('Hapus'),
+            child: const Text(
+              'Hapus',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),

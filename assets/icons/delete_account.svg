@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Kepala / Avatar Pengguna -->
+  <circle cx="21" cy="14" r="7" stroke="#1E293B" stroke-width="2.5" fill="#E6F5EE"/>
+
+  <!-- Badan / Pundak Pengguna -->
+  <path d="M7 38C7 30.5 13.5 27 21 27C24.5 27 27.6 27.8 30 29.2" stroke="#1E293B" stroke-width="2.5" fill="#E6F5EE"/>
+  <path d="M7 38H26" stroke="#1E293B" stroke-width="2.5"/>
+
+  <!-- Lencana Aksi Hapus Akun (Lingkaran Merah dengan Tong Sampah) -->
+  <g transform="translate(24, 21)">
+    <!-- Lingkaran Luar Aksen Bahaya / Hapus -->
+    <circle cx="12" cy="12" r="10" fill="#EF4444" stroke="#FFFFFF" stroke-width="2"/>
+
+    <!-- Gagang Tutup Tempat Sampah -->
+    <path d="M10 8C10 7.4 10.4 7 11 7H13C13.6 7 14 7.4 14 8" stroke="#FFFFFF" stroke-width="1.4"/>
+    <!-- Tutup Sampah -->
+    <line x1="7.5" y1="9" x2="16.5" y2="9" stroke="#FFFFFF" stroke-width="1.6"/>
+    <!-- Wadah Tempat Sampah -->
+    <path d="M8.5 9L9.5 16.2C9.6 16.7 10 17 10.5 17H13.5C14 17 14.4 16.7 14.5 16.2L15.5 9" stroke="#FFFFFF" stroke-width="1.5" fill="#EF4444"/>
+    <!-- Garis Tengah Wadah -->
+    <line x1="12" y1="11" x2="12" y2="15" stroke="#FFFFFF" stroke-width="1.4"/>
+  </g>
+</svg>

@@ -80,11 +80,13 @@ class PromoBloc extends Bloc<PromoEvent, PromoState> {
     on<UpdatePromo>(_onUpdatePromo);
     on<DeletePromo>(_onDeletePromo);
     on<_InternalUpdatePromos>((event, emit) {
-      emit(state.copyWith(
-        promos: event.promos,
-        error: event.error,
-        isLoading: false,
-      ));
+      emit(
+        state.copyWith(
+          promos: event.promos,
+          error: event.error,
+          isLoading: false,
+        ),
+      );
     });
   }
 
@@ -99,30 +101,57 @@ class PromoBloc extends Bloc<PromoEvent, PromoState> {
     });
   }
 
-  Future<void> _onCreatePromo(CreatePromo event, Emitter<PromoState> emit) async {
+  Future<void> _onCreatePromo(
+    CreatePromo event,
+    Emitter<PromoState> emit,
+  ) async {
     emit(state.copyWith(isLoading: true));
     final result = await repository.createPromo(event.promo);
     result.fold(
       (l) => emit(state.copyWith(isLoading: false, error: l)),
-      (r) => emit(state.copyWith(isLoading: false, isSuccess: true, message: 'Promo berhasil ditambahkan')),
+      (r) => emit(
+        state.copyWith(
+          isLoading: false,
+          isSuccess: true,
+          message: 'Promo berhasil ditambahkan',
+        ),
+      ),
     );
   }
 
-  Future<void> _onUpdatePromo(UpdatePromo event, Emitter<PromoState> emit) async {
+  Future<void> _onUpdatePromo(
+    UpdatePromo event,
+    Emitter<PromoState> emit,
+  ) async {
     emit(state.copyWith(isLoading: true));
     final result = await repository.updatePromo(event.promo);
     result.fold(
       (l) => emit(state.copyWith(isLoading: false, error: l)),
-      (r) => emit(state.copyWith(isLoading: false, isSuccess: true, message: 'Promo berhasil diperbarui')),
+      (r) => emit(
+        state.copyWith(
+          isLoading: false,
+          isSuccess: true,
+          message: 'Promo berhasil diperbarui',
+        ),
+      ),
     );
   }
 
-  Future<void> _onDeletePromo(DeletePromo event, Emitter<PromoState> emit) async {
+  Future<void> _onDeletePromo(
+    DeletePromo event,
+    Emitter<PromoState> emit,
+  ) async {
     emit(state.copyWith(isLoading: true));
     final result = await repository.deletePromo(event.id);
     result.fold(
       (l) => emit(state.copyWith(isLoading: false, error: l)),
-      (r) => emit(state.copyWith(isLoading: false, isSuccess: true, message: 'Promo berhasil dihapus')),
+      (r) => emit(
+        state.copyWith(
+          isLoading: false,
+          isSuccess: true,
+          message: 'Promo berhasil dihapus',
+        ),
+      ),
     );
   }
 

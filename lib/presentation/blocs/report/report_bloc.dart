@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../../core/services/report_service.dart';
+import '../../../../core/services/session_service.dart';
 
 // Events
 abstract class ReportEvent extends Equatable {
@@ -64,8 +65,10 @@ class ReportError extends ReportState {
 // BLoC
 class ReportBloc extends Bloc<ReportEvent, ReportState> {
   final ReportService reportService;
+  final SessionService sessionService;
 
-  ReportBloc({required this.reportService}) : super(ReportInitial()) {
+  ReportBloc({required this.reportService, required this.sessionService})
+    : super(ReportInitial()) {
     on<LoadDailyReport>(_onLoadDailyReport);
     on<LoadWeeklyReport>(_onLoadWeeklyReport);
     on<LoadMonthlyReport>(_onLoadMonthlyReport);
@@ -77,13 +80,11 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     Emitter<ReportState> emit,
   ) async {
     emit(ReportLoading());
-    print('ReportBloc: Loading Daily Report for ${event.date}');
     try {
-      final data = await reportService.getDailyReport(event.date);
-      print('ReportBloc: Daily Report Loaded: $data');
+      final businessId = sessionService.businessId ?? '';
+      final data = await reportService.getDailyReport(businessId, event.date);
       emit(ReportLoaded(data));
     } catch (e) {
-      print('ReportBloc: Daily Report Error: $e');
       emit(ReportError(e.toString()));
     }
   }
@@ -93,13 +94,11 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     Emitter<ReportState> emit,
   ) async {
     emit(ReportLoading());
-    print('ReportBloc: Loading Weekly Report for ${event.date}');
     try {
-      final data = await reportService.getWeeklyReport(event.date);
-      print('ReportBloc: Weekly Report Loaded: $data');
+      final businessId = sessionService.businessId ?? '';
+      final data = await reportService.getWeeklyReport(businessId, event.date);
       emit(ReportLoaded(data));
     } catch (e) {
-      print('ReportBloc: Weekly Report Error: $e');
       emit(ReportError(e.toString()));
     }
   }
@@ -109,13 +108,11 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     Emitter<ReportState> emit,
   ) async {
     emit(ReportLoading());
-    print('ReportBloc: Loading Monthly Report for ${event.date}');
     try {
-      final data = await reportService.getMonthlyReport(event.date);
-      print('ReportBloc: Monthly Report Loaded: $data');
+      final businessId = sessionService.businessId ?? '';
+      final data = await reportService.getMonthlyReport(businessId, event.date);
       emit(ReportLoaded(data));
     } catch (e) {
-      print('ReportBloc: Monthly Report Error: $e');
       emit(ReportError(e.toString()));
     }
   }
@@ -125,13 +122,15 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     Emitter<ReportState> emit,
   ) async {
     emit(ReportLoading());
-    print('ReportBloc: Loading Custom Range Report from ${event.startDate} to ${event.endDate}');
     try {
-      final data = await reportService.getCustomRangeReport(event.startDate, event.endDate);
-      print('ReportBloc: Custom Range Report Loaded: $data');
+      final businessId = sessionService.businessId ?? '';
+      final data = await reportService.getCustomRangeReport(
+        businessId: businessId,
+        startDate: event.startDate,
+        endDate: event.endDate,
+      );
       emit(ReportLoaded(data));
     } catch (e) {
-      print('ReportBloc: Custom Range Report Error: $e');
       emit(ReportError(e.toString()));
     }
   }

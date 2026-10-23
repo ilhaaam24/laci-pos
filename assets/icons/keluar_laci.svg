@@ -1,0 +1,13 @@
+<!-- 3. KAS KELUAR LACI (Cash Out / Pay Out / Cash Down) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="8" y="22" width="32" height="18" rx="3.5" stroke="#1E293B" stroke-width="2.5" fill="#E6F5EE"/>
+  <rect x="20" y="27" width="8" height="3" rx="1.5" fill="#1E293B"/>
+  <circle cx="24" cy="34" r="1.5" fill="#1E293B"/>
+  <rect x="8" y="8" width="22" height="11" rx="2" stroke="#1E293B" stroke-width="2" fill="#FFFFFF"/>
+  <circle cx="19" cy="13.5" r="2" fill="#EF4444"/>
+  <g transform="translate(28, 3)">
+    <circle cx="8" cy="11" r="7" fill="#EF4444" stroke="#FFFFFF" stroke-width="1.8"/>
+    <path d="M8 8V14" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    <polyline points="5.5,11.5 8,14 10.5,11.5" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

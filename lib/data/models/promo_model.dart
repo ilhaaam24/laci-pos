@@ -11,6 +11,7 @@ class PromoModel extends PromoEntity {
     super.isActive = true,
     super.startDate,
     super.endDate,
+    super.businessId,
   });
 
   factory PromoModel.fromFirestore(DocumentSnapshot doc) {
@@ -31,6 +32,7 @@ class PromoModel extends PromoEntity {
       endDate: data['endDate'] != null
           ? (data['endDate'] as Timestamp).toDate()
           : null,
+      businessId: data['businessId'],
     );
   }
 
@@ -43,7 +45,41 @@ class PromoModel extends PromoEntity {
       'isActive': isActive,
       'startDate': startDate != null ? Timestamp.fromDate(startDate!) : null,
       'endDate': endDate != null ? Timestamp.fromDate(endDate!) : null,
+      'businessId': businessId,
     };
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'type': type.name,
+      'value': value,
+      'minPurchase': minPurchase,
+      'isActive': isActive,
+      'startDate': startDate?.toIso8601String(),
+      'endDate': endDate?.toIso8601String(),
+      'businessId': businessId,
+    };
+  }
+
+  factory PromoModel.fromJson(Map<String, dynamic> json) {
+    return PromoModel(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      type: PromoType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => PromoType.fixed,
+      ),
+      value: (json['value'] ?? 0).toDouble(),
+      minPurchase: (json['minPurchase'] ?? 0).toDouble(),
+      isActive: json['isActive'] ?? true,
+      startDate: json['startDate'] != null
+          ? DateTime.parse(json['startDate'])
+          : null,
+      endDate: json['endDate'] != null ? DateTime.parse(json['endDate']) : null,
+      businessId: json['businessId'],
+    );
   }
 
   factory PromoModel.fromEntity(PromoEntity entity) {
@@ -56,6 +92,31 @@ class PromoModel extends PromoEntity {
       isActive: entity.isActive,
       startDate: entity.startDate,
       endDate: entity.endDate,
+      businessId: entity.businessId,
+    );
+  }
+
+  PromoModel copyWith({
+    String? id,
+    String? name,
+    PromoType? type,
+    double? value,
+    double? minPurchase,
+    bool? isActive,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? businessId,
+  }) {
+    return PromoModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      value: value ?? this.value,
+      minPurchase: minPurchase ?? this.minPurchase,
+      isActive: isActive ?? this.isActive,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      businessId: businessId ?? this.businessId,
     );
   }
 }

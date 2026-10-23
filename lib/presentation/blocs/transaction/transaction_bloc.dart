@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/transaction_entity.dart';
@@ -11,6 +13,15 @@ abstract class TransactionEvent extends Equatable {
 
 class LoadTransactions extends TransactionEvent {}
 
+class ResetTransactions extends TransactionEvent {}
+
+class _TransactionsUpdated extends TransactionEvent {
+  final Either<String, List<TransactionEntity>> result;
+  _TransactionsUpdated(this.result);
+  @override
+  List<Object?> get props => [result];
+}
+
 class LoadTransactionsByDateRange extends TransactionEvent {
   final DateTime startDate;
   final DateTime endDate;
@@ -19,6 +30,15 @@ class LoadTransactionsByDateRange extends TransactionEvent {
 
   @override
   List<Object?> get props => [startDate, endDate];
+}
+
+class LoadTransactionsByCustomerId extends TransactionEvent {
+  final String customerId;
+
+  LoadTransactionsByCustomerId(this.customerId);
+
+  @override
+  List<Object?> get props => [customerId];
 }
 
 class CreateTransaction extends TransactionEvent {
@@ -71,10 +91,14 @@ class TransactionSuccess extends TransactionState {
 // BLoC
 class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   final TransactionRepository repository;
+  StreamSubscription<Either<String, List<TransactionEntity>>>? _transactionsSubscription;
 
   TransactionBloc({required this.repository}) : super(TransactionInitial()) {
     on<LoadTransactions>(_onLoadTransactions);
+    on<_TransactionsUpdated>(_onTransactionsUpdated);
+    on<ResetTransactions>(_onResetTransactions);
     on<LoadTransactionsByDateRange>(_onLoadTransactionsByDateRange);
+    on<LoadTransactionsByCustomerId>(_onLoadTransactionsByCustomerId);
     on<CreateTransaction>(_onCreateTransaction);
   }
 
@@ -83,15 +107,29 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     Emitter<TransactionState> emit,
   ) async {
     emit(TransactionLoading());
-    await emit.forEach(
-      repository.getTransactions(),
-      onData: (result) {
-        return result.fold(
-          (error) => TransactionError(error),
-          (transactions) => TransactionLoaded(transactions),
-        );
-      },
+    await _transactionsSubscription?.cancel();
+    _transactionsSubscription = repository.getTransactions().listen((result) {
+      add(_TransactionsUpdated(result));
+    });
+  }
+
+  void _onTransactionsUpdated(
+    _TransactionsUpdated event,
+    Emitter<TransactionState> emit,
+  ) {
+    event.result.fold(
+      (error) => emit(TransactionError(error)),
+      (transactions) => emit(TransactionLoaded(transactions)),
     );
+  }
+
+  Future<void> _onResetTransactions(
+    ResetTransactions event,
+    Emitter<TransactionState> emit,
+  ) async {
+    await _transactionsSubscription?.cancel();
+    _transactionsSubscription = null;
+    emit(TransactionInitial());
   }
 
   Future<void> _onLoadTransactionsByDateRange(
@@ -99,15 +137,12 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     Emitter<TransactionState> emit,
   ) async {
     emit(TransactionLoading());
-    await emit.forEach(
-      repository.getTransactionsByDateRange(event.startDate, event.endDate),
-      onData: (result) {
-        return result.fold(
-          (error) => TransactionError(error),
-          (transactions) => TransactionLoaded(transactions),
-        );
-      },
-    );
+    await _transactionsSubscription?.cancel();
+    _transactionsSubscription = repository
+        .getTransactionsByDateRange(event.startDate, event.endDate)
+        .listen((result) {
+      add(_TransactionsUpdated(result));
+    });
   }
 
   Future<void> _onCreateTransaction(
@@ -123,5 +158,24 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       (id) =>
           emit(TransactionSuccess('Transaction completed successfully', id)),
     );
+  }
+
+  Future<void> _onLoadTransactionsByCustomerId(
+    LoadTransactionsByCustomerId event,
+    Emitter<TransactionState> emit,
+  ) async {
+    emit(TransactionLoading());
+    await _transactionsSubscription?.cancel();
+    _transactionsSubscription = repository
+        .getTransactionsByCustomerId(event.customerId)
+        .listen((result) {
+      add(_TransactionsUpdated(result));
+    });
+  }
+
+  @override
+  Future<void> close() {
+    _transactionsSubscription?.cancel();
+    return super.close();
   }
 }

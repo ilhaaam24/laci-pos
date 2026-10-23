@@ -9,6 +9,7 @@ class CategoryModel extends Category {
     super.imageUrl,
     required super.createdAt,
     required super.updatedAt,
+    super.businessId,
   });
 
   factory CategoryModel.fromFirestore(DocumentSnapshot doc) {
@@ -18,8 +19,13 @@ class CategoryModel extends Category {
       name: data['name'] ?? '',
       description: data['description'],
       imageUrl: data['imageUrl'],
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+      updatedAt: data['updatedAt'] != null
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : DateTime.now(),
+      businessId: data['businessId'],
     );
   }
 
@@ -30,7 +36,36 @@ class CategoryModel extends Category {
       'imageUrl': imageUrl,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'businessId': businessId,
     };
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'imageUrl': imageUrl,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'businessId': businessId,
+    };
+  }
+
+  factory CategoryModel.fromJson(Map<String, dynamic> json) {
+    return CategoryModel(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      description: json['description'],
+      imageUrl: json['imageUrl'],
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : DateTime.now(),
+      businessId: json['businessId'],
+    );
   }
 
   Category toEntity() {
@@ -41,6 +76,7 @@ class CategoryModel extends Category {
       imageUrl: imageUrl,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      businessId: businessId,
     );
   }
 
@@ -52,6 +88,27 @@ class CategoryModel extends Category {
       imageUrl: category.imageUrl,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
+      businessId: category.businessId,
+    );
+  }
+
+  CategoryModel copyWith({
+    String? id,
+    String? name,
+    String? description,
+    String? imageUrl,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? businessId,
+  }) {
+    return CategoryModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      imageUrl: imageUrl ?? this.imageUrl,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      businessId: businessId ?? this.businessId,
     );
   }
 }

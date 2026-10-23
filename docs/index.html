@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kebijakan Privasi - Laci POS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1E3A8A;
+            --primary-light: #EFF6FF;
+            --accent: #2563EB;
+            --text-dark: #0F172A;
+            --text-muted: #475569;
+            --bg-light: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --border: #E2E8F0;
+            --badge-bg: #E0E7FF;
+            --badge-text: #3730A3;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.7;
+            color: var(--text-dark);
+            background-color: var(--bg-light);
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 860px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 48px 56px;
+            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+            border: 1px solid var(--border);
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 16px 12px;
+            }
+            .container {
+                padding: 28px 20px;
+                border-radius: 16px;
+            }
+        }
+
+        header {
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 24px;
+            margin-bottom: 32px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            margin-bottom: 14px;
+            letter-spacing: 0.3px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1.25;
+            margin-bottom: 10px;
+        }
+
+        .meta {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        section {
+            margin-bottom: 32px;
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2::before {
+            content: "";
+            display: inline-block;
+            width: 4px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        p {
+            color: var(--text-muted);
+            margin-bottom: 14px;
+            font-size: 15px;
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 14px;
+        }
+
+        li {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 10px;
+            color: var(--text-muted);
+            font-size: 15px;
+        }
+
+        li::before {
+            content: "•";
+            position: absolute;
+            left: 8px;
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 18px;
+            line-height: 1.4;
+        }
+
+        .permission-card {
+            background: var(--primary-light);
+            border-left: 4px solid var(--accent);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin: 16px 0;
+        }
+
+        .permission-card h3 {
+            font-size: 16px;
+            color: var(--primary);
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .permission-card p {
+            margin-bottom: 0;
+            font-size: 14px;
+            color: #1E293B;
+        }
+
+        .table-box {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 18px 0;
+            font-size: 14px;
+        }
+
+        .table-box th, .table-box td {
+            border: 1px solid var(--border);
+            padding: 12px 14px;
+            text-align: left;
+        }
+
+        .table-box th {
+            background-color: #F1F5F9;
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+
+        .contact-box {
+            background: #F8FAFC;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 16px;
+        }
+
+        footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <span class="badge">Dokumen Resmi Privasi</span>
+        <h1>Kebijakan Privasi Laci POS</h1>
+        <div class="meta">
+            Aplikasi: <strong>Laci POS</strong> | Package ID: <code>com.ilhaaam24.lacipos</code><br>
+            Tanggal Efektif: <strong>Oktober 2026</strong> | Terakhir Diperbarui: <strong>24 Oktober 2026</strong>
+        </div>
+    </header>
+
+    <section>
+        <h2>1. Pendahuluan</h2>
+        <p>
+            Selamat datang di <strong>Laci POS</strong>. Kami menghormati dan berkomitmen penuh untuk melindungi privasi serta keamanan data para pemilik bisnis, kasir, dan pengguna aplikasi kami. Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, menyimpan, serta menjaga informasi yang Anda berikan saat menggunakan aplikasi kasir Laci POS.
+        </p>
+        <p>
+            Dengan mengunduh, memasang, dan menggunakan aplikasi Laci POS, Anda menyetujui praktik penanganan data yang diuraikan dalam Kebijakan Privasi ini.
+        </p>
+    </section>
+
+    <section>
+        <h2>2. Data yang Kami Kumpulkan</h2>
+        <p>Untuk menunjang operasional kasir dan kelancaran pencatatan usaha Anda, kami mengumpulkan data-data berikut:</p>
+        <ul>
+            <li><strong>Informasi Akun Pengguna:</strong> Alamat email, nama usaha/toko, dan nomor telepon yang Anda masukkan saat mendaftar atau login akun menggunakan Firebase Authentication.</li>
+            <li><strong>Data Transaksi & Katalog Produk:</strong> Nama produk, kategori, harga jual, harga modal, jumlah stok, catatan kas masuk/keluar, ringkasan shift kasir, dan riwayat transaksi penjualan.</li>
+            <li><strong>Logo Toko & Preferensi Struk:</strong> Gambar logo toko yang Anda pilih dari perangkat Anda untuk dicetak pada struk kasir, serta catatan kaki struk (*receipt footer*).</li>
+            <li><strong>Data Perangkat & Diagnostik Sistem:</strong> Model perangkat, versi sistem operasi Android, dan log kesalahan sistem (*crash logs*) semata-mata untuk menjaga kestabilan aplikasi.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>3. Penggunaan Izin Khusus Perangkat (Device Permissions)</h2>
+        <p>Laci POS hanya meminta izin perangkat yang benar-benar esensial untuk menjalankan fungsi aplikasi:</p>
+
+        <div class="permission-card">
+            <h3>📷 Izin Kamera (CAMERA)</h3>
+            <p><strong>Tujuan:</strong> Digunakan secara langsung saat kasir mengaktifkan fitur pemindai barcode / QR code barang. Aplikasi <strong>TIDAK PERNAH</strong> mengambil foto, merekam video secara diam-diam, mengenali wajah, atau menyimpan rekaman visual kamera Anda ke server mana pun.</p>
+        </div>
+
+        <div class="permission-card">
+            <h3>🖨️ Izin Bluetooth & Perangkat Sekitar (BLUETOOTH_CONNECT & BLUETOOTH_SCAN)</h3>
+            <p><strong>Tujuan:</strong> Digunakan semata-mata untuk memindai dan menghubungkan perangkat dengan printer kasir thermal Bluetooth agar struk pesanan dapat dicetak. Kami <strong>TIDAK</strong> melacak atau menyimpan data lokasi fisik pengguna melalui Bluetooth.</p>
+        </div>
+
+        <div class="permission-card">
+            <h3>🖼️ Izin Akses Galeri & Media (READ_EXTERNAL_STORAGE / MEDIA)</h3>
+            <p><strong>Tujuan:</strong> Digunakan hanya saat Anda secara eksplisit memilih gambar logo toko dari galeri perangkat Anda untuk ditampilkan pada kepala struk kasir.</p>
+        </div>
+    </section>
+
+    <section>
+        <h2>4. Penyimpanan & Keamanan Data</h2>
+        <p>
+            Laci POS mengutamakan keamanan dan kemudahan operasional Anda:
+        </p>
+        <ul>
+            <li><strong>Penyimpanan Lokal Mandiri:</strong> Basis data transaksi dan katalog Anda disimpan secara lokal di memori internal perangkat Anda sehingga aplikasi dapat tetap digunakan tanpa koneksi internet (*offline mode*).</li>
+            <li><strong>Sinkronisasi Cloud yang Aman:</strong> Jika Anda mengaktifkan akun online, data disinkronkan menggunakan infrastruktur Google Cloud Firestore dengan enkripsi standar industri (*encryption in transit and at rest*).</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>5. Layanan Pihak Ketiga</h2>
+        <p>Aplikasi ini terintegrasi dengan penyedia layanan pihak ketiga tepercaya untuk mendukung autentikasi dan infrastruktur cloud:</p>
+        <table class="table-box">
+            <thead>
+                <tr>
+                    <th>Layanan</th>
+                    <th>Penyedia</th>
+                    <th>Fungsi</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Google Play Services</td>
+                    <td>Google LLC</td>
+                    <td>Distribusi aplikasi & pustaka inti Android</td>
+                </tr>
+                <tr>
+                    <td>Firebase Authentication</td>
+                    <td>Google LLC</td>
+                    <td>Autentikasi login email yang aman</td>
+                </tr>
+                <tr>
+                    <td>Cloud Firestore</td>
+                    <td>Google LLC</td>
+                    <td>Penyimpanan cloud basis data terenkripsi</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>6. Permintaan Penghapusan Akun & Data (Data Deletion)</h2>
+        <p>
+            Sesuai dengan Kebijakan Data Pengguna Google Play, Anda memiliki hak penuh untuk meminta penghapusan akun serta seluruh data usaha Anda kapan saja.
+        </p>
+        <p>
+            Untuk mengajukan penghapusan akun dan data terkait:
+        </p>
+        <ul>
+            <li>Kirimkan email ke <strong>support@lacipos.id</strong> (atau <strong>ilhambagas2424@gmail.com</strong>) dengan subjek: <code>Permintaan Penghapusan Akun Laci POS</code>.</li>
+            <li>Sertakan alamat email yang terdaftar pada akun Laci POS Anda.</li>
+            <li>Tim kami akan memproses dan menghapus akun beserta seluruh data transaksi cloud Anda secara permanen dalam waktu maksimal 7 (tujuh) hari kerja.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>7. Privasi Anak-Anak (Children's Privacy)</h2>
+        <p>
+            Aplikasi Laci POS dirancang secara khusus untuk keperluan operasional usaha dagang dan UMKM, serta tidak ditujukan untuk anak-anak di bawah usia 13 tahun. Kami tidak secara sengaja mengumpulkan data pribadi dari anak-anak.
+        </p>
+    </section>
+
+    <section>
+        <h2>8. Perubahan Kebijakan Privasi</h2>
+        <p>
+            Kami dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu guna menyesuaikan dengan pembaruan fitur atau regulasi hukum yang berlaku. Setiap perubahan penting akan diberitahukan melalui halaman ini dengan memperbarui tanggal "Terakhir Diperbarui".
+        </p>
+    </section>
+
+    <section>
+        <h2>9. Kontak Resmi Pengembang</h2>
+        <p>Jika Anda memiliki pertanyaan, saran, atau masukan mengenai Kebijakan Privasi ini, silakan hubungi kami:</p>
+        <div class="contact-box">
+            <strong>Tim Pengembang Laci POS</strong><br>
+            • Email Dukungan: <a href="mailto:support@lacipos.id" style="color: var(--accent); text-decoration: none;">support@lacipos.id</a><br>
+            • Email Alternatif: <a href="mailto:ilhambagas2424@gmail.com" style="color: var(--accent); text-decoration: none;">ilhambagas2424@gmail.com</a><br>
+            • Aplikasi: Laci POS (com.ilhaaam24.lacipos)
+        </div>
+    </section>
+
+    <footer>
+        &copy; 2026 Laci POS. Seluruh hak cipta dilindungi undang-undang.
+    </footer>
+</div>
+
+</body>
+</html>

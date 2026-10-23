@@ -3,6 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/user_entity.dart';
 import '../../../domain/repositories/auth_repository.dart';
+import '../../../core/services/session_service.dart';
+import '../../../core/services/background_service.dart';
+import '../../../core/services/sync_service.dart';
+import '../../../core/services/iap_service.dart';
+import '../../../core/di/injection.dart';
+import '../../../data/datasources/local/local_database.dart';
 
 // Events
 abstract class AuthEvent extends Equatable {
@@ -22,7 +28,21 @@ class SignInRequested extends AuthEvent {
 
 class GoogleSignInRequested extends AuthEvent {}
 
+class SignUpRequested extends AuthEvent {
+  final String email;
+  final String password;
+  SignUpRequested({required this.email, required this.password});
+  @override
+  List<Object?> get props => [email, password];
+}
+
 class SignOutRequested extends AuthEvent {}
+
+class DeleteAccountRequested extends AuthEvent {}
+
+class SendEmailVerificationRequested extends AuthEvent {}
+
+class CheckEmailVerificationRequested extends AuthEvent {}
 
 // States
 abstract class AuthState extends Equatable {
@@ -53,26 +73,44 @@ class AuthError extends AuthState {
 // BLoC
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository repository;
+  final SessionService sessionService;
+  final LocalDatabase localDatabase;
   StreamSubscription<UserEntity?>? _authStateSubscription;
 
-  AuthBloc({required this.repository}) : super(AuthInitial()) {
+  AuthBloc({
+    required this.repository,
+    required this.sessionService,
+    required this.localDatabase,
+  }) : super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
     on<SignInRequested>(_onSignInRequested);
     on<GoogleSignInRequested>(_onGoogleSignInRequested);
+    on<SignUpRequested>(_onSignUpRequested);
     on<SignOutRequested>(_onSignOutRequested);
+    on<DeleteAccountRequested>(_onDeleteAccountRequested);
+    on<SendEmailVerificationRequested>(_onSendEmailVerificationRequested);
+    on<CheckEmailVerificationRequested>(_onCheckEmailVerificationRequested);
     on<_AuthStatusChanged>(_onAuthStatusChanged);
 
-    _authStateSubscription = repository.authStateChanges.listen((user) {
-      add(_AuthStatusChanged(user));
-    });
+    _authStateSubscription = repository.authStateChanges.listen(
+      (user) {
+        add(_AuthStatusChanged(user));
+      },
+      onError: (_) {},
+    );
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
     final result = await repository.getCurrentUser();
     result.fold((error) => emit(Unauthenticated()), (user) {
       if (user != null) {
+        sessionService.setUser(user);
+        if (user.businessId != null) {
+          BackgroundService.scheduleDailySummary(user.businessId!);
+        }
         emit(Authenticated(user));
       } else {
+        sessionService.setUser(null);
         emit(Unauthenticated());
       }
     });
@@ -80,8 +118,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   void _onAuthStatusChanged(_AuthStatusChanged event, Emitter<AuthState> emit) {
     if (event.user != null) {
+      sessionService.setUser(event.user);
+      if (event.user!.businessId != null) {
+        BackgroundService.scheduleDailySummary(event.user!.businessId!);
+      }
       emit(Authenticated(event.user!));
     } else {
+      sessionService.setUser(null);
       emit(Unauthenticated());
     }
   }
@@ -97,7 +140,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
     result.fold(
       (error) => emit(AuthError(error)),
-      (_) {}, // Status will be updated by stream
+      (user) {
+        sessionService.setUser(user);
+        if (user.businessId != null) {
+          BackgroundService.scheduleDailySummary(user.businessId!);
+        }
+        emit(Authenticated(user));
+      },
     );
   }
 
@@ -112,13 +161,88 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     });
   }
 
+  Future<void> _onSignUpRequested(
+    SignUpRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    final result = await repository.signUpWithEmail(
+      email: event.email,
+      password: event.password,
+    );
+    result.fold(
+      (error) => emit(AuthError(error)),
+      (user) {
+        sessionService.setUser(user);
+        if (user.businessId != null) {
+          BackgroundService.scheduleDailySummary(user.businessId!);
+        }
+        emit(Authenticated(user));
+      },
+    );
+  }
+
   Future<void> _onSignOutRequested(
     SignOutRequested event,
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
+    try {
+      if (sessionService.businessId != null) {
+        await getIt<SyncService>().pushToRemote();
+      }
+    } catch (_) {}
+    try {
+      await getIt<IapService>().logout();
+    } catch (_) {}
     await repository.signOut();
-    // Status will be updated by stream
+    // Clear local database on sign out to prevent data leakage
+    await localDatabase.clearAllData();
+    sessionService.setUser(null);
+    emit(Unauthenticated());
+  }
+
+  Future<void> _onDeleteAccountRequested(
+    DeleteAccountRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    final result = await repository.deleteAccount();
+    await result.fold(
+      (error) async {
+        emit(AuthError(error));
+      },
+      (_) async {
+        await localDatabase.clearAllData();
+        sessionService.setUser(null);
+        emit(Unauthenticated());
+      },
+    );
+  }
+
+  Future<void> _onSendEmailVerificationRequested(
+    SendEmailVerificationRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    await repository.sendEmailVerification();
+  }
+
+  Future<void> _onCheckEmailVerificationRequested(
+    CheckEmailVerificationRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    final result = await repository.checkEmailVerified();
+    result.fold(
+      (error) => null,
+      (isVerified) {
+        if (isVerified && state is Authenticated) {
+          final currentUser = (state as Authenticated).user;
+          final updatedUser = currentUser.copyWith(isEmailVerified: true);
+          sessionService.setUser(updatedUser);
+          emit(Authenticated(updatedUser));
+        }
+      },
+    );
   }
 
   @override

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+import 'package:intl/intl.dart';
 import '../constants/firebase_collections.dart';
 
 class ReportService {
@@ -7,14 +8,20 @@ class ReportService {
   ReportService(this.firestore);
 
   // Daily Report
-  Future<Map<String, dynamic>> getDailyReport(DateTime date) async {
+  Future<Map<String, dynamic>> getDailyReport(
+    String businessId,
+    DateTime date,
+  ) async {
     final startDate = DateTime(date.year, date.month, date.day);
     final endDate = startDate.add(const Duration(days: 1));
-    return await _getReport(startDate, endDate);
+    return await _getReport(businessId, startDate, endDate);
   }
 
   // Weekly Report
-  Future<Map<String, dynamic>> getWeeklyReport(DateTime date) async {
+  Future<Map<String, dynamic>> getWeeklyReport(
+    String businessId,
+    DateTime date,
+  ) async {
     final startDate = date.subtract(Duration(days: date.weekday - 1));
     final normalizedStart = DateTime(
       startDate.year,
@@ -22,29 +29,42 @@ class ReportService {
       startDate.day,
     );
     final endDate = normalizedStart.add(const Duration(days: 7));
-    return await _getReport(normalizedStart, endDate);
+    return await _getReport(businessId, normalizedStart, endDate);
   }
 
   // Monthly Report
-  Future<Map<String, dynamic>> getMonthlyReport(DateTime date) async {
+  Future<Map<String, dynamic>> getMonthlyReport(
+    String businessId,
+    DateTime date,
+  ) async {
     final startDate = DateTime(date.year, date.month, 1);
     final endDate = DateTime(date.year, date.month + 1, 1);
-    return await _getReport(startDate, endDate);
+    return await _getReport(businessId, startDate, endDate);
   }
 
   // Custom Range Report
-  Future<Map<String, dynamic>> getCustomRangeReport(DateTime start, DateTime end) async {
-    final startDate = DateTime(start.year, start.month, start.day);
-    final endDate = DateTime(end.year, end.month, end.day).add(const Duration(days: 1));
-    return await _getReport(startDate, endDate);
+  Future<Map<String, dynamic>> getCustomRangeReport({
+    required String businessId,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    final start = DateTime(startDate.year, startDate.month, startDate.day);
+    final end = DateTime(
+      endDate.year,
+      endDate.month,
+      endDate.day,
+    ).add(const Duration(days: 1));
+    return await _getReport(businessId, start, end);
   }
 
   Future<Map<String, dynamic>> _getReport(
+    String businessId,
     DateTime startDate,
     DateTime endDate,
   ) async {
     final snapshot = await firestore
         .collection(FirebaseCollections.transactions)
+        .where('businessId', isEqualTo: businessId)
         .where(
           'createdAt',
           isGreaterThanOrEqualTo: Timestamp.fromDate(startDate),
@@ -57,7 +77,6 @@ class ReportService {
     int totalTransactions = snapshot.docs.length;
     int totalItems = 0;
     Map<String, Map<String, dynamic>> productSales = {};
-    Map<String, double> categorySales = {};
 
     for (var doc in snapshot.docs) {
       final data = doc.data();
@@ -101,6 +120,49 @@ class ReportService {
             (b['totalQuantity'] as int).compareTo(a['totalQuantity'] as int),
       );
 
+    // Calculate daily sales for chart (last 7 days by default or current range)
+    Map<String, double> dailySales = {};
+    for (int i = 0; i < 7; i++) {
+      final date = endDate.subtract(Duration(days: i));
+      final label = DateFormat('E', 'en_US').format(date);
+      dailySales[label] = 0;
+    }
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+      final date = (data['createdAt'] as Timestamp).toDate();
+      final label = DateFormat('E', 'en_US').format(date);
+      if (dailySales.containsKey(label)) {
+        dailySales[label] =
+            (dailySales[label] ?? 0) + (data['totalAmount'] ?? 0).toDouble();
+      }
+    }
+
+    // New Customers count
+    final customersSnapshot = await firestore
+        .collection(FirebaseCollections.customers)
+        .where('businessId', isEqualTo: businessId)
+        .where(
+          'createdAt',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startDate),
+        )
+        .where('createdAt', isLessThan: Timestamp.fromDate(endDate))
+        .get();
+    final newCustomers = customersSnapshot.docs.length;
+
+    // Fetch product images for best sellers
+    final List<Map<String, dynamic>> enrichedBestSellers = [];
+    for (var item in bestSellingProducts.take(5)) {
+      final productDoc = await firestore
+          .collection(FirebaseCollections.products)
+          .doc(item['productId'])
+          .get();
+      enrichedBestSellers.add({
+        ...item,
+        'imageUrl': productDoc.exists ? productDoc.data()!['imageUrl'] : null,
+      });
+    }
+
     final totalProfit = totalRevenue - totalCost;
 
     return {
@@ -109,7 +171,9 @@ class ReportService {
       'totalProfit': totalProfit,
       'totalTransactions': totalTransactions,
       'totalItems': totalItems,
-      'bestSellingProducts': bestSellingProducts.take(5).toList(),
+      'bestSellingProducts': enrichedBestSellers,
+      'dailySales': dailySales,
+      'newCustomers': newCustomers,
       'averageTransaction': totalTransactions > 0
           ? totalRevenue / totalTransactions
           : 0,
@@ -120,6 +184,7 @@ class ReportService {
 
   // Best Selling Products
   Future<List<Map<String, dynamic>>> getBestSellingProducts({
+    required String businessId,
     DateTime? startDate,
     DateTime? endDate,
     int limit = 10,
@@ -131,6 +196,7 @@ class ReportService {
     // Get all transactions in date range
     final transactionsSnapshot = await firestore
         .collection(FirebaseCollections.transactions)
+        .where('businessId', isEqualTo: businessId)
         .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
         .where('createdAt', isLessThan: Timestamp.fromDate(end))
         .get();
@@ -176,6 +242,7 @@ class ReportService {
 
   // Sales by Category
   Future<Map<String, double>> getSalesByCategory({
+    required String businessId,
     DateTime? startDate,
     DateTime? endDate,
   }) async {
@@ -185,6 +252,7 @@ class ReportService {
 
     final transactionsSnapshot = await firestore
         .collection(FirebaseCollections.transactions)
+        .where('businessId', isEqualTo: businessId)
         .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
         .where('createdAt', isLessThan: Timestamp.fromDate(end))
         .get();

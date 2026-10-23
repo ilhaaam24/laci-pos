@@ -1,173 +1,193 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:laci/core/constants/firebase_collections.dart';
+import 'dart:convert';
+import 'package:laci/data/datasources/local/local_database.dart';
+import 'package:laci/data/datasources/local/product_local_datasource.dart';
+import 'package:laci/data/datasources/local/transaction_local_datasource.dart';
+import 'package:laci/data/datasources/local/stock_log_local_datasource.dart';
+import 'package:laci/data/datasources/local/customer_local_datasource.dart';
 import 'package:laci/data/models/transaction_model.dart';
-
+import 'package:laci/data/models/stock_log_model.dart';
+import 'package:laci/domain/entities/stock_log_entity.dart';
 import '../../domain/entities/transaction_entity.dart';
+import './notification_service.dart';
+import './session_service.dart';
 
 class TransactionService {
-  final FirebaseFirestore _firestore;
+  final LocalDatabase _localDb;
+  final ProductLocalDataSource _productLocal;
+  final TransactionLocalDataSource _transactionLocal;
+  final StockLogLocalDataSource _stockLogLocal;
+  final CustomerLocalDataSource _customerLocal;
+  final NotificationService _notificationService;
+  final SessionService _sessionService;
 
-  TransactionService(this._firestore);
+  TransactionService(
+    this._localDb,
+    this._productLocal,
+    this._transactionLocal,
+    this._stockLogLocal,
+    this._customerLocal,
+    this._notificationService,
+    this._sessionService,
+  );
 
-  /// Process transaction with atomic stock update
+  String get _businessId => _sessionService.businessId ?? '';
+
+  /// Process transaction with local stock update and sync queueing
   Future<String> processTransaction(TransactionEntity transaction) async {
+    if (_businessId.isEmpty) {
+      throw Exception('Business ID is missing. Please re-login.');
+    }
+
     try {
-      // Validate stock availability first (outside transaction for quick check)
-      await _validateStockAvailability(transaction.items);
+      final transactionModel = TransactionModel.fromEntity(
+        transaction,
+      ).copyWith(businessId: _businessId);
 
-      // Use Firestore transaction for atomic operations
-      final transactionId = await _firestore.runTransaction<String>((
-        firestoreTransaction,
-      ) async {
-        // --- STEP 1: READS (Must be performed before any writes) ---
-
-        // Pre-fetch all product snapshots
-        final Map<String, DocumentSnapshot> productSnapshots = {};
+      // We use a local DB transaction to ensure atomicity
+      await _localDb.transaction(() async {
+        // 1. Validate and update stock for each item
         for (final item in transaction.items) {
-          final productRef = _firestore
-              .collection(FirebaseCollections.products)
-              .doc(item.productId);
-
-          final snapshot = await firestoreTransaction.get(productRef);
-          if (!snapshot.exists) {
-            throw Exception('Produk ${item.productName} tidak ditemukan');
+          final product = await _productLocal.getProductById(item.productId);
+          if (product == null) {
+            throw Exception('Produk ${item.displayName} tidak ditemukan');
           }
-          productSnapshots[item.productId] = snapshot;
-        }
 
-        // --- STEP 2: WRITES ---
+          if (!product.trackStock) {
+            // Item does not track inventory (e.g. cooked to order, services)
+            continue;
+          }
 
-        // 1. Create transaction document
-        final transactionRef = _firestore
-            .collection(FirebaseCollections.transactions)
-            .doc(transaction.id);
-
-        final transactionModel = TransactionModel.fromEntity(transaction);
-        firestoreTransaction.set(
-          transactionRef,
-          transactionModel.toFirestore(),
-        );
-
-        // 2. Create transaction items as subcollection and update stock
-        for (final item in transaction.items) {
-          final itemRef = transactionRef
-              .collection(FirebaseCollections.transactionItems)
-              .doc();
-
-          firestoreTransaction.set(
-            itemRef,
-            TransactionItemModel.fromEntity(item).toMap(),
-          );
-
-          // 3. Update product stock atomically
-          final snapshot = productSnapshots[item.productId]!;
-          final currentStock =
-              (snapshot.data() as Map<String, dynamic>)['stock'] ?? 0;
-          final newStock = (currentStock as num).toInt() - item.quantity;
+          final currentStock = product.stock;
+          final newStock = currentStock - item.quantity;
 
           if (newStock < 0) {
             throw Exception(
-              'Stok tidak cukup untuk ${item.productName}. Tersedia: $currentStock',
+              'Stok tidak cukup untuk ${item.displayName}. Tersedia: $currentStock',
             );
           }
 
-          final productRef = _firestore
-              .collection(FirebaseCollections.products)
-              .doc(item.productId);
+          var updatedVariants = product.variants;
+          if (item.selectedVariant != null && product.variants.isNotEmpty) {
+            updatedVariants = product.variants.map((v) {
+              if (v.id == item.selectedVariant!.id) {
+                final vNewStock = v.stock - item.quantity;
+                return v.copyWith(stock: vNewStock < 0 ? 0 : vNewStock);
+              }
+              return v;
+            }).toList();
+          }
 
-          firestoreTransaction.update(productRef, {
-            'stock': newStock,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+          final updatedProduct = product.copyWith(
+            stock: newStock,
+            variants: updatedVariants,
+          );
+
+          // Update local stock
+          await _productLocal.upsertProduct(
+            updatedProduct,
+            syncStatus: 'pendingUpload',
+          );
+
+          // Create local stock log
+          final logModel = StockLogModel(
+            id:
+                DateTime.now().millisecondsSinceEpoch.toString() +
+                item.productId,
+            productId: item.productId,
+            productName: item.displayName,
+            type: StockLogType.sale,
+            quantity: -item.quantity,
+            previousStock: currentStock,
+            newStock: newStock,
+            reason: 'Transaksi ${transaction.transactionCode}',
+            createdAt: DateTime.now(),
+            businessId: _businessId,
+          );
+          await _stockLogLocal.insertStockLog(
+            logModel,
+            syncStatus: 'pendingUpload',
+          );
+
+          // Check for low stock alert
+          if (newStock <= product.stockThreshold) {
+            _notificationService.showStockAlert(
+              productName: item.displayName,
+              currentStock: newStock,
+            );
+          }
+
+          // Add to sync queue for product update (Stock changed!)
+          await _localDb.addToSyncQueue(
+            syncEntityName: 'products',
+            documentId: item.productId,
+            operation: 'update',
+            businessId: _businessId,
+            data: jsonEncode(updatedProduct.toJson()),
+          );
+
+          // Add to sync queue for stock log
+          await _localDb.addToSyncQueue(
+            syncEntityName: 'stock_logs',
+            documentId: logModel.id,
+            operation: 'create',
+            businessId: _businessId,
+            data: jsonEncode(logModel.toJson()),
+          );
         }
 
-        return transactionRef.id;
-      }, timeout: const Duration(seconds: 30));
-
-      return transactionId;
-    } catch (e) {
-      throw Exception('Gagal memproses transaksi: $e');
-    }
-  }
-
-  /// Validate stock before processing
-  Future<void> _validateStockAvailability(List<TransactionItem> items) async {
-    for (final item in items) {
-      final productDoc = await _firestore
-          .collection(FirebaseCollections.products)
-          .doc(item.productId)
-          .get();
-
-      if (!productDoc.exists) {
-        throw Exception('Produk ${item.productName} tidak ditemukan');
-      }
-
-      final currentStock = (productDoc.data()!['stock'] as num).toInt();
-
-      if (currentStock < item.quantity) {
-        throw Exception(
-          'Stok tidak cukup untuk ${item.productName}. Tersedia: $currentStock, Diminta: ${item.quantity}',
+        // 2. Save transaction locally
+        await _transactionLocal.createTransaction(
+          transactionModel,
+          syncStatus: 'pendingUpload',
         );
-      }
-    }
-  }
 
-  /// Cancel transaction and restore stock
-  Future<void> cancelTransaction(String transactionId) async {
-    try {
-      await _firestore.runTransaction((firestoreTransaction) async {
-        final transactionRef = _firestore
-            .collection(FirebaseCollections.transactions)
-            .doc(transactionId);
+        // 3. Update Customer Statistics if customerId is present
+        if (transaction.customerId != null &&
+            transaction.customerId!.isNotEmpty) {
+          final customer = await _customerLocal.getCustomerById(
+            transaction.customerId!,
+          );
+          if (customer != null) {
+            // Logic: 1 point for every 10,000 IDR
+            final newPoints = (transaction.totalAmount / 10000).floor();
 
-        // Get transaction items
-        final itemsSnapshot = await transactionRef
-            .collection(FirebaseCollections.transactionItems)
-            .get();
+            final updatedCustomer = customer.copyWith(
+              totalSpent: customer.totalSpent + transaction.totalAmount,
+              lastTransactionDate: transaction.createdAt,
+              loyaltyPoints: customer.loyaltyPoints + newPoints,
+              updatedAt: DateTime.now(),
+            );
 
-        // Restore stock for each item
-        for (final itemDoc in itemsSnapshot.docs) {
-          final data = itemDoc.data();
-          final productId = data['productId'] as String;
-          final quantity = data['quantity'] as int;
+            await _customerLocal.upsertCustomer(
+              updatedCustomer,
+              syncStatus: 'pendingUpload',
+            );
 
-          final productRef = _firestore
-              .collection(FirebaseCollections.products)
-              .doc(productId);
-
-          firestoreTransaction.update(productRef, {
-            'stock': FieldValue.increment(quantity),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+            // Add customer update to sync queue
+            await _localDb.addToSyncQueue(
+              syncEntityName: 'customers',
+              documentId: updatedCustomer.id,
+              operation: 'update',
+              businessId: _businessId,
+              data: jsonEncode(updatedCustomer.toJson()),
+            );
+          }
         }
 
-        // Update transaction status
-        firestoreTransaction.update(transactionRef, {
-          'status': TransactionStatus.cancelled.name,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+        // 4. Add to sync queue for transaction
+        await _localDb.addToSyncQueue(
+          syncEntityName: 'transactions',
+          documentId: transaction.id,
+          operation: 'create',
+          businessId: _businessId,
+          data: jsonEncode(transactionModel.toJson()),
+        );
       });
+
+      return transaction.id;
     } catch (e) {
-      throw Exception('Failed to cancel transaction: $e');
+      throw Exception('Gagal memproses transaksi secara offline: $e');
     }
-  }
-
-  /// Get low stock products
-  Future<List<Map<String, dynamic>>> getLowStockProducts({
-    int threshold = 10,
-  }) async {
-    final snapshot = await _firestore
-        .collection(FirebaseCollections.products)
-        .where('stock', isLessThanOrEqualTo: threshold)
-        .get();
-
-    return snapshot.docs.map((doc) {
-      return {
-        'id': doc.id,
-        'name': doc.data()['name'],
-        'stock': doc.data()['stock'],
-      };
-    }).toList();
   }
 
   /// Stock adjustment (for manual stock updates)
@@ -177,40 +197,57 @@ class TransactionService {
     String reason,
   ) async {
     try {
-      await _firestore.runTransaction((transaction) async {
-        final productRef = _firestore
-            .collection(FirebaseCollections.products)
-            .doc(productId);
+      final product = await _productLocal.getProductById(productId);
+      if (product == null) {
+        throw Exception('Product not found');
+      }
 
-        final productSnapshot = await transaction.get(productRef);
+      final currentStock = product.stock;
+      final newStock = currentStock + adjustment;
 
-        if (!productSnapshot.exists) {
-          throw Exception('Product not found');
-        }
+      if (newStock < 0) {
+        throw Exception('Stock cannot be negative');
+      }
 
-        final currentStock = (productSnapshot.data()!['stock'] as num).toInt();
-        final newStock = currentStock + adjustment;
+      await _localDb.transaction(() async {
+        // 1. Update local stock
+        await _productLocal.updateStock(productId, newStock);
 
-        if (newStock < 0) {
-          throw Exception('Stock cannot be negative');
-        }
+        // 2. Log stock adjustment
+        final logModel = StockLogModel(
+          id: DateTime.now().millisecondsSinceEpoch.toString() + productId,
+          productId: productId,
+          productName: product.name,
+          type: adjustment > 0 ? StockLogType.stockIn : StockLogType.stockOut,
+          quantity: adjustment,
+          previousStock: currentStock,
+          newStock: newStock,
+          reason: reason,
+          createdAt: DateTime.now(),
+          businessId: _businessId,
+        );
+        await _stockLogLocal.insertStockLog(
+          logModel,
+          syncStatus: 'pendingUpload',
+        );
 
-        transaction.update(productRef, {
-          'stock': newStock,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+        // 3. Add to sync queue
+        await _localDb.addToSyncQueue(
+          syncEntityName: 'stock_logs',
+          documentId: logModel.id,
+          operation: 'create',
+          businessId: _businessId,
+          data: jsonEncode(logModel.toJson()),
+        );
 
-        // Log stock adjustment
-        final adjustmentRef = _firestore.collection('stock_adjustments').doc();
-
-        transaction.set(adjustmentRef, {
-          'productId': productId,
-          'previousStock': currentStock,
-          'adjustment': adjustment,
-          'newStock': newStock,
-          'reason': reason,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+        // Note: Since we updated product stock, we also need to sync the product update
+        await _localDb.addToSyncQueue(
+          syncEntityName: 'products',
+          documentId: productId,
+          operation: 'update',
+          businessId: _businessId,
+          data: jsonEncode(product.copyWith(stock: newStock).toJson()),
+        );
       });
     } catch (e) {
       throw Exception('Failed to adjust stock: $e');

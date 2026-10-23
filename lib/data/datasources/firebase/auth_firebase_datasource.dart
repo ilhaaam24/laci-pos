@@ -11,7 +11,18 @@ abstract class AuthFirebaseDataSource {
 
   Future<UserCredential> signInWithGoogle();
 
+  Future<UserCredential> signUpWithEmail({
+    required String email,
+    required String password,
+  });
+
+  Future<void> sendEmailVerification();
+
+  Future<bool> checkEmailVerified();
+
   Future<void> signOut();
+
+  Future<void> deleteAccount();
 
   User? getCurrentUser();
 
@@ -40,37 +51,104 @@ class AuthFirebaseDataSourceImpl implements AuthFirebaseDataSource {
   }
 
   @override
-  Future<UserCredential> signInWithGoogle() async {
-    log('masuk sign in with google');
-
-    // 1. Authenticate (Identify the user)
-    final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
-    log('google user: ${googleUser.email}');
-
-
-
-    // 2. Get Authentication data (for idToken)
-    final GoogleSignInAuthentication googleAuth = googleUser.authentication;
-
-    // 3. Request Authorization (for accessToken)
-    // We need at least email and profile scopes
-    final auth = await googleUser.authorizationClient.authorizeScopes([
-      'email',
-      'profile',
-    ]);
-
-    final AuthCredential credential = GoogleAuthProvider.credential(
-      accessToken: auth.accessToken,
-      idToken: googleAuth.idToken,
+  Future<UserCredential> signUpWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    return await _firebaseAuth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
     );
+  }
 
-    return await _firebaseAuth.signInWithCredential(credential);
+  @override
+  Future<UserCredential> signInWithGoogle() async {
+    try {
+      log('Starting Google Sign-In flow...');
+
+      // 1. Trigger Google Sign-In account picker
+      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
+
+      log('Google user authenticated: ${googleUser.email}');
+
+      // 2. Get authentication tokens
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+
+      if (googleAuth.idToken == null) {
+        log('ID Token is null. Authentication failed.');
+        throw FirebaseAuthException(
+          code: 'ERROR_MISSING_ID_TOKEN',
+          message: 'Gagal mendapatkan ID Token dari Google',
+        );
+      }
+
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
+
+      log('Signing into Firebase with Google credentials...');
+      return await _firebaseAuth.signInWithCredential(credential);
+    } catch (e, stackTrace) {
+      log('Error during Google Sign-In: $e');
+      log('Stack trace: $stackTrace');
+
+      if (e is FirebaseAuthException) {
+        rethrow;
+      }
+
+      if (e is GoogleSignInException && e.code == GoogleSignInExceptionCode.canceled) {
+        throw FirebaseAuthException(
+          code: 'ERROR_ABORTED_BY_USER',
+          message: 'Proses login Google dibatalkan oleh pengguna',
+        );
+      }
+
+      throw FirebaseAuthException(
+        code: 'ERROR_GOOGLE_SIGN_IN',
+        message: 'Gagal login dengan Google: ${e.toString()}',
+      );
+    }
+  }
+
+  @override
+  Future<void> sendEmailVerification() async {
+    final user = _firebaseAuth.currentUser;
+    if (user != null && !user.emailVerified) {
+      await user.sendEmailVerification();
+    }
+  }
+
+  @override
+  Future<bool> checkEmailVerified() async {
+    final user = _firebaseAuth.currentUser;
+    if (user != null) {
+      await user.reload();
+      return _firebaseAuth.currentUser?.emailVerified ?? false;
+    }
+    return false;
   }
 
   @override
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    try {
+      await _googleSignIn.signOut();
+    } catch (e) {
+      log('Error signing out from Google: $e');
+    }
     return await _firebaseAuth.signOut();
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    final user = _firebaseAuth.currentUser;
+    if (user != null) {
+      try {
+        await _googleSignIn.signOut();
+      } catch (e) {
+        log('Error signing out from Google during deleteAccount: $e');
+      }
+      await user.delete();
+    }
   }
 
   @override

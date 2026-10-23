@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/product_entity.dart';
@@ -10,6 +12,15 @@ abstract class ProductEvent extends Equatable {
 }
 
 class LoadProducts extends ProductEvent {}
+
+class ResetProducts extends ProductEvent {}
+
+class _ProductsUpdated extends ProductEvent {
+  final Either<String, List<Product>> result;
+  _ProductsUpdated(this.result);
+  @override
+  List<Object?> get props => [result];
+}
 
 class LoadProductsByCategory extends ProductEvent {
   final String categoryId;
@@ -84,9 +95,12 @@ class ProductError extends ProductState {
 // BLoC
 class ProductBloc extends Bloc<ProductEvent, ProductState> {
   final ProductRepository repository;
+  StreamSubscription<Either<String, List<Product>>>? _productsSubscription;
 
   ProductBloc({required this.repository}) : super(const ProductState()) {
     on<LoadProducts>(_onLoadProducts);
+    on<_ProductsUpdated>(_onProductsUpdated);
+    on<ResetProducts>(_onResetProducts);
     on<LoadProductsByCategory>(_onLoadProductsByCategory);
     on<CreateProduct>(_onCreateProduct);
     on<UpdateProduct>(_onUpdateProduct);
@@ -98,19 +112,35 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     Emitter<ProductState> emit,
   ) async {
     emit(state.copyWith(isLoading: true));
-    await emit.forEach(
-      repository.getProducts(),
-      onData: (result) {
-        return result.fold(
-          (error) => ProductError(error, state.products),
-          (products) => ProductState(
-            products: products,
-            isLoading: false,
-            isSuccess: true,
-          ),
-        );
-      },
+    await _productsSubscription?.cancel();
+    _productsSubscription = repository.getProducts().listen((result) {
+      add(_ProductsUpdated(result));
+    });
+  }
+
+  void _onProductsUpdated(
+    _ProductsUpdated event,
+    Emitter<ProductState> emit,
+  ) {
+    event.result.fold(
+      (error) => emit(ProductError(error, state.products)),
+      (products) => emit(
+        ProductState(
+          products: products,
+          isLoading: false,
+          isSuccess: true,
+        ),
+      ),
     );
+  }
+
+  Future<void> _onResetProducts(
+    ResetProducts event,
+    Emitter<ProductState> emit,
+  ) async {
+    await _productsSubscription?.cancel();
+    _productsSubscription = null;
+    emit(const ProductState());
   }
 
   Future<void> _onLoadProductsByCategory(
@@ -118,19 +148,10 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     Emitter<ProductState> emit,
   ) async {
     emit(state.copyWith(isLoading: true));
-    await emit.forEach(
-      repository.getProductsByCategory(event.categoryId),
-      onData: (result) {
-        return result.fold(
-          (error) => ProductError(error, state.products),
-          (products) => ProductState(
-            products: products,
-            isLoading: false,
-            isSuccess: true,
-          ),
-        );
-      },
-    );
+    await _productsSubscription?.cancel();
+    _productsSubscription = repository.getProductsByCategory(event.categoryId).listen((result) {
+      add(_ProductsUpdated(result));
+    });
   }
 
   Future<void> _onCreateProduct(
@@ -169,5 +190,11 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       (_) =>
           emit(ProductActionSuccess('Produk berhasil dihapus', state.products)),
     );
+  }
+
+  @override
+  Future<void> close() {
+    _productsSubscription?.cancel();
+    return super.close();
   }
 }

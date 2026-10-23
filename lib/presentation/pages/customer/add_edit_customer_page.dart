@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:uuid/uuid.dart';
+
 import '../../blocs/customer/customer_bloc.dart';
 import '../../../domain/entities/customer_entity.dart';
 import '../../../core/style/app_colors.dart';
@@ -16,6 +18,7 @@ class AddEditCustomerPage extends StatefulWidget {
 class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
+  late TextEditingController _emailController;
   late TextEditingController _phoneController;
   late TextEditingController _addressController;
 
@@ -25,6 +28,7 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.customer?.name);
+    _emailController = TextEditingController(text: widget.customer?.email);
     _phoneController = TextEditingController(text: widget.customer?.phone);
     _addressController = TextEditingController(text: widget.customer?.address);
   }
@@ -32,24 +36,133 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
     super.dispose();
   }
 
+  void _onSave() {
+    if (_formKey.currentState!.validate()) {
+      final customer = Customer(
+        id: _isEdit ? widget.customer!.id : const Uuid().v4(),
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        address: _addressController.text.trim(),
+        totalSpent: _isEdit ? widget.customer!.totalSpent : 0,
+        lastTransactionDate: _isEdit ? widget.customer!.lastTransactionDate : null,
+        loyaltyPoints: _isEdit ? widget.customer!.loyaltyPoints : 0,
+        createdAt: _isEdit ? widget.customer!.createdAt : DateTime.now(),
+        updatedAt: DateTime.now(),
+        businessId: _isEdit ? widget.customer!.businessId : null,
+      );
+
+      if (_isEdit) {
+        context.read<CustomerBloc>().add(UpdateCustomer(customer));
+      } else {
+        context.read<CustomerBloc>().add(CreateCustomer(customer));
+      }
+    }
+  }
+
+  void _showDeleteConfirm() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final subtextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: cardColor,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: borderColor),
+        ),
+        title: Text(
+          'Hapus Pelanggan?',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
+        ),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus pelanggan "${widget.customer?.name}"?',
+          style: TextStyle(fontSize: 14, color: subtextColor),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: borderColor),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text('Batal', style: TextStyle(color: subtextColor)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              context.read<CustomerBloc>().add(DeleteCustomer(widget.customer!.id));
+              Navigator.pop(dialogContext);
+            },
+            style: ElevatedButton.styleFrom(
+              elevation: 0,
+              backgroundColor: const Color(0xFFDC2626),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Hapus', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        title: Text(_isEdit ? 'Ubah Pelanggan' : 'Tambah Pelanggan'),
+        backgroundColor: cardColor,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: textColor),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          _isEdit ? 'Ubah Pelanggan' : 'Tambah Pelanggan',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
+        ),
         actions: [
           if (_isEdit)
             IconButton(
-              icon: const Icon(Icons.delete_outline, color: AppColors.error),
-              onPressed: () => _showDeleteConfirm(),
+              icon: const Icon(Icons.delete_outline, color: Color(0xFFDC2626)),
+              tooltip: 'Hapus Pelanggan',
+              onPressed: _showDeleteConfirm,
             ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, thickness: 1, color: borderColor),
+        ),
       ),
       body: BlocListener<CustomerBloc, CustomerState>(
         listener: (context, state) {
@@ -67,61 +180,80 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildCard(
-                  title: 'Informasi Dasar',
+                _buildCardGroup(
+                  title: 'INFORMASI DASAR',
                   children: [
+                    _buildLabel('Nama Lengkap'),
                     TextFormField(
                       controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nama Pelanggan *',
-                        prefixIcon: Icon(Icons.person_outline),
+                      style: TextStyle(fontSize: 14, color: textColor),
+                      decoration: _buildInputDecoration(
+                        hint: 'Contoh: Ahmad Fauzi',
+                        prefixIcon: Icons.person_outline,
                       ),
-                      validator: (v) => v == null || v.isEmpty
+                      validator: (v) => v == null || v.trim().isEmpty
                           ? 'Nama tidak boleh kosong'
                           : null,
                     ),
                     const SizedBox(height: 16),
+                    _buildLabel('Nomor WhatsApp / Telepon'),
                     TextFormField(
                       controller: _phoneController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nomor Telepon',
-                        prefixIcon: Icon(Icons.phone_outlined),
-                        hintText: '0812xxxxxxxx',
-                      ),
                       keyboardType: TextInputType.phone,
+                      style: TextStyle(fontSize: 14, color: textColor),
+                      decoration: _buildInputDecoration(
+                        hint: '0812xxxxxxxx',
+                        prefixIcon: Icons.phone_outlined,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildLabel('Email (Opsional)'),
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      style: TextStyle(fontSize: 14, color: textColor),
+                      decoration: _buildInputDecoration(
+                        hint: 'pelanggan@email.com',
+                        prefixIcon: Icons.email_outlined,
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                _buildCard(
-                  title: 'Alamat',
+                _buildCardGroup(
+                  title: 'ALAMAT PENGIRIMAN',
                   children: [
+                    _buildLabel('Alamat Lengkap (Opsional)'),
                     TextFormField(
                       controller: _addressController,
-                      decoration: const InputDecoration(
-                        labelText: 'Alamat Lengkap',
-                        prefixIcon: Icon(Icons.location_on_outlined),
-                      ),
                       maxLines: 3,
+                      style: TextStyle(fontSize: 14, color: textColor),
+                      decoration: _buildInputDecoration(
+                        hint: 'Jalan, nomor rumah, RT/RW, kecamatan...',
+                        prefixIcon: Icons.location_on_outlined,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: _onSave,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.teal,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 24),
+                SizedBox(
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _onSave,
+                    style: ElevatedButton.styleFrom(
+                      elevation: 0,
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    _isEdit ? 'SIMPAN PERUBAHAN' : 'TAMBAH PELANGGAN',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                    child: Text(
+                      _isEdit ? 'Simpan Perubahan' : 'Tambah Pelanggan',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
                 ),
@@ -133,71 +265,88 @@ class _AddEditCustomerPageState extends State<AddEditCustomerPage> {
     );
   }
 
-  Widget _buildCard({required String title, required List<Widget> children}) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...children,
-          ],
+  Widget _buildLabel(String text) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
         ),
       ),
     );
   }
 
-  void _onSave() {
-    if (_formKey.currentState!.validate()) {
-      final customer = Customer(
-        id: _isEdit ? widget.customer!.id : '',
-        name: _nameController.text.trim(),
-        phone: _phoneController.text.trim(),
-        address: _addressController.text.trim(),
-        createdAt: _isEdit ? widget.customer!.createdAt : DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-
-      if (_isEdit) {
-        context.read<CustomerBloc>().add(UpdateCustomer(customer));
-      } else {
-        context.read<CustomerBloc>().add(CreateCustomer(customer));
-      }
-    }
+  Widget _buildCardGroup({required String title, required List<Widget> children}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: children,
+          ),
+        ),
+      ],
+    );
   }
 
-  void _showDeleteConfirm() {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Hapus Pelanggan'),
-        content: const Text('Apakah Anda yakin ingin menghapus pelanggan ini?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              context.read<CustomerBloc>().add(
-                DeleteCustomer(widget.customer!.id),
-              );
-              Navigator.pop(dialogContext);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Hapus'),
-          ),
-        ],
+  InputDecoration _buildInputDecoration({
+    required String hint,
+    required IconData prefixIcon,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fillCol = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final borderCol = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final hintCol = isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
+    final iconCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(fontSize: 13, color: hintCol),
+      prefixIcon: Icon(prefixIcon, size: 20, color: iconCol),
+      filled: true,
+      fillColor: fillCol,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: borderCol),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: borderCol),
+      ),
+      focusedBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(10)),
+        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+      ),
+      errorBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(10)),
+        borderSide: BorderSide(color: Color(0xFFDC2626)),
       ),
     );
   }

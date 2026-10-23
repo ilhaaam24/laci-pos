@@ -12,29 +12,51 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Laci POS'),
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        title: Text(
+          'Laci POS',
+          style: TextStyle(
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined),
+            icon: Icon(
+              Icons.settings_outlined,
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
+            ),
             onPressed: () {},
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(context),
+            _buildHeader(context, isDark),
             const SizedBox(height: 24),
-            _buildLowStockAlert(context),
+            _buildLowStockAlert(context, isDark),
             const SizedBox(height: 32),
-            _buildQuickActions(context),
+            _buildQuickActions(context, isDark),
             const SizedBox(height: 32),
-            _buildRecentTransactions(context),
+            _buildRecentTransactions(context, isDark),
           ],
         ),
       ),
@@ -50,23 +72,30 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Selamat Datang,', style: Theme.of(context).textTheme.bodyLarge),
+        Text(
+          'Selamat Datang,',
+          style: TextStyle(
+            fontSize: 16,
+            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+          ),
+        ),
         Text(
           'Laci POS Admin',
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+          style: TextStyle(
+            fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
           ),
         ),
       ],
     ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.1);
   }
 
-  Widget _buildLowStockAlert(BuildContext context) {
+  Widget _buildLowStockAlert(BuildContext context, bool isDark) {
     return BlocBuilder<ProductBloc, ProductState>(
       builder: (context, state) {
         final lowStockProducts = state.products
@@ -79,25 +108,31 @@ class HomePage extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.error.withOpacity(0.1),
+            color: isDark
+                ? const Color(0xFF7F1D1D).withValues(alpha: 0.2)
+                : AppColors.error.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.error.withOpacity(0.3)),
+            border: Border.all(
+              color: isDark
+                  ? const Color(0xFF991B1B)
+                  : AppColors.error.withValues(alpha: 0.3),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.warning_amber_rounded,
-                    color: AppColors.error,
+                    color: isDark ? const Color(0xFFF87171) : AppColors.error,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     'Peringatan Stok Rendah (${lowStockProducts.length})',
-                    style: const TextStyle(
-                      color: AppColors.error,
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFFF87171) : AppColors.error,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -116,9 +151,11 @@ class HomePage extends StatelessWidget {
                       margin: const EdgeInsets.only(right: 12),
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
+                        color: isDark ? const Color(0xFF1E293B) : Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.divider),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,17 +165,19 @@ class HomePage extends StatelessWidget {
                             p.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Sisa: ${p.stock}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: AppColors.error,
+                              color: isDark ? const Color(0xFFF87171) : AppColors.error,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -154,11 +193,18 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
+  Widget _buildQuickActions(BuildContext context, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Menu Utama', style: Theme.of(context).textTheme.titleLarge),
+        Text(
+          'Menu Utama',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : const Color(0xFF0F172A),
+          ),
+        ),
         const SizedBox(height: 16),
         GridView.count(
           shrinkWrap: true,
@@ -170,6 +216,7 @@ class HomePage extends StatelessWidget {
           children: [
             _buildMenuCard(
               context,
+              isDark: isDark,
               title: 'Produk',
               icon: Icons.inventory_2_outlined,
               color: AppColors.primary,
@@ -180,6 +227,7 @@ class HomePage extends StatelessWidget {
             ),
             _buildMenuCard(
               context,
+              isDark: isDark,
               title: 'Riwayat Stok',
               icon: Icons.history,
               color: Colors.blueAccent,
@@ -190,6 +238,7 @@ class HomePage extends StatelessWidget {
             ),
             _buildMenuCard(
               context,
+              isDark: isDark,
               title: 'Transaksi',
               icon: Icons.receipt_long_outlined,
               color: AppColors.secondary,
@@ -197,6 +246,7 @@ class HomePage extends StatelessWidget {
             ),
             _buildMenuCard(
               context,
+              isDark: isDark,
               title: 'Laporan',
               icon: Icons.bar_chart_outlined,
               color: Colors.orange,
@@ -204,6 +254,7 @@ class HomePage extends StatelessWidget {
             ),
             _buildMenuCard(
               context,
+              isDark: isDark,
               title: 'Promo',
               icon: Icons.confirmation_number_outlined,
               color: Colors.pinkAccent,
@@ -214,6 +265,7 @@ class HomePage extends StatelessWidget {
             ),
             _buildMenuCard(
               context,
+              isDark: isDark,
               title: 'Pelanggan',
               icon: Icons.people_outline,
               color: Colors.teal,
@@ -227,6 +279,7 @@ class HomePage extends StatelessWidget {
 
   Widget _buildMenuCard(
     BuildContext context, {
+    required bool isDark,
     required String title,
     required IconData icon,
     required Color color,
@@ -239,16 +292,11 @@ class HomePage extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.05),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -256,7 +304,7 @@ class HomePage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: isDark ? 0.2 : 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: color, size: 32),
@@ -264,9 +312,11 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 title,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
               ),
             ],
           ),
@@ -275,7 +325,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentTransactions(BuildContext context) {
+  Widget _buildRecentTransactions(BuildContext context, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -284,29 +334,44 @@ class HomePage extends StatelessWidget {
           children: [
             Text(
               'Transaksi Terakhir',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+              ),
             ),
-            TextButton(onPressed: () {}, child: const Text('Lihat Semua')),
+            TextButton(
+              onPressed: () {},
+              child: const Text('Lihat Semua'),
+            ),
           ],
         ),
         const SizedBox(height: 12),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
           ),
-          child: const Center(
+          child: Center(
             child: Column(
               children: [
                 Icon(
                   Icons.history_outlined,
-                  color: AppColors.textDisabled,
+                  color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
                   size: 48,
                 ),
-                SizedBox(height: 12),
-                Text('Belum ada transaksi hari ini'),
+                const SizedBox(height: 12),
+                Text(
+                  'Belum ada transaksi hari ini',
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    fontSize: 13,
+                  ),
+                ),
               ],
             ),
           ),

@@ -1,22 +1,51 @@
+import 'dart:convert';
 import 'package:dartz/dartz.dart';
+import 'package:uuid/uuid.dart';
+import '../../core/di/injection.dart';
+import '../../core/services/session_service.dart';
+import '../../core/services/sync_service.dart';
 import '../../domain/entities/product_entity.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../datasources/firebase/product_firebase_datasource.dart';
+import '../datasources/local/local_database.dart';
+import '../datasources/local/product_local_datasource.dart';
 import '../models/product_model.dart';
 
 class ProductRepositoryImpl implements ProductRepository {
-  final ProductFirebaseDataSource dataSource;
+  final ProductFirebaseDataSource remoteDataSource;
+  final ProductLocalDataSource localDataSource;
+  final LocalDatabase localDatabase;
+  final SessionService sessionService;
 
-  ProductRepositoryImpl({required this.dataSource});
+  ProductRepositoryImpl({
+    required this.remoteDataSource,
+    required this.localDataSource,
+    required this.localDatabase,
+    required this.sessionService,
+  });
+
+  String get _businessId => sessionService.businessId ?? '';
+
+  void _triggerSync() {
+    try {
+      getIt<SyncService>().fullSync();
+    } catch (_) {}
+  }
 
   @override
   Stream<Either<String, List<Product>>> getProducts() {
+    final businessId = _businessId;
+    if (businessId.isEmpty) {
+      return Stream.value(const Right([]));
+    }
     try {
-      return dataSource.getProducts().map(
-        (products) => Right<String, List<Product>>(
-          products.map((model) => model.toEntity()).toList(),
-        ),
-      );
+      return localDataSource
+          .watchProducts(businessId)
+          .map(
+            (products) => Right<String, List<Product>>(
+              products.map((model) => model.toEntity()).toList(),
+            ),
+          );
     } catch (e) {
       return Stream.value(Left(e.toString()));
     }
@@ -25,8 +54,11 @@ class ProductRepositoryImpl implements ProductRepository {
   @override
   Future<Either<String, Product>> getProductById(String id) async {
     try {
-      final result = await dataSource.getProductById(id);
-      return Right(result.toEntity());
+      final result = await localDataSource.getProductById(id);
+      if (result != null) {
+        return Right(result.toEntity());
+      }
+      return const Left('Produk tidak ditemukan di lokal');
     } catch (e) {
       return Left(e.toString());
     }
@@ -35,9 +67,27 @@ class ProductRepositoryImpl implements ProductRepository {
   @override
   Future<Either<String, String>> createProduct(Product product) async {
     try {
-      final model = ProductModel.fromEntity(product);
-      final id = await dataSource.createProduct(model);
-      return Right(id);
+      final productId = product.id.isEmpty ? const Uuid().v4() : product.id;
+      final model = ProductModel.fromEntity(
+        product,
+      ).copyWith(id: productId, businessId: _businessId);
+
+      // 1. Save to local DB
+      await localDataSource.upsertProduct(model, syncStatus: 'pendingUpload');
+
+      // 2. Add to sync queue
+      await localDatabase.addToSyncQueue(
+        syncEntityName: 'products',
+        documentId: model.id,
+        operation: 'create',
+        businessId: _businessId,
+        data: jsonEncode(model.toJson()),
+      );
+
+      // 3. Trigger immediate sync
+      _triggerSync();
+
+      return Right(model.id);
     } catch (e) {
       return Left(e.toString());
     }
@@ -46,8 +96,25 @@ class ProductRepositoryImpl implements ProductRepository {
   @override
   Future<Either<String, void>> updateProduct(Product product) async {
     try {
-      final model = ProductModel.fromEntity(product);
-      await dataSource.updateProduct(model);
+      final model = ProductModel.fromEntity(
+        product,
+      ).copyWith(businessId: _businessId);
+
+      // 1. Update local DB
+      await localDataSource.upsertProduct(model, syncStatus: 'pendingUpload');
+
+      // 2. Add to sync queue
+      await localDatabase.addToSyncQueue(
+        syncEntityName: 'products',
+        documentId: model.id,
+        operation: 'update',
+        businessId: _businessId,
+        data: jsonEncode(model.toJson()),
+      );
+
+      // 3. Trigger immediate sync
+      _triggerSync();
+
       return const Right(null);
     } catch (e) {
       return Left(e.toString());
@@ -57,7 +124,20 @@ class ProductRepositoryImpl implements ProductRepository {
   @override
   Future<Either<String, void>> deleteProduct(String id) async {
     try {
-      await dataSource.deleteProduct(id);
+      // 1. Mark as deleted in local DB
+      await localDataSource.markAsDeleted(id);
+
+      // 2. Add to sync queue
+      await localDatabase.addToSyncQueue(
+        syncEntityName: 'products',
+        documentId: id,
+        operation: 'delete',
+        businessId: _businessId,
+      );
+
+      // 3. Trigger immediate sync
+      _triggerSync();
+
       return const Right(null);
     } catch (e) {
       return Left(e.toString());
@@ -68,12 +148,19 @@ class ProductRepositoryImpl implements ProductRepository {
   Stream<Either<String, List<Product>>> getProductsByCategory(
     String categoryId,
   ) {
+    final businessId = _businessId;
+    if (businessId.isEmpty) {
+      return Stream.value(const Right([]));
+    }
     try {
-      return dataSource
-          .getProductsByCategory(categoryId)
+      return localDataSource
+          .watchProducts(businessId)
           .map(
             (products) => Right<String, List<Product>>(
-              products.map((model) => model.toEntity()).toList(),
+              products
+                  .where((p) => p.categoryId == categoryId)
+                  .map((model) => model.toEntity())
+                  .toList(),
             ),
           );
     } catch (e) {

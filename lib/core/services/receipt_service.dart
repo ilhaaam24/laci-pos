@@ -172,9 +172,34 @@ class ReceiptService {
                         children: [
                           pw.Expanded(
                             flex: 3,
-                            child: pw.Text(
-                              item.productName,
-                              style: const pw.TextStyle(fontSize: 10),
+                            child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text(
+                                  item.displayName,
+                                  style: pw.TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: pw.FontWeight.bold,
+                                  ),
+                                ),
+                                if (item.selectedModifiers.isNotEmpty)
+                                  pw.Text(
+                                    '+ ${item.modifiersDisplay}',
+                                    style: const pw.TextStyle(
+                                      fontSize: 8,
+                                      color: PdfColors.grey700,
+                                    ),
+                                  ),
+                                if (item.notes != null &&
+                                    item.notes!.trim().isNotEmpty)
+                                  pw.Text(
+                                    '* ${item.notes!.trim()}',
+                                    style: const pw.TextStyle(
+                                      fontSize: 8,
+                                      color: PdfColors.grey700,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                           pw.Expanded(
@@ -187,7 +212,7 @@ class ReceiptService {
                           pw.Expanded(
                             flex: 2,
                             child: pw.Text(
-                              currencyFormatter.format(item.price),
+                              currencyFormatter.format(item.unitPrice),
                               style: const pw.TextStyle(fontSize: 10),
                               textAlign: pw.TextAlign.right,
                             ),
@@ -231,20 +256,29 @@ class ReceiptService {
                 ],
               ),
 
-              pw.SizedBox(height: 4),
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text(
-                    'Metode Pembayaran:',
-                    style: const pw.TextStyle(fontSize: 10),
-                  ),
-                  pw.Text(
-                    transaction.paymentMethod,
-                    style: const pw.TextStyle(fontSize: 10),
-                  ),
-                ],
+              ...transaction.payments.map(
+                (p) => pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(p.typeName, style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text(
+                      currencyFormatter.format(p.amount),
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
+                  ],
+                ),
               ),
+              if (transaction.changeAmount > 0)
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Kembali:', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text(
+                      currencyFormatter.format(transaction.changeAmount),
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
+                  ],
+                ),
 
               pw.Divider(thickness: 1),
 

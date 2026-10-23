@@ -1,0 +1,265 @@
+// ============================================================================
+// ARCHIVED REFERENCE: RevenueCat In-App Purchase Service
+// ============================================================================
+// File ini diarsipkan sebagai referensi implementasi In-App Purchase (IAP) &
+// Subscription menggunakan RevenueCat (purchases_flutter & purchases_ui_flutter).
+//
+// CARA MENGAKTIFKAN KEMBALI DI MASA DEPAN:
+// 1. Tambahkan dependensi ke pubspec.yaml:
+//      purchases_flutter: ^10.13.2
+//      purchases_ui_flutter: ^10.13.2
+// 2. Salin isi file ini ke: lib/core/services/revenuecat_iap_service.dart
+// 3. Masukkan Google Public SDK Key dan Apple Public SDK Key dari RevenueCat Dashboard.
+// 4. Daftarkan di lib/core/di/injection.dart:
+//      getIt.registerLazySingleton<IapService>(() => RevenueCatIapService());
+// ============================================================================
+
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
+import '../../../lib/domain/entities/business_entity.dart';
+import '../../../lib/core/services/iap_service.dart';
+
+class RevenueCatIapService implements IapService {
+  // Public SDK Key - place your RevenueCat API keys here
+  // You can obtain these from your RevenueCat Dashboard -> Project Settings -> API Keys
+  static const String _googleApiKey = 'test_bCbxgGpmUHtpqmjohyxmSHJxxKK';
+  static const String _appleApiKey = 'test_bCbxgGpmUHtpqmjohyxmSHJxxKK';
+
+  static const String entitlementId = 'pro';
+
+  bool _isConfigured = false;
+  bool get isConfigured => _isConfigured;
+
+  @override
+  Future<void> initialize({String? appUserId}) async {
+    if (kIsWeb) return;
+
+    try {
+      final apiKey = Platform.isAndroid ? _googleApiKey : _appleApiKey;
+      if (apiKey.isEmpty || apiKey.contains('placeholder')) {
+        debugPrint(
+          '⚠️ [RevenueCat] API Key masih placeholder! Paywall dashboard belum bisa diakses.\n'
+          '👉 Buka RevenueCat Dashboard -> Project Settings -> API Keys -> Copy "Public API Key" Anda.',
+        );
+        return;
+      }
+
+      await Purchases.setLogLevel(kDebugMode ? LogLevel.debug : LogLevel.info);
+
+      final configuration = PurchasesConfiguration(apiKey);
+      if (appUserId != null && appUserId.isNotEmpty) {
+        configuration.appUserID = appUserId;
+      }
+
+      await Purchases.configure(configuration);
+      _isConfigured = true;
+      debugPrint(
+        'RevenueCat initialized successfully with user ID: $appUserId',
+      );
+    } catch (e) {
+      debugPrint('RevenueCat initialization failed: $e');
+    }
+  }
+
+  /// Update the current user identity in RevenueCat when business/user changes
+  @override
+  Future<void> identifyUser(String businessId) async {
+    if (!_isConfigured) return;
+    try {
+      final logInResult = await Purchases.logIn(businessId);
+      debugPrint(
+        'RevenueCat identified user: ${logInResult.customerInfo.originalAppUserId}',
+      );
+    } catch (e) {
+      debugPrint('RevenueCat identifyUser error: $e');
+    }
+  }
+
+  /// Log out from RevenueCat when user logs out
+  @override
+  Future<void> logout() async {
+    if (!_isConfigured) return;
+    try {
+      await Purchases.logOut();
+    } catch (e) {
+      debugPrint('RevenueCat logout error: $e');
+    }
+  }
+
+  /// Fetch offerings configured on RevenueCat dashboard
+  Future<Offerings?> getOfferings() async {
+    if (!_isConfigured) return null;
+    try {
+      return await Purchases.getOfferings();
+    } catch (e) {
+      debugPrint('RevenueCat getOfferings error: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<bool> purchaseSubscription(String productId) async {
+    if (!_isConfigured) {
+      debugPrint('RevenueCat not configured, cannot purchase.');
+      return false;
+    }
+
+    try {
+      final offerings = await Purchases.getOfferings();
+      final currentOffering = offerings.current;
+
+      Package? packageToPurchase;
+      if (currentOffering != null) {
+        for (final p in currentOffering.availablePackages) {
+          if (p.storeProduct.identifier == productId) {
+            packageToPurchase = p;
+            break;
+          }
+        }
+      }
+
+      CustomerInfo customerInfo;
+      if (packageToPurchase != null) {
+        final result = await Purchases.purchase(
+          PurchaseParams.package(packageToPurchase),
+        );
+        customerInfo = result.customerInfo;
+      } else {
+        // Fallback to purchasing product identifier directly
+        final products = await Purchases.getProducts([productId]);
+        if (products.isEmpty) {
+          debugPrint('RevenueCat: Product $productId not found in store.');
+          return false;
+        }
+        final result = await Purchases.purchase(
+          PurchaseParams.storeProduct(products.first),
+        );
+        customerInfo = result.customerInfo;
+      }
+
+      return customerInfo.entitlements.all[entitlementId]?.isActive ?? false;
+    } on PlatformException catch (e) {
+      final errorCode = PurchasesErrorHelper.getErrorCode(e);
+      if (errorCode == PurchasesErrorCode.purchaseCancelledError) {
+        debugPrint('RevenueCat: Purchase was cancelled by user.');
+      } else {
+        debugPrint(
+          'RevenueCat PlatformException [${errorCode.name}]: ${e.message}',
+        );
+      }
+      return false;
+    } catch (e) {
+      debugPrint('RevenueCat purchase error: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> restorePurchases() async {
+    if (!_isConfigured) return false;
+    try {
+      final customerInfo = await Purchases.restorePurchases();
+      return customerInfo.entitlements.all[entitlementId]?.isActive ?? false;
+    } catch (e) {
+      debugPrint('RevenueCat restore error: $e');
+      return false;
+    }
+  }
+
+  /// Present RevenueCat Paywall UI directly from dashboard configuration
+  Future<PaywallResult> presentPaywall() async {
+    if (!_isConfigured) return PaywallResult.notPresented;
+    try {
+      return await RevenueCatUI.presentPaywall();
+    } catch (e) {
+      debugPrint('RevenueCat presentPaywall error: $e');
+      return PaywallResult.error;
+    }
+  }
+
+  /// Present RevenueCat Paywall UI only if the user is not Pro
+  Future<PaywallResult> presentPaywallIfNeeded() async {
+    if (!_isConfigured) return PaywallResult.notPresented;
+    try {
+      return await RevenueCatUI.presentPaywallIfNeeded(entitlementId);
+    } catch (e) {
+      debugPrint('RevenueCat presentPaywallIfNeeded error: $e');
+      return PaywallResult.error;
+    }
+  }
+
+  /// Check current customer entitlement
+  Future<bool> checkProStatus() async {
+    if (!_isConfigured) return false;
+    try {
+      final customerInfo = await Purchases.getCustomerInfo();
+      return customerInfo.entitlements.all[entitlementId]?.isActive ?? false;
+    } catch (e) {
+      debugPrint('RevenueCat checkProStatus error: $e');
+      return false;
+    }
+  }
+
+  /// Get active expiration date if available
+  @override
+  Future<DateTime?> getExpirationDate() async {
+    if (!_isConfigured) return null;
+    try {
+      final customerInfo = await Purchases.getCustomerInfo();
+      final entitlement = customerInfo.entitlements.all[entitlementId];
+      if (entitlement != null && entitlement.expirationDate != null) {
+        return DateTime.tryParse(entitlement.expirationDate!);
+      }
+    } catch (e) {
+      debugPrint('RevenueCat getExpirationDate error: $e');
+    }
+    return null;
+  }
+
+  @override
+  BusinessInfo handleSuccessfulPurchase({
+    required BusinessInfo currentBusiness,
+    required String productId,
+    required String purchaseToken,
+    DateTime? expirationDate,
+  }) {
+    final now = DateTime.now();
+    DateTime newExpiresAt;
+    String plan;
+
+    if (expirationDate != null && expirationDate.isAfter(now)) {
+      newExpiresAt = expirationDate;
+      if (productId == LaciPosIapConfig.yearlySubscriptionId) {
+        plan = 'yearly';
+      } else if (productId == LaciPosIapConfig.lifetimeNonConsumableId) {
+        plan = 'lifetime';
+      } else {
+        plan = 'monthly';
+      }
+    } else {
+      if (productId == LaciPosIapConfig.yearlySubscriptionId) {
+        newExpiresAt = now.add(const Duration(days: 365));
+        plan = 'yearly';
+      } else if (productId == LaciPosIapConfig.lifetimeNonConsumableId) {
+        newExpiresAt = now.add(const Duration(days: 36500));
+        plan = 'lifetime';
+      } else {
+        newExpiresAt = now.add(const Duration(days: 30));
+        plan = 'monthly';
+      }
+    }
+
+    return currentBusiness.copyWith(
+      subscriptionTier: 'pro',
+      subscriptionExpiresAt: newExpiresAt,
+      subscriptionPlan: plan,
+      updatedAt: now,
+    );
+  }
+
+  @override
+  void dispose() {}
+}

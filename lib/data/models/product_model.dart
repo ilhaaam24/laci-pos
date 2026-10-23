@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/product_entity.dart';
+import '../../domain/entities/product_variant.dart';
 
 class ProductModel extends Product {
   const ProductModel({
@@ -15,6 +16,10 @@ class ProductModel extends Product {
     super.sku,
     required super.createdAt,
     required super.updatedAt,
+    super.businessId,
+    super.variants = const [],
+    super.modifierGroups = const [],
+    super.trackStock = true,
   });
 
   factory ProductModel.fromFirestore(DocumentSnapshot doc) {
@@ -30,8 +35,30 @@ class ProductModel extends Product {
       stockThreshold: data['stockThreshold'] ?? 5,
       imageUrl: data['imageUrl'],
       sku: data['sku'],
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+      updatedAt: data['updatedAt'] != null
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : DateTime.now(),
+      businessId: data['businessId'],
+      variants: (data['variants'] as List<dynamic>?)
+              ?.map(
+                (v) => ProductVariant.fromJson(
+                  Map<String, dynamic>.from(v as Map),
+                ),
+              )
+              .toList() ??
+          const [],
+      modifierGroups: (data['modifierGroups'] as List<dynamic>?)
+              ?.map(
+                (g) => ModifierGroup.fromJson(
+                  Map<String, dynamic>.from(g as Map),
+                ),
+              )
+              .toList() ??
+          const [],
+      trackStock: data['trackStock'] ?? true,
     );
   }
 
@@ -48,7 +75,71 @@ class ProductModel extends Product {
       'sku': sku,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'businessId': businessId,
+      'variants': variants.map((v) => v.toJson()).toList(),
+      'modifierGroups': modifierGroups.map((g) => g.toJson()).toList(),
+      'trackStock': trackStock,
     };
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'categoryId': categoryId,
+      'name': name,
+      'description': description,
+      'price': price,
+      'costPrice': costPrice,
+      'stock': stock,
+      'stockThreshold': stockThreshold,
+      'imageUrl': imageUrl,
+      'sku': sku,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'businessId': businessId,
+      'variants': variants.map((v) => v.toJson()).toList(),
+      'modifierGroups': modifierGroups.map((g) => g.toJson()).toList(),
+      'trackStock': trackStock,
+    };
+  }
+
+  factory ProductModel.fromJson(Map<String, dynamic> json) {
+    return ProductModel(
+      id: json['id'] ?? '',
+      categoryId: json['categoryId'] ?? '',
+      name: json['name'] ?? '',
+      description: json['description'],
+      price: (json['price'] ?? 0).toDouble(),
+      costPrice: (json['costPrice'] ?? 0).toDouble(),
+      stock: json['stock'] ?? 0,
+      stockThreshold: json['stockThreshold'] ?? 5,
+      imageUrl: json['imageUrl'],
+      sku: json['sku'],
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : DateTime.now(),
+      businessId: json['businessId'],
+      variants: (json['variants'] as List<dynamic>?)
+              ?.map(
+                (v) => ProductVariant.fromJson(
+                  Map<String, dynamic>.from(v as Map),
+                ),
+              )
+              .toList() ??
+          const [],
+      modifierGroups: (json['modifierGroups'] as List<dynamic>?)
+              ?.map(
+                (g) => ModifierGroup.fromJson(
+                  Map<String, dynamic>.from(g as Map),
+                ),
+              )
+              .toList() ??
+          const [],
+      trackStock: json['trackStock'] ?? true,
+    );
   }
 
   Product toEntity() {
@@ -65,6 +156,10 @@ class ProductModel extends Product {
       sku: sku,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      businessId: businessId,
+      variants: variants,
+      modifierGroups: modifierGroups,
+      trackStock: trackStock,
     );
   }
 
@@ -82,6 +177,49 @@ class ProductModel extends Product {
       sku: product.sku,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
+      businessId: product.businessId,
+      variants: product.variants,
+      modifierGroups: product.modifierGroups,
+      trackStock: product.trackStock,
+    );
+  }
+
+  @override
+  ProductModel copyWith({
+    String? id,
+    String? categoryId,
+    String? name,
+    String? description,
+    double? price,
+    double? costPrice,
+    int? stock,
+    int? stockThreshold,
+    String? imageUrl,
+    String? sku,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? businessId,
+    List<ProductVariant>? variants,
+    List<ModifierGroup>? modifierGroups,
+    bool? trackStock,
+  }) {
+    return ProductModel(
+      id: id ?? this.id,
+      categoryId: categoryId ?? this.categoryId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      costPrice: costPrice ?? this.costPrice,
+      stock: stock ?? this.stock,
+      stockThreshold: stockThreshold ?? this.stockThreshold,
+      imageUrl: imageUrl ?? this.imageUrl,
+      sku: sku ?? this.sku,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      businessId: businessId ?? this.businessId,
+      variants: variants ?? this.variants,
+      modifierGroups: modifierGroups ?? this.modifierGroups,
+      trackStock: trackStock ?? this.trackStock,
     );
   }
 }

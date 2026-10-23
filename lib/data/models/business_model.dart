@@ -1,26 +1,26 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../domain/entities/business_entity.dart';
 
-class BusinessInfoModel {
-  final String id;
-  final String businessName;
-  final String? address;
-  final String? phone;
-  final String? email;
-  final String? logoUrl;
-  final String? qrisUrl;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  BusinessInfoModel({
-    required this.id,
-    required this.businessName,
-    this.address,
-    this.phone,
-    this.email,
-    this.logoUrl,
-    this.qrisUrl,
-    required this.createdAt,
-    required this.updatedAt,
+class BusinessInfoModel extends BusinessInfo {
+  const BusinessInfoModel({
+    required super.id,
+    required super.businessName,
+    super.address,
+    super.phone,
+    super.email,
+    super.logoUrl,
+    super.qrisUrl,
+    required super.createdAt,
+    required super.updatedAt,
+    super.isTaxEnabled = false,
+    super.taxRate = 0.0,
+    super.taxName = 'Pajak',
+    super.isServiceChargeEnabled = false,
+    super.serviceChargeRate = 0.0,
+    super.isPriceInclusiveTax = false,
+    super.subscriptionTier = 'free',
+    super.subscriptionExpiresAt,
+    super.subscriptionPlan,
   });
 
   factory BusinessInfoModel.fromFirestore(DocumentSnapshot doc) {
@@ -35,6 +35,63 @@ class BusinessInfoModel {
       qrisUrl: data['qrisUrl'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      isTaxEnabled: data['isTaxEnabled'] ?? false,
+      taxRate: (data['taxRate'] ?? 0.0).toDouble(),
+      taxName: data['taxName'] ?? 'Pajak',
+      isServiceChargeEnabled: data['isServiceChargeEnabled'] ?? false,
+      serviceChargeRate: (data['serviceChargeRate'] ?? 0.0).toDouble(),
+      isPriceInclusiveTax: data['isPriceInclusiveTax'] ?? false,
+      subscriptionTier: data['subscriptionTier'] ?? 'free',
+      subscriptionExpiresAt: data['subscriptionExpiresAt'] != null
+          ? (data['subscriptionExpiresAt'] as Timestamp).toDate()
+          : null,
+      subscriptionPlan: data['subscriptionPlan'],
+    );
+  }
+
+  factory BusinessInfoModel.fromEntity(BusinessInfo entity) {
+    return BusinessInfoModel(
+      id: entity.id,
+      businessName: entity.businessName,
+      address: entity.address,
+      phone: entity.phone,
+      email: entity.email,
+      logoUrl: entity.logoUrl,
+      qrisUrl: entity.qrisUrl,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+      isTaxEnabled: entity.isTaxEnabled,
+      taxRate: entity.taxRate,
+      taxName: entity.taxName,
+      isServiceChargeEnabled: entity.isServiceChargeEnabled,
+      serviceChargeRate: entity.serviceChargeRate,
+      isPriceInclusiveTax: entity.isPriceInclusiveTax,
+      subscriptionTier: entity.subscriptionTier,
+      subscriptionExpiresAt: entity.subscriptionExpiresAt,
+      subscriptionPlan: entity.subscriptionPlan,
+    );
+  }
+
+  BusinessInfo toEntity() {
+    return BusinessInfo(
+      id: id,
+      businessName: businessName,
+      address: address,
+      phone: phone,
+      email: email,
+      logoUrl: logoUrl,
+      qrisUrl: qrisUrl,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      isTaxEnabled: isTaxEnabled,
+      taxRate: taxRate,
+      taxName: taxName,
+      isServiceChargeEnabled: isServiceChargeEnabled,
+      serviceChargeRate: serviceChargeRate,
+      isPriceInclusiveTax: isPriceInclusiveTax,
+      subscriptionTier: subscriptionTier,
+      subscriptionExpiresAt: subscriptionExpiresAt,
+      subscriptionPlan: subscriptionPlan,
     );
   }
 
@@ -48,6 +105,69 @@ class BusinessInfoModel {
       'qrisUrl': qrisUrl,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'isTaxEnabled': isTaxEnabled,
+      'taxRate': taxRate,
+      'taxName': taxName,
+      'isServiceChargeEnabled': isServiceChargeEnabled,
+      'serviceChargeRate': serviceChargeRate,
+      'isPriceInclusiveTax': isPriceInclusiveTax,
+      'subscriptionTier': subscriptionTier,
+      'subscriptionExpiresAt': subscriptionExpiresAt != null
+          ? Timestamp.fromDate(subscriptionExpiresAt!)
+          : null,
+      'subscriptionPlan': subscriptionPlan,
     };
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'businessName': businessName,
+      'address': address,
+      'phone': phone,
+      'email': email,
+      'logoUrl': logoUrl,
+      'qrisUrl': qrisUrl,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'isTaxEnabled': isTaxEnabled,
+      'taxRate': taxRate,
+      'taxName': taxName,
+      'isServiceChargeEnabled': isServiceChargeEnabled,
+      'serviceChargeRate': serviceChargeRate,
+      'isPriceInclusiveTax': isPriceInclusiveTax,
+      'subscriptionTier': subscriptionTier,
+      'subscriptionExpiresAt': subscriptionExpiresAt?.toIso8601String(),
+      'subscriptionPlan': subscriptionPlan,
+    };
+  }
+
+  factory BusinessInfoModel.fromJson(Map<String, dynamic> json) {
+    return BusinessInfoModel(
+      id: json['id'] ?? '',
+      businessName: json['businessName'] ?? '',
+      address: json['address'],
+      phone: json['phone'],
+      email: json['email'],
+      logoUrl: json['logoUrl'],
+      qrisUrl: json['qrisUrl'],
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : DateTime.now(),
+      isTaxEnabled: json['isTaxEnabled'] ?? false,
+      taxRate: (json['taxRate'] ?? 0.0).toDouble(),
+      taxName: json['taxName'] ?? 'Pajak',
+      isServiceChargeEnabled: json['isServiceChargeEnabled'] ?? false,
+      serviceChargeRate: (json['serviceChargeRate'] ?? 0.0).toDouble(),
+      isPriceInclusiveTax: json['isPriceInclusiveTax'] ?? false,
+      subscriptionTier: json['subscriptionTier'] ?? 'free',
+      subscriptionExpiresAt: json['subscriptionExpiresAt'] != null
+          ? DateTime.parse(json['subscriptionExpiresAt'])
+          : null,
+      subscriptionPlan: json['subscriptionPlan'],
+    );
   }
 }

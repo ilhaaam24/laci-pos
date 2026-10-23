@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Kartu / Dokumen Lisensi di Belakang -->
+  <path d="M10 8C10 5.8 11.8 4 14 4H34C36.2 4 38 5.8 38 8V34C38 36.2 36.2 38 34 38H14C11.8 38 10 36.2 10 34V8Z" 
+        stroke="#1E293B" stroke-width="2.5" fill="#E6F5EE"/>
+
+  <!-- Slot Input Serial Key / Kode Lisensi -->
+  <rect x="15" y="9" width="18" height="5" rx="1.5" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1.8"/>
+  <circle cx="19" cy="11.5" r="1" fill="#009951"/>
+  <circle cx="24" cy="11.5" r="1" fill="#009951"/>
+  <circle cx="29" cy="11.5" r="1" fill="#009951"/>
+
+  <!-- Kunci Aktivasi Utama (License Key) -->
+  <g transform="translate(6, 17)">
+    <circle cx="9" cy="8" r="6" stroke="#1E293B" stroke-width="2.5" fill="#FFFFFF"/>
+    <circle cx="9" cy="8" r="2.2" fill="#009951"/>
+    <path d="M15 8H29" stroke="#1E293B" stroke-width="2.5"/>
+    <path d="M24 8V12" stroke="#1E293B" stroke-width="2.5"/>
+    <path d="M28 8V13" stroke="#1E293B" stroke-width="2.5"/>
+  </g>
+
+  <!-- Lencana Centang Aktivasi Sukses (Active Badge) -->
+  <g transform="translate(25, 23)">
+    <circle cx="12" cy="12" r="9.5" fill="#009951" stroke="#FFFFFF" stroke-width="2"/>
+    <path d="M7.5 12L10.5 15L16.5 9" stroke="#FFFFFF" stroke-width="2.2"/>
+  </g>
+
+  <!-- Sparkle Kilau Lisensi Aktif -->
+  <path d="M7 4L8 6.5L10.5 7.5L8 8.5L7 11L6 8.5L3.5 7.5L6 6.5Z" fill="#009951"/>
+</svg>

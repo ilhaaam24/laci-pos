@@ -1,207 +1,1223 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
+import '../../../core/di/injection.dart';
+import '../../../core/services/sync_service.dart';
+import '../../../core/style/app_colors.dart';
+import '../../../core/utils/app_toast.dart';
+import '../../../domain/entities/user_entity.dart';
+import '../../blocs/auth/auth_bloc.dart';
+import '../../blocs/cart/cart_bloc.dart';
+import '../../blocs/product/product_bloc.dart';
+import '../../blocs/category/category_bloc.dart';
+import '../../blocs/customer/customer_bloc.dart';
+import '../../blocs/transaction/transaction_bloc.dart';
+import '../../blocs/business/business_bloc.dart';
+import '../../blocs/promo/promo_bloc.dart';
+import '../../widgets/sync_status_indicator.dart';
 import '../products/products_page.dart';
 import '../categories/categories_page.dart';
 import '../customer/customers_page.dart';
+import '../promo/promo_page.dart';
 import 'business_info_page.dart';
 import 'printer_page.dart';
-import '../../blocs/auth/auth_bloc.dart';
-import 'package:laci/core/style/app_colors.dart';
+import 'receipt_settings_page.dart';
+import 'users_management_page.dart';
+import 'shift_history_page.dart';
+import 'help_page.dart';
+import 'terms_and_conditions_page.dart';
+import '../../../core/services/tutorial_service.dart';
+import '../kasir/kasir_page.dart';
+import '../main_page.dart';
+import '../../widgets/upgrade_pro_sheet.dart';
+import '../../widgets/pro_badge.dart';
+import '../../widgets/voucher_activation_dialog.dart';
 
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
+class SettingsPage extends StatefulWidget {
+  final VoidCallback? onOpenDrawer;
+
+  const SettingsPage({super.key, this.onOpenDrawer});
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<BusinessBloc>().add(LoadBusinessInfo());
+    context.read<ProductBloc>().add(LoadProducts());
+    context.read<CategoryBloc>().add(LoadCategories());
+    context.read<CustomerBloc>().add(LoadCustomers());
+    context.read<PromoBloc>().add(LoadPromos());
+  }
+
+  String _getInitials(String name) {
+    final clean = name.trim();
+    if (clean.isEmpty) return 'LP';
+    final parts = clean.split(' ').where((p) => p.isNotEmpty).toList();
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return clean.substring(0, clean.length >= 2 ? 2 : 1).toUpperCase();
+  }
+
+  String _capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s[0].toUpperCase() + s.substring(1);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Pengaturan')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildSectionHeader('Manajemen Data'),
-          _buildSettingTile(
-            context,
-            title: 'Kelola Produk',
-            subtitle: 'Tambah, edit, atau hapus produk',
-            icon: Icons.inventory_2_outlined,
-            color: Colors.blue,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ProductsPage()),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return BlocConsumer<AuthBloc, AuthState>(
+      listener: (context, authState) {
+        if (authState is AuthError) {
+          AppToast.showError(context, authState.message);
+        }
+      },
+      builder: (context, authState) {
+        final role = (authState is Authenticated)
+            ? authState.user.role
+            : UserRole.kasir;
+
+        final canManageData =
+            role.canManageInventory || role.isAdmin || role.isOwner;
+        final canManageStore = role.isAdmin || role.isOwner;
+        final canManageUsers = role.canManageUsers || role.isOwner;
+        final isPro = context.select<BusinessBloc, bool>(
+          (b) => b.state.businessInfo?.isPro ?? false,
+        );
+
+        return Scaffold(
+          backgroundColor: isDark
+              ? const Color(0xFF0F172A)
+              : const Color(0xFFF8FAFC),
+          appBar: AppBar(
+            leading: MediaQuery.of(context).size.width >= 720
+                ? IconButton(
+                    icon: Icon(
+                      Icons.menu_rounded,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    ),
+                    tooltip: 'Menu Navigasi',
+                    onPressed: () {
+                      if (widget.onOpenDrawer != null) {
+                        widget.onOpenDrawer!();
+                      } else {
+                        context
+                            .findRootAncestorStateOfType<ScaffoldState>()
+                            ?.openDrawer();
+                      }
+                    },
+                  )
+                : null,
+            backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            title: Text(
+              'Pengaturan',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+              ),
+            ),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1),
+              child: Divider(
+                height: 1,
+                thickness: 1,
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
+              ),
             ),
           ),
-          _buildSettingTile(
-            context,
-            title: 'Kelola Kategori',
-            subtitle: 'Atur kategori produk Anda',
-            icon: Icons.category_outlined,
-            color: Colors.orange,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const CategoriesPage()),
+          body: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            children: [
+              _buildProfileCard(authState),
+              const SizedBox(height: 14),
+
+              BlocBuilder<BusinessBloc, BusinessState>(
+                builder: (context, bState) {
+                  return _buildProMembershipCard(context, bState, isDark);
+                },
+              ),
+              const SizedBox(height: 20),
+
+              if (canManageData) ...[
+                _buildSectionHeader('MANAJEMEN TOKO'),
+                _buildCardGroup([
+                  BlocBuilder<ProductBloc, ProductState>(
+                    builder: (context, pState) {
+                      return _buildTile(
+                        icon: "assets/icons/product.svg",
+                        title: 'Kelola Produk',
+                        subtitle: 'Daftar produk, harga, dan stok',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ProductsPage(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildDivider(),
+                  BlocBuilder<CategoryBloc, CategoryState>(
+                    builder: (context, cState) {
+                      return _buildTile(
+                        icon: "assets/icons/category.svg",
+                        title: 'Kelola Kategori',
+                        subtitle: 'Pengelompokan menu & barang',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const CategoriesPage(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildDivider(),
+                  BlocBuilder<CustomerBloc, CustomerState>(
+                    builder: (context, custState) {
+                      return _buildTile(
+                        icon: "assets/icons/customer.svg",
+                        title: 'Kelola Pelanggan',
+                        subtitle: 'Data pelanggan dan loyalitas',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const CustomersPage(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildDivider(),
+                  BlocBuilder<PromoBloc, PromoState>(
+                    builder: (context, promoState) {
+                      return _buildTile(
+                        icon: "assets/icons/discount.svg",
+                        title: 'Promo & Diskon',
+                        subtitle: 'Voucher dan kupon potongan harga',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const PromoPage()),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildDivider(),
+                  _buildTile(
+                    icon: "assets/icons/chasier.svg",
+                    title: 'Riwayat Shift Kasir',
+                    subtitle: 'Laporan buka/tutup kasir & selisih uang laci',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ShiftHistoryPage(),
+                      ),
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 20),
+              ],
+
+              // 3. Section: Perangkat & Konfigurasi
+              _buildSectionHeader('PERANGKAT & KONFIGURASI'),
+              _buildCardGroup([
+                _buildTile(
+                  icon: "assets/icons/printer.svg",
+                  title: 'Pengaturan Printer',
+                  subtitle: 'Koneksi printer thermal Bluetooth (58mm/80mm)',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PrinterPage()),
+                  ),
+                ),
+                _buildDivider(),
+                _buildTile(
+                  icon: "assets/icons/struk.svg",
+                  title: 'Kustomisasi Struk',
+                  subtitle: 'Logo toko, header, footer, & opsi tampilan nota',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ReceiptSettingsPage(),
+                    ),
+                  ),
+                ),
+                if (canManageStore) ...[
+                  _buildDivider(),
+                  _buildTile(
+                    icon: "assets/icons/busines.svg",
+                    title: 'Profil Bisnis & QRIS',
+                    subtitle: 'Nama toko, alamat, logo, dan barcode QRIS',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const BusinessInfoPage(),
+                      ),
+                    ),
+                  ),
+                ],
+                if (canManageUsers) ...[
+                  _buildDivider(),
+                  _buildTile(
+                    icon: "assets/icons/staff.svg",
+                    title: 'Manajemen Staf & User',
+                    badge: !isPro ? const ProBadge() : null,
+                    subtitle: isPro
+                        ? 'Kelola akun kasir dan hak akses staf'
+                        : 'Kelola staf & multi-kasir (Fitur Pro)',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const UsersManagementPage(),
+                      ),
+                    ),
+                  ),
+                ],
+              ]),
+              const SizedBox(height: 20),
+
+              // 4. Section: Sistem & Informasi
+              _buildSectionHeader('SISTEM & INFORMASI'),
+              _buildCardGroup([
+                BlocBuilder<BusinessBloc, BusinessState>(
+                  builder: (context, bState) {
+                    final isPro = bState.businessInfo?.isPro ?? false;
+                    return _buildTile(
+                      icon: "assets/icons/sync.svg",
+                      title: 'Sinkronisasi Data',
+                      badge: !isPro ? const ProBadge() : null,
+                      subtitle: isPro
+                          ? 'Sinkronkan database lokal dengan cloud'
+                          : 'Fitur Pro: Cadangkan database lokal ke cloud',
+                      customTrailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SyncStatusIndicator(),
+                          const SizedBox(width: 4),
+                          TextButton(
+                            onPressed: () {
+                              if (!isPro) {
+                                showUpgradeProSheet(
+                                  context,
+                                  featureName: 'Cloud Backup & Multi-Perangkat',
+                                );
+                                return;
+                              }
+                              getIt<SyncService>().fullSync();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Memulai sinkronisasi data...'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            child: const Text(
+                              'Sinkronkan',
+                              style: TextStyle(
+                                color: AppColors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      onTap: () {
+                        if (!isPro) {
+                          showUpgradeProSheet(
+                            context,
+                            featureName: 'Cloud Backup & Multi-Perangkat',
+                          );
+                          return;
+                        }
+                        getIt<SyncService>().fullSync();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Memulai sinkronisasi data...'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+                _buildDivider(),
+                _buildTile(
+                  icon: "assets/icons/panduan.svg",
+                  iconColor: AppColors.primary,
+                  iconBgColor: isDark
+                      ? AppColors.primary.withValues(alpha: 0.25)
+                      : const Color(0xFFCCFBF1),
+                  title: 'Panduan Aplikasi',
+                  subtitle: 'Mulai tur panduan langkah kasir & POS',
+                  onTap: () async {
+                    await TutorialService().resetPosTutorial();
+                    MainPage.switchToKasir();
+                    Future.delayed(const Duration(milliseconds: 350), () {
+                      KasirPage.startTutorial(force: true);
+                    });
+                  },
+                ),
+                _buildDivider(),
+                _buildTile(
+                  icon: "assets/icons/help.svg",
+                  iconColor: const Color(0xFF0284C7),
+                  iconBgColor: isDark
+                      ? const Color(0xFF0369A1).withValues(alpha: 0.25)
+                      : const Color(0xFFE0F2FE),
+                  title: 'Pusat Bantuan & Kendala',
+                  subtitle: 'Solusi kendala aplikasi & kontak tim teknis',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HelpPage()),
+                  ),
+                ),
+                _buildDivider(),
+                _buildTile(
+                  icon: "assets/icons/term_condition.svg",
+                  iconColor: const Color(0xFF8B5CF6),
+                  iconBgColor: isDark
+                      ? const Color(0xFF6D28D9).withValues(alpha: 0.25)
+                      : const Color(0xFFEDE9FE),
+                  title: 'Syarat & Ketentuan',
+                  subtitle: 'Ketentuan penggunaan layanan Laci POS',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const TermsAndConditionsPage(),
+                    ),
+                  ),
+                ),
+
+                _buildDivider(),
+                _buildTile(
+                  icon: "assets/icons/aktivasi_lisensi.svg",
+                  iconColor: const Color(0xFFF59E0B),
+                  iconBgColor: isDark
+                      ? const Color(0xFFF59E0B).withValues(alpha: 0.25)
+                      : const Color(0xFFFEF3C7),
+                  title: 'Aktivasi Lisensi',
+                  subtitle: 'Masukkan kode voucher untuk aktifkan status Pro',
+                  onTap: () => showVoucherActivationDialog(context),
+                ),
+                _buildDivider(),
+                _buildTile(
+                  icon: "assets/icons/delete_account.svg",
+                  iconColor: const Color(0xFFEF4444),
+                  iconBgColor: isDark
+                      ? const Color(0xFFEF4444).withValues(alpha: 0.15)
+                      : const Color(0xFFFEF2F2),
+                  title: 'Hapus Akun',
+                  subtitle: 'Hapus akun dan seluruh data toko secara permanen',
+                  onTap: () => _showDeleteAccountDialog(context),
+                ),
+              ]),
+              const SizedBox(height: 16),
+
+              _buildLogoutButton(),
+              const SizedBox(height: 16),
+
+              Center(
+                child: Text(
+                  'Laci POS v1.0.0',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? const Color(0xFF64748B)
+                        : const Color(0xFF94A3B8),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Profile Card: Real Store & User Info (Clean flat card, no shadow)
+  Widget _buildProfileCard(AuthState authState) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return BlocBuilder<BusinessBloc, BusinessState>(
+      builder: (context, bState) {
+        final businessInfo = bState.businessInfo;
+        final businessName =
+            businessInfo?.businessName.isNotEmpty == true &&
+                businessInfo?.businessName != 'Toko Saya'
+            ? businessInfo!.businessName
+            : 'Toko Saya';
+        final initials = _getInitials(businessName);
+
+        String userName = 'Kasir';
+        String roleName = 'Kasir';
+        String userEmail = '-';
+
+        if (authState is Authenticated) {
+          final user = authState.user;
+          userName = user.name?.isNotEmpty == true
+              ? user.name!
+              : user.email.split('@').first;
+          userEmail = user.email;
+          roleName = _capitalize(user.role.name);
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
             ),
           ),
-          _buildSettingTile(
-            context,
-            title: 'Kelola Pelanggan',
-            subtitle: 'Daftar pelanggan dan loyalitas',
-            icon: Icons.people_outline,
-            color: Colors.teal,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const CustomersPage()),
+          child: Row(
+            children: [
+              // Store Logo or Initials Box
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF334155)
+                        : const Color(0xFFE2E8F0),
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(11),
+                  child:
+                      (businessInfo?.logoUrl != null &&
+                          businessInfo!.logoUrl!.isNotEmpty)
+                      ? CachedNetworkImage(
+                          imageUrl: businessInfo.logoUrl!,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Center(
+                            child: Text(
+                              initials,
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0F172A),
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        )
+                      : SvgPicture.asset(
+                          "assets/icons/logo.svg",
+                          height: 30,
+                          width: 30,
+                        ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              // Store Name & User Role
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      businessName,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            '$userName ($userEmail)',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Role Badge
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  roleName,
+                  style: const TextStyle(
+                    color: AppColors.white,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProMembershipCard(
+    BuildContext context,
+    BusinessState bState,
+    bool isDark,
+  ) {
+    final businessInfo = bState.businessInfo;
+    final isPro = businessInfo?.isPro ?? false;
+
+    if (isPro) {
+      final remainingDays = businessInfo?.remainingProDays ?? 0;
+      final isLifetime =
+          businessInfo?.subscriptionPlan == 'lifetime' || remainingDays > 3650;
+      final planLabel = isLifetime
+          ? 'Lisensi Lifetime'
+          : businessInfo?.subscriptionPlan == 'yearly'
+          ? 'Paket Tahunan'
+          : businessInfo?.subscriptionPlan == 'monthly'
+          ? 'Paket Bulanan'
+          : 'Lisensi Pro';
+      final expiryLabel = isLifetime
+          ? 'Aktif Selamanya'
+          : 'Sisa masa aktif: $remainingDays hari';
+
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
+        ),
+        child: Row(
+          children: [
+            SvgPicture.asset('assets/icons/pro_badge.svg'),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      'Laci POS Pro Aktif',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$planLabel • $expiryLabel',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            // Verified Active Badge (No Paywall triggered)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check_circle_rounded,
+                    size: 13,
+                    color: Colors.white,
+                  ),
+                  SizedBox(width: 4),
+                  Text(
+                    'Aktif',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Free Tier: Card with prominent CTA button to activate Pro
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => showUpgradeProSheet(context),
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                SvgPicture.asset('assets/icons/pro_badge.svg'),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'Upgrade ke Laci POS Pro',
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Buka semua fitur tanpa batas',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Dedicated CTA Button to activate Pro
+                ElevatedButton(
+                  onPressed: () => showUpgradeProSheet(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    minimumSize: const Size(0, 32),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Aktivasi',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.arrow_forward_ios, size: 11),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 24),
-          _buildSectionHeader('Konfigurasi Aplikasi'),
-          _buildSettingTile(
-            context,
-            title: 'Info Bisnis',
-            subtitle: 'Nama toko, alamat, dan kontak',
-            icon: Icons.storefront_outlined,
-            color: Colors.indigo,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const BusinessInfoPage()),
-            ),
-          ),
-          _buildSettingTile(
-            context,
-            title: 'Pengaturan Printer',
-            subtitle: 'Sambungkan printer thermal Bluetooth/USB',
-            icon: Icons.print_outlined,
-            color: Colors.blueGrey,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const PrinterPage()),
-            ),
-          ),
-          _buildSettingTile(
-            context,
-            title: 'User & Keamanan',
-            subtitle: 'Atur akses staf dan password',
-            icon: Icons.lock_outline,
-            color: Colors.redAccent,
-            onTap: () {
-              // Navigate to User/Security management
-            },
-          ),
-          const SizedBox(height: 24),
-          _buildSectionHeader('Lainnya'),
-          _buildSettingTile(
-            context,
-            title: 'Tentang Aplikasi',
-            subtitle: 'Versi 1.0.0',
-            icon: Icons.info_outline,
-            color: AppColors.textSecondary,
-            onTap: () {},
-          ),
-          const SizedBox(height: 16),
-          _buildLogoutTile(context),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildLogoutTile(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        onTap: () => _showLogoutDialog(context),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.error.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: const Icon(Icons.logout, color: AppColors.error),
+  Widget _buildSectionHeader(String title) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+          letterSpacing: 0.6,
         ),
-        title: const Text(
-          'Keluar',
-          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.error),
+      ),
+    );
+  }
+
+  Widget _buildCardGroup(List<Widget> children) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
         ),
-        subtitle: const Text(
-          'Keluar dari akun Anda',
-          style: TextStyle(fontSize: 12),
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  Widget _buildDivider() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Divider(
+      height: 1,
+      thickness: 1,
+      indent: 54,
+      color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+    );
+  }
+
+  Widget _buildTile({
+    String? icon,
+    IconData? iconData,
+    Color? iconColor,
+    Color? iconBgColor,
+    required String title,
+    required String subtitle,
+    Widget? badge,
+    String? trailingText,
+    Widget? customTrailing,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Widget leadingWidget = iconData != null
+        ? Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color:
+                  iconBgColor ??
+                  (isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9)),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Icon(
+              iconData,
+              size: 20,
+              color:
+                  iconColor ??
+                  (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+            ),
+          )
+        : SvgPicture.asset(
+            icon ?? "assets/icons/setting.svg",
+            width: 34,
+            height: 34,
+          );
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            leadingWidget,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
+                        ),
+                      ),
+                      if (badge != null) ...[const SizedBox(width: 8), badge],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            if (customTrailing != null)
+              customTrailing
+            else ...[
+              if (trailingText != null) ...[
+                Text(
+                  trailingText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? const Color(0xFF64748B)
+                        : const Color(0xFF94A3B8),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 4),
+              ],
+              Icon(
+                Icons.chevron_right_rounded,
+                color: isDark
+                    ? const Color(0xFF475569)
+                    : const Color(0xFFCBD5E1),
+                size: 20,
+              ),
+            ],
+          ],
         ),
-        trailing: const Icon(
-          Icons.chevron_right,
-          color: AppColors.textDisabled,
+      ),
+    );
+  }
+
+  // Logout Button (Flat clean red card, no shadow)
+  Widget _buildLogoutButton() {
+    return InkWell(
+      onTap: () => _showLogoutDialog(context),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        height: 50,
+        decoration: BoxDecoration(
+          // color: const Color(0xFFFEF2F2),
+          borderRadius: BorderRadius.circular(14),
+          // border: Border.all(color: const Color(0xFFFEE2E2)),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.logout_rounded, color: Color(0xFFDC2626), size: 20),
+            SizedBox(width: 8),
+            Text(
+              'Keluar',
+              style: TextStyle(
+                color: Color(0xFFDC2626),
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   void _showLogoutDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Keluar'),
-        content: const Text('Apakah Anda yakin ingin keluar dari aplikasi?'),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
+        ),
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        elevation: 0,
+        title: Text(
+          'Keluar dari Akun',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 17,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        ),
+        content: Text(
+          'Apakah Anda yakin ingin keluar dari akun ini? Semua perubahan offline telah diamankan.',
+          style: TextStyle(
+            fontSize: 14,
+            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+          ),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(
+          OutlinedButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Batal'),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              'Batal',
+              style: TextStyle(
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
+              context.read<CartBloc>().add(ClearCart());
+              context.read<ProductBloc>().add(ResetProducts());
+              context.read<CategoryBloc>().add(ResetCategories());
+              context.read<CustomerBloc>().add(ResetCustomers());
+              context.read<TransactionBloc>().add(ResetTransactions());
+              context.read<BusinessBloc>().add(ResetBusinessInfo());
               context.read<AuthBloc>().add(SignOutRequested());
               Navigator.pop(dialogContext);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
+              backgroundColor: const Color(0xFFDC2626),
               foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-            child: const Text('Keluar'),
+            child: const Text(
+              'Keluar',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 12),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: AppColors.textSecondary,
-          letterSpacing: 1.2,
+  void _showDeleteAccountDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
         ),
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        elevation: 0,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                'Hapus Akun & Data',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 17,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tindakan ini permanen dan tidak dapat dibatalkan. Menghapus akun akan:',
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark
+                    ? const Color(0xFFCBD5E1)
+                    : const Color(0xFF334155),
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 10),
+            _buildDeleteBullet('Profil akun dan kredensial login Anda', isDark),
+            _buildDeleteBullet(
+              'Seluruh data produk, kategori, dan pelanggan',
+              isDark,
+            ),
+            _buildDeleteBullet(
+              'Seluruh riwayat transaksi & mutasi stok toko',
+              isDark,
+            ),
+            _buildDeleteBullet(
+              'Semua status lisensi Pro yang terhubung',
+              isDark,
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.3),
+                ),
+              ),
+              child: const Text(
+                'Semua data akan dihapus permanen dari server dan perangkat ini.',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFDC2626),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actions: [
+          OutlinedButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              'Batal',
+              style: TextStyle(
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context.read<CartBloc>().add(ClearCart());
+              context.read<ProductBloc>().add(ResetProducts());
+              context.read<CategoryBloc>().add(ResetCategories());
+              context.read<CustomerBloc>().add(ResetCustomers());
+              context.read<TransactionBloc>().add(ResetTransactions());
+              context.read<BusinessBloc>().add(ResetBusinessInfo());
+              context.read<AuthBloc>().add(DeleteAccountRequested());
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Hapus Permanen',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSettingTile(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        onTap: onTap,
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
+  Widget _buildDeleteBullet(String text, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '• ',
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
           ),
-          child: Icon(icon, color: color),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
-        trailing: const Icon(
-          Icons.chevron_right,
-          color: AppColors.textDisabled,
-        ),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
+                height: 1.25,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

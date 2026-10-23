@@ -52,7 +52,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyD3UlJo-GvmU49LhS9FkaMPvPPoLtqNUm0',
-    appId: '1:747380789752:android:cd16fba6158feee2a1460d',
+    appId: '1:747380789752:android:62605f1840c2b3b6a1460d',
     messagingSenderId: '747380789752',
     projectId: 'chatify-9b6ef',
     storageBucket: 'chatify-9b6ef.firebasestorage.app',
@@ -68,7 +68,7 @@ class DefaultFirebaseOptions {
         '747380789752-reectdft13t0kfeohe4o5hrc0rob8rf1.apps.googleusercontent.com',
     iosClientId:
         '747380789752-0j2nv54qgo8incgi7p0safloasu2dv9h.apps.googleusercontent.com',
-    iosBundleId: 'com.example.laci',
+    iosBundleId: 'com.ilhaaam24.lacipos',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -81,7 +81,7 @@ class DefaultFirebaseOptions {
         '747380789752-reectdft13t0kfeohe4o5hrc0rob8rf1.apps.googleusercontent.com',
     iosClientId:
         '747380789752-0j2nv54qgo8incgi7p0safloasu2dv9h.apps.googleusercontent.com',
-    iosBundleId: 'com.example.laci',
+    iosBundleId: 'com.ilhaaam24.lacipos',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(

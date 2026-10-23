@@ -12,6 +12,7 @@ class StockLogModel extends StockLog {
     required super.newStock,
     super.reason,
     required super.createdAt,
+    super.businessId,
   });
 
   factory StockLogModel.fromFirestore(DocumentSnapshot doc) {
@@ -29,6 +30,7 @@ class StockLogModel extends StockLog {
       newStock: data['newStock'] ?? 0,
       reason: data['reason'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
+      businessId: data['businessId'],
     );
   }
 
@@ -42,7 +44,43 @@ class StockLogModel extends StockLog {
       'newStock': newStock,
       'reason': reason,
       'createdAt': Timestamp.fromDate(createdAt),
+      'businessId': businessId,
     };
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'productId': productId,
+      'productName': productName,
+      'type': type.name,
+      'quantity': quantity,
+      'previousStock': previousStock,
+      'newStock': newStock,
+      'reason': reason,
+      'createdAt': createdAt.toIso8601String(),
+      'businessId': businessId,
+    };
+  }
+
+  factory StockLogModel.fromJson(Map<String, dynamic> json) {
+    return StockLogModel(
+      id: json['id'] ?? '',
+      productId: json['productId'] ?? '',
+      productName: json['productName'] ?? '',
+      type: StockLogType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => StockLogType.adjustment,
+      ),
+      quantity: json['quantity'] ?? 0,
+      previousStock: json['previousStock'] ?? 0,
+      newStock: json['newStock'] ?? 0,
+      reason: json['reason'],
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      businessId: json['businessId'],
+    );
   }
 
   factory StockLogModel.fromEntity(StockLog entity) {
@@ -56,6 +94,7 @@ class StockLogModel extends StockLog {
       newStock: entity.newStock,
       reason: entity.reason,
       createdAt: entity.createdAt,
+      businessId: entity.businessId,
     );
   }
 }

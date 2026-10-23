@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Badan Amplop Email -->
+  <path d="M6 14C6 11.79 7.79 10 10 10H38C40.21 10 42 11.79 42 14V34C42 36.21 40.21 38 38 38H10C7.79 38 6 36.21 6 34V14Z" 
+        stroke="#1E293B" stroke-width="2.5" fill="#E6F5EE"/>
+  
+  <!-- Lipatan Penutup Amplop Atas -->
+  <path d="M6 13L24 25L42 13" stroke="#1E293B" stroke-width="2.5"/>
+
+  <!-- Lipatan Sisi Dalam Bawah -->
+  <line x1="6" y1="35" x2="18" y2="23" stroke="#94A3B8" stroke-width="1.8"/>
+
+  <!-- Badge Verifikasi Centang Hijau -->
+  <g transform="translate(24, 21)">
+    <circle cx="12" cy="12" r="9.5" fill="#009951" stroke="#FFFFFF" stroke-width="2.2"/>
+    <path d="M7.5 12L10.5 15L16.5 9" stroke="#FFFFFF" stroke-width="2.2"/>
+  </g>
+</svg>

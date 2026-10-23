@@ -1,22 +1,51 @@
+import 'dart:convert';
 import 'package:dartz/dartz.dart';
+import 'package:uuid/uuid.dart';
+import '../../core/di/injection.dart';
+import '../../core/services/session_service.dart';
+import '../../core/services/sync_service.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/repositories/category_repository.dart';
 import '../datasources/firebase/category_firebase_datasource.dart';
+import '../datasources/local/category_local_datasource.dart';
+import '../datasources/local/local_database.dart';
 import '../models/category_model.dart';
 
 class CategoryRepositoryImpl implements CategoryRepository {
-  final CategoryFirebaseDataSource dataSource;
+  final CategoryFirebaseDataSource remoteDataSource;
+  final CategoryLocalDataSource localDataSource;
+  final LocalDatabase localDatabase;
+  final SessionService sessionService;
 
-  CategoryRepositoryImpl({required this.dataSource});
+  CategoryRepositoryImpl({
+    required this.remoteDataSource,
+    required this.localDataSource,
+    required this.localDatabase,
+    required this.sessionService,
+  });
+
+  String get _businessId => sessionService.businessId ?? '';
+
+  void _triggerSync() {
+    try {
+      getIt<SyncService>().fullSync();
+    } catch (_) {}
+  }
 
   @override
   Stream<Either<String, List<Category>>> getCategories() {
+    final businessId = _businessId;
+    if (businessId.isEmpty) {
+      return Stream.value(const Right([]));
+    }
     try {
-      return dataSource.getCategories().map(
-        (categories) => Right<String, List<Category>>(
-          categories.map((model) => model.toEntity()).toList(),
-        ),
-      );
+      return localDataSource
+          .watchCategories(businessId)
+          .map(
+            (categories) => Right<String, List<Category>>(
+              categories.map((model) => model.toEntity()).toList(),
+            ),
+          );
     } catch (e) {
       return Stream.value(Left(e.toString()));
     }
@@ -25,8 +54,11 @@ class CategoryRepositoryImpl implements CategoryRepository {
   @override
   Future<Either<String, Category>> getCategoryById(String id) async {
     try {
-      final result = await dataSource.getCategoryById(id);
-      return Right(result.toEntity());
+      final result = await localDataSource.getCategoryById(id);
+      if (result != null) {
+        return Right(result.toEntity());
+      }
+      return const Left('Kategori tidak ditemukan di lokal');
     } catch (e) {
       return Left(e.toString());
     }
@@ -35,9 +67,27 @@ class CategoryRepositoryImpl implements CategoryRepository {
   @override
   Future<Either<String, String>> createCategory(Category category) async {
     try {
-      final model = CategoryModel.fromEntity(category);
-      final id = await dataSource.createCategory(model);
-      return Right(id);
+      final categoryId = category.id.isEmpty ? const Uuid().v4() : category.id;
+      final model = CategoryModel.fromEntity(
+        category,
+      ).copyWith(id: categoryId, businessId: _businessId);
+
+      // 1. Save to local DB
+      await localDataSource.upsertCategory(model, syncStatus: 'pendingUpload');
+
+      // 2. Add to sync queue
+      await localDatabase.addToSyncQueue(
+        syncEntityName: 'categories',
+        documentId: model.id,
+        operation: 'create',
+        businessId: _businessId,
+        data: jsonEncode(model.toJson()),
+      );
+
+      // 3. Trigger immediate sync
+      _triggerSync();
+
+      return Right(model.id);
     } catch (e) {
       return Left(e.toString());
     }
@@ -46,8 +96,25 @@ class CategoryRepositoryImpl implements CategoryRepository {
   @override
   Future<Either<String, void>> updateCategory(Category category) async {
     try {
-      final model = CategoryModel.fromEntity(category);
-      await dataSource.updateCategory(model);
+      final model = CategoryModel.fromEntity(
+        category,
+      ).copyWith(businessId: _businessId);
+
+      // 1. Update local DB
+      await localDataSource.upsertCategory(model, syncStatus: 'pendingUpload');
+
+      // 2. Add to sync queue
+      await localDatabase.addToSyncQueue(
+        syncEntityName: 'categories',
+        documentId: model.id,
+        operation: 'update',
+        businessId: _businessId,
+        data: jsonEncode(model.toJson()),
+      );
+
+      // 3. Trigger immediate sync
+      _triggerSync();
+
       return const Right(null);
     } catch (e) {
       return Left(e.toString());
@@ -57,7 +124,20 @@ class CategoryRepositoryImpl implements CategoryRepository {
   @override
   Future<Either<String, void>> deleteCategory(String id) async {
     try {
-      await dataSource.deleteCategory(id);
+      // 1. Mark as deleted locally
+      await localDataSource.markAsDeleted(id);
+
+      // 2. Add to sync queue
+      await localDatabase.addToSyncQueue(
+        syncEntityName: 'categories',
+        documentId: id,
+        operation: 'delete',
+        businessId: _businessId,
+      );
+
+      // 3. Trigger immediate sync
+      _triggerSync();
+
       return const Right(null);
     } catch (e) {
       return Left(e.toString());

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="100%" height="100%" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Bingkai Gambar / Frame Luar -->
+  <rect x="7" y="8" width="34" height="32" rx="5" stroke="#1E293B" stroke-width="2.5" fill="#E6F5EE"/>
+
+  <!-- Matahari / Lingkaran Fokus (Aksen Hijau Brand) -->
+  <circle cx="17" cy="18" r="4" stroke="#009951" stroke-width="2" fill="#009951"/>
+
+  <!-- Pegunungan / Lanskap Gambar Depan & Belakang -->
+  <path d="M26 40L33 28L41 39" stroke="#94A3B8" stroke-width="2" fill="#CEEBDC" opacity="0.6"/>
+  <path d="M7 36L17 22L29 40" stroke="#1E293B" stroke-width="2.5" fill="#FFFFFF"/>
+  <path d="M25 34L29 29L40 40H8L13 33" stroke="#1E293B" stroke-width="2.5"/>
+</svg>

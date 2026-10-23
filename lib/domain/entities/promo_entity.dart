@@ -11,27 +11,30 @@ class PromoEntity extends Equatable {
   final bool isActive;
   final DateTime? startDate;
   final DateTime? endDate;
+  final String? businessId;
 
   const PromoEntity({
     required this.id,
     required this.name,
-    required this.type,
+    this.type = PromoType.fixed,
     required this.value,
     this.minPurchase = 0,
     this.isActive = true,
     this.startDate,
     this.endDate,
+    this.businessId,
   });
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        type,
-        value,
-        minPurchase,
-        isActive,
-        startDate,
-        endDate,
-      ];
+    id,
+    name,
+    type,
+    value,
+    minPurchase,
+    isActive,
+    startDate,
+    endDate,
+    businessId,
+  ];
 }
