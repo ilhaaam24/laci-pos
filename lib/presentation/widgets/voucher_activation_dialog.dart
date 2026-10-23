@@ -306,7 +306,7 @@ class _VoucherActivationDialogState extends State<VoucherActivationDialog> {
                               ),
                             )
                           : const Text(
-                              'Aktifkan Sekarang',
+                              'Aktifkan',
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13.5,
@@ -325,11 +325,10 @@ class _VoucherActivationDialogState extends State<VoucherActivationDialog> {
                   onTap: _contactAdminWhatsApp,
 
                   child: const Text(
-                    'Belum punya kode? Hubungi Admin via WhatsApp',
+                    'Belum punya kode? Hubungi Admin',
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFFD97706),
                     ),
                   ),
                 ),

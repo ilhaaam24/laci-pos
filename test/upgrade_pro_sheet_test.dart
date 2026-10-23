@@ -36,7 +36,7 @@ void main() {
   });
 
   group('UpgradeProContent Widget Tests', () {
-    testWidgets('Renders header, Free vs PRO comparison, and Lifetime pricing card', (tester) async {
+    testWidgets('Renders header, minimalist feature checklist, and pricing card', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -46,35 +46,24 @@ void main() {
       );
 
       expect(find.text('Laci POS'), findsOneWidget);
-      expect(find.text('PRO'), findsOneWidget);
+      expect(find.text('Rp 49.000 • Sekali Bayar Selamanya'), findsOneWidget);
 
-      // Verify Comparison Table
-      expect(find.text('FITUR BISNIS'), findsOneWidget);
-      expect(find.text('FREE'), findsOneWidget);
-      expect(find.text('PRO 👑'), findsOneWidget);
+      // Verify Minimalist Feature Checklist
+      expect(find.text('FITUR UNGGULAN PRO'), findsOneWidget);
+      expect(find.text('Katalog Produk & Transaksi Tanpa Batas'), findsOneWidget);
+      expect(find.text('Multi-Kasir & Hak Akses PIN Staf'), findsOneWidget);
+      expect(find.text('Laporan Laba/Rugi & Export Excel/PDF'), findsOneWidget);
+      expect(find.text('Cetak Struk Tanpa Watermark + Logo Toko'), findsOneWidget);
 
-      expect(find.text('Katalog Produk'), findsOneWidget);
-      expect(find.text('Maks 150'), findsOneWidget);
-      expect(find.text('Tanpa Batas 🚀'), findsOneWidget);
-
-      expect(find.text('Multi-Kasir & PIN'), findsOneWidget);
-      expect(find.text('1 Kasir'), findsOneWidget);
-      expect(find.text('Banyak Staf 👥'), findsOneWidget);
-
-      expect(find.text('Laporan Laba & HPP'), findsOneWidget);
-      expect(find.text('Export Excel & PDF'), findsOneWidget);
-      expect(find.text('Logo & Bebas Watermark'), findsOneWidget);
-      expect(find.text('Cloud Backup & Sync'), findsOneWidget);
-
-      // Verify Lifetime Pricing
-      expect(find.text('SEKALI BAYAR • AKTIF SELAMANYA'), findsOneWidget);
-      expect(find.text('Hemat 67%'), findsOneWidget);
+      // Verify Pricing
       expect(find.text('Rp 49.000'), findsOneWidget);
       expect(find.text('Rp 149.000'), findsOneWidget);
+      expect(find.text('Hemat 67%'), findsOneWidget);
+      expect(find.text('Sekali bayar • Tanpa langganan bulanan'), findsOneWidget);
 
-      // Default CTA button
+      // Primary CTA button
       expect(
-        find.text('Beli Lisensi via WhatsApp (Rp 49.000)'),
+        find.text('Hubungi Admin'),
         findsOneWidget,
       );
     });
@@ -95,28 +84,6 @@ void main() {
         findsOneWidget,
       );
       expect(find.byIcon(Icons.lock_rounded), findsOneWidget);
-    });
-
-    testWidgets('Renders and triggers voucher activation button when callback provided', (tester) async {
-      bool voucherTapped = false;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: UpgradeProContent(
-              onVoucherTap: () => voucherTapped = true,
-            ),
-          ),
-        ),
-      );
-
-      final voucherBtn = find.text('Sudah Punya Kode Voucher? Aktivasi di Sini');
-      expect(voucherBtn, findsOneWidget);
-
-      await tester.ensureVisible(voucherBtn);
-      await tester.tap(voucherBtn);
-      await tester.pumpAndSettle();
-
-      expect(voucherTapped, isTrue);
     });
 
     for (final width in [320.0, 360.0, 375.0, 390.0, 414.0]) {

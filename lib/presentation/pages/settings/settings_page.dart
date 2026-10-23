@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/services/sync_service.dart';
@@ -90,6 +89,9 @@ class _SettingsPageState extends State<SettingsPage> {
             role.canManageInventory || role.isAdmin || role.isOwner;
         final canManageStore = role.isAdmin || role.isOwner;
         final canManageUsers = role.canManageUsers || role.isOwner;
+        final isPro = context.select<BusinessBloc, bool>(
+          (b) => b.state.businessInfo?.isPro ?? false,
+        );
 
         return Scaffold(
           backgroundColor: isDark
@@ -272,7 +274,10 @@ class _SettingsPageState extends State<SettingsPage> {
                   _buildTile(
                     icon: "assets/icons/staff.svg",
                     title: 'Manajemen Staf & User',
-                    subtitle: 'Kelola akun kasir dan hak akses staf',
+                    badge: !isPro ? const ProBadge() : null,
+                    subtitle: isPro
+                        ? 'Kelola akun kasir dan hak akses staf'
+                        : 'Kelola staf & multi-kasir (Fitur Pro)',
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -307,8 +312,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               if (!isPro) {
                                 showUpgradeProSheet(
                                   context,
-                                  featureName:
-                                      'Cloud Backup & Multi-Perangkat',
+                                  featureName: 'Cloud Backup & Multi-Perangkat',
                                 );
                                 return;
                               }
@@ -321,7 +325,9 @@ class _SettingsPageState extends State<SettingsPage> {
                               );
                             },
                             style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
                               visualDensity: VisualDensity.compact,
                             ),
                             child: const Text(
@@ -401,23 +407,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   ),
                 ),
-                _buildDivider(),
-                _buildTile(
-                  icon: "assets/icons/policy.svg",
-                  title: 'Kebijakan Privasi',
-                  subtitle: 'Kebijakan privasi & perlindungan data pengguna',
-                  onTap: () async {
-                    final url = Uri.parse(
-                      'https://sites.google.com/view/lacipos-privacypolicy',
-                    );
-                    if (await canLaunchUrl(url)) {
-                      await launchUrl(
-                        url,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    }
-                  },
-                ),
+
                 _buildDivider(),
                 _buildTile(
                   icon: "assets/icons/aktivasi_lisensi.svg",
@@ -427,7 +417,6 @@ class _SettingsPageState extends State<SettingsPage> {
                       : const Color(0xFFFEF3C7),
                   title: 'Aktivasi Lisensi',
                   subtitle: 'Masukkan kode voucher untuk aktifkan status Pro',
-                  customTrailing: const ProBadge(),
                   onTap: () => showVoucherActivationDialog(context),
                 ),
                 _buildDivider(),
@@ -628,12 +617,13 @@ class _SettingsPageState extends State<SettingsPage> {
       final planLabel = isLifetime
           ? 'Lisensi Lifetime'
           : businessInfo?.subscriptionPlan == 'yearly'
-              ? 'Paket Tahunan'
-              : businessInfo?.subscriptionPlan == 'monthly'
-                  ? 'Paket Bulanan'
-                  : 'Lisensi Pro';
-      final expiryLabel =
-          isLifetime ? 'Aktif Selamanya' : 'Sisa masa aktif: $remainingDays hari';
+          ? 'Paket Tahunan'
+          : businessInfo?.subscriptionPlan == 'monthly'
+          ? 'Paket Bulanan'
+          : 'Lisensi Pro';
+      final expiryLabel = isLifetime
+          ? 'Aktif Selamanya'
+          : 'Sisa masa aktif: $remainingDays hari';
 
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -641,61 +631,29 @@ class _SettingsPageState extends State<SettingsPage> {
           color: isDark ? const Color(0xFF1E293B) : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: const Color(0xFFF59E0B).withValues(alpha: 0.6),
-            width: 1.5,
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Row(
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.workspace_premium_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
+            SvgPicture.asset('assets/icons/pro_badge.svg'),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'Laci POS Pro Aktif',
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
-                            color: isDark
-                                ? Colors.white
-                                : const Color(0xFF0F172A),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                  Flexible(
+                    child: Text(
+                      'Laci POS Pro Aktif',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
-                      const SizedBox(width: 6),
-                      const ProBadge(),
-                    ],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -712,97 +670,131 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               ),
             ),
-            const SizedBox(width: 4),
-            IconButton(
-              icon: const Icon(Icons.info_outline_rounded, size: 20),
-              color: const Color(0xFFD97706),
-              tooltip: 'Info Langganan',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: () => showUpgradeProSheet(context),
+            const SizedBox(width: 6),
+            // Verified Active Badge (No Paywall triggered)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check_circle_rounded,
+                    size: 13,
+                    color: Colors.white,
+                  ),
+                  SizedBox(width: 4),
+                  Text(
+                    'Aktif',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
       );
     }
 
-    // Free Tier Upgrade Card
-    return InkWell(
-      onTap: () => showUpgradeProSheet(context),
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
-            width: 1.2,
-          ),
+    // Free Tier: Card with prominent CTA button to activate Pro
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
         ),
-        child: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: SvgPicture.asset("assets/icons/premium.svg", height: 32),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => showUpgradeProSheet(context),
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                SvgPicture.asset('assets/icons/pro_badge.svg'),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Flexible(
+                      Flexible(
                         child: Text(
                           'Upgrade ke Laci POS Pro',
                           style: TextStyle(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Buka semua fitur tanpa batas',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 3),
-                  const Text(
-                    'Akses multi-kasir, produk unlimited, dan laporan laba kotor',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.white,
-                      height: 1.25,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF59E0B),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text(
-                'Lihat Paket',
-                style: TextStyle(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
                 ),
-              ),
+                const SizedBox(width: 8),
+                // Dedicated CTA Button to activate Pro
+                ElevatedButton(
+                  onPressed: () => showUpgradeProSheet(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    minimumSize: const Size(0, 32),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Aktivasi',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.arrow_forward_ios, size: 11),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -904,13 +896,12 @@ class _SettingsPageState extends State<SettingsPage> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
                         ),
                       ),
-                      if (badge != null) ...[
-                        const SizedBox(width: 8),
-                        badge,
-                      ],
+                      if (badge != null) ...[const SizedBox(width: 8), badge],
                     ],
                   ),
                   const SizedBox(height: 2),

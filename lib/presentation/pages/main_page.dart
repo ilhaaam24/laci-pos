@@ -54,12 +54,14 @@ class MainPageState extends State<MainPage> {
   }
 
   void _navigateToOrders() {
+    KasirPageState.stopActiveScanner();
     setState(() {
       _currentIndex = 1;
     });
   }
 
   void _openDrawer() {
+    KasirPageState.stopActiveScanner();
     MainPage.openDrawer();
   }
 
@@ -160,6 +162,9 @@ class MainPageState extends State<MainPage> {
                   child: BottomNavigationBar(
                     currentIndex: _currentIndex,
                     onTap: (index) {
+                      if (_currentIndex != index) {
+                        KasirPageState.stopActiveScanner();
+                      }
                       setState(() {
                         _currentIndex = index;
                       });
@@ -386,6 +391,9 @@ class MainPageState extends State<MainPage> {
                     margin: const EdgeInsets.only(bottom: 6),
                     child: InkWell(
                       onTap: () {
+                        if (_currentIndex != index) {
+                          KasirPageState.stopActiveScanner();
+                        }
                         setState(() {
                           _currentIndex = index;
                         });
@@ -477,40 +485,65 @@ class MainPageState extends State<MainPage> {
                 return Container(
                   margin: const EdgeInsets.symmetric(
                     horizontal: 14,
-                    vertical: 6,
+                    vertical: 8,
                   ),
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: isDark
+                        ? const Color(0xFF0F172A)
+                        : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFE2E8F0),
+                    ),
                   ),
                   child: Row(
                     children: [
+                      Icon(
+                        isOpen
+                            ? Icons.point_of_sale_rounded
+                            : Icons.storefront_outlined,
+                        size: 22,
+                        color: isOpen
+                            ? AppColors.primary
+                            : (isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B)),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              isOpen
-                                  ? 'Shift Kasir Aktif'
-                                  : 'Shift Belum Dibuka',
+                              isOpen ? 'Shift Aktif' : 'Shift Kasir',
                               style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: isOpen
-                                    ? AppColors.white
-                                    : (isDark
-                                          ? const Color(0xFFFCD34D)
-                                          : const Color(0xFF92400E)),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? Colors.white
+                                    : AppColors.textPrimary,
                               ),
                             ),
+                            const SizedBox(height: 4),
                             Text(
                               isOpen
-                                  ? 'Kasir: ${shift?.userName ?? 'Kasir'}'
-                                  : 'Buka shift untuk catat laci',
+                                  ? (shift != null
+                                        ? 'Buka pukul ${DateFormat('HH:mm').format(shift.startTime)}'
+                                        : 'Siap transaksi')
+                                  : 'Shift belum dibuka',
                               style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.normal,
+                                color: isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : AppColors.textSecondary,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -518,7 +551,8 @@ class MainPageState extends State<MainPage> {
                           ],
                         ),
                       ),
-                      TextButton(
+                      const SizedBox(width: 12),
+                      ElevatedButton(
                         onPressed: () async {
                           Navigator.pop(context);
                           if (isOpen) {
@@ -578,27 +612,24 @@ class MainPageState extends State<MainPage> {
                             OpenShiftDialog.show(context);
                           }
                         },
-                        style: TextButton.styleFrom(
-                          backgroundColor: Colors.white,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                            horizontal: 14,
+                            vertical: 8,
                           ),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          minimumSize: const Size(0, 34),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                         child: Text(
                           isOpen ? 'Kelola' : 'Buka',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: isOpen
-                                ? (isDark
-                                      ? const Color(0xFF34D399)
-                                      : const Color(0xFF059669))
-                                : (isDark
-                                      ? const Color(0xFFFBBF24)
-                                      : AppColors.white),
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),

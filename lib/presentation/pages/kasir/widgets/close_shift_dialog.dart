@@ -289,15 +289,15 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
 
     return Dialog(
       backgroundColor: surfaceColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: 480,
+          maxWidth: 460,
           maxHeight: MediaQuery.of(context).size.height * 0.9,
         ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           child: _closedSuccess
               ? _buildSuccessView(
                   isDark: isDark,
@@ -343,53 +343,49 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Tutup Shift Kasir (Z-Report)',
+                    'Tutup Shift Kasir',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: textColor,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(
-                    'Hitung uang fisik di laci kasir (Blind Close)',
-                    style: TextStyle(fontSize: 12, color: mutedColor),
+                    'Hitung uang fisik di laci kasir',
+                    style: TextStyle(fontSize: 13, color: mutedColor),
                   ),
                 ],
               ),
             ),
             IconButton(
-              icon: Icon(Icons.close, color: mutedColor),
+              icon: Icon(Icons.close_rounded, color: mutedColor),
               onPressed: () => Navigator.of(context).pop(null),
+              splashRadius: 20,
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
         Divider(height: 1, color: borderColor),
         const SizedBox(height: 16),
 
         // Input Uang Fisik Di Laci
         Text(
-          'Total Uang Fisik Tunai di Laci',
+          'Total Uang Fisik di Laci',
           style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
             color: textColor,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          'Hitung dan masukkan seluruh uang tunai yang ada di laci saat ini.',
-          style: TextStyle(fontSize: 12, color: mutedColor),
-        ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
 
         TextField(
           controller: _actualCashController,
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           style: TextStyle(
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: textColor,
           ),
@@ -399,7 +395,7 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
               child: Text(
                 'Rp',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,
                 ),
@@ -411,23 +407,27 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
             ),
             hintText: '0',
             hintStyle: TextStyle(
-              fontSize: 22,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: mutedColor.withValues(alpha: 0.5),
+              color: mutedColor.withValues(alpha: 0.4),
             ),
             filled: true,
             fillColor: inputBg,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: borderColor),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: borderColor),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
             ),
           ),
           onChanged: (_) {
@@ -444,7 +444,7 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: borderColor),
             ),
@@ -499,85 +499,49 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
                   textColor,
                   isBold: true,
                 ),
-                const SizedBox(height: 10),
-
-                // Difference Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: difference == 0
-                        ? const Color(0xFF10B981).withValues(alpha: 0.12)
-                        : difference > 0
-                        ? const Color(0xFF0284C7).withValues(alpha: 0.12)
-                        : const Color(0xFFEF4444).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: difference == 0
-                          ? const Color(0xFF10B981)
-                          : difference > 0
-                          ? const Color(0xFF0284C7)
-                          : const Color(0xFFEF4444),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Status Selisih:',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: textColor,
-                        ),
-                      ),
-                      Text(
-                        difference == 0
-                            ? 'PAS (Rp 0)'
-                            : difference > 0
-                            ? 'LEBIH +${_currencyFormatter.format(difference)}'
-                            : 'KURANG ${_currencyFormatter.format(difference)}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: difference == 0
-                              ? const Color(0xFF10B981)
-                              : difference > 0
-                              ? const Color(0xFF0284C7)
-                              : const Color(0xFFEF4444),
-                        ),
-                      ),
-                    ],
-                  ),
+                const SizedBox(height: 8),
+                Divider(height: 1, color: borderColor),
+                const SizedBox(height: 8),
+                _buildRow(
+                  'Status Selisih',
+                  difference == 0
+                      ? 'Pas (Rp 0)'
+                      : difference > 0
+                      ? 'Lebih +${_currencyFormatter.format(difference)}'
+                      : 'Kurang ${_currencyFormatter.format(difference)}',
+                  difference == 0
+                      ? AppColors.primary
+                      : difference > 0
+                      ? const Color(0xFF0284C7)
+                      : const Color(0xFFEF4444),
+                  textColor,
+                  isBold: true,
                 ),
               ],
             ),
           ),
           const SizedBox(height: 16),
 
-          // Alokasi Uang Laci (Serah Terima / Setor)
+          // Alokasi Kas Laci (Serah Terima / Setor)
           Text(
-            'Alokasi Kas Laci (Serah Terima / Setor)',
+            'Alokasi Kas Laci (Serah Terima)',
             style: TextStyle(
               fontSize: 13,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
               color: textColor,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            'Tentukan uang fisik yang disetor ke brankas dan yang ditinggal di laci:',
-            style: TextStyle(fontSize: 11, color: mutedColor),
+            'Pilih alokasi kas untuk brankas dan shift berikutnya:',
+            style: TextStyle(fontSize: 11.5, color: mutedColor),
           ),
           const SizedBox(height: 10),
 
           _buildHandoverOptionCard(
             option: DrawerCashHandoverOption.leaveFloatOnly,
             title: 'Setor Hasil Penjualan',
-            subtitle:
-                'Setor omset ke brankas/pemilik. Sisakan modal awal di laci untuk kasir berikutnya.',
+            subtitle: 'Sisakan modal awal di laci untuk kasir berikutnya',
             depositAmount: actualCash >= widget.shift.startCash
                 ? actualCash - widget.shift.startCash
                 : 0,
@@ -592,9 +556,8 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
           ),
           _buildHandoverOptionCard(
             option: DrawerCashHandoverOption.keepAllInDrawer,
-            title: 'Laci Bergulir (Teruskan Semua)',
-            subtitle:
-                'Tidak ada uang yang diambil. Seluruh uang fisik di laci diteruskan ke shift berikutnya.',
+            title: 'Laci Bergulir',
+            subtitle: 'Teruskan seluruh kas ke kasir berikutnya',
             depositAmount: 0,
             remainingAmount: actualCash,
             isDark: isDark,
@@ -605,8 +568,7 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
           _buildHandoverOptionCard(
             option: DrawerCashHandoverOption.emptyDrawer,
             title: 'Kuras Laci (Tutup Toko)',
-            subtitle:
-                'Tarik seluruh uang fisik untuk disetor ke brankas/bank. Laci dikosongkan (Rp 0).',
+            subtitle: 'Seluruh kas disetor ke brankas/bank (Laci Rp 0)',
             depositAmount: actualCash,
             remainingAmount: 0,
             isDark: isDark,
@@ -617,8 +579,7 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
           _buildHandoverOptionCard(
             option: DrawerCashHandoverOption.custom,
             title: 'Nominal Kustom',
-            subtitle:
-                'Atur nominal setoran dan sisa uang di laci secara manual.',
+            subtitle: 'Atur nominal setoran dan sisa uang manual',
             depositAmount: _calculatedDepositedCash,
             remainingAmount: _calculatedRemainingCash,
             isDark: isDark,
@@ -629,7 +590,7 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
 
           if (_handoverOption == DrawerCashHandoverOption.custom) ...[
             Padding(
-              padding: const EdgeInsets.only(top: 4, bottom: 8),
+              padding: const EdgeInsets.only(top: 2, bottom: 8),
               child: TextField(
                 controller: _customDepositController,
                 keyboardType: TextInputType.number,
@@ -640,7 +601,7 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
                   color: textColor,
                 ),
                 decoration: InputDecoration(
-                  labelText: 'Nominal yang Disetor ke Brankas/Pemilik',
+                  labelText: 'Nominal yang Disetor ke Brankas',
                   labelStyle: TextStyle(fontSize: 12, color: mutedColor),
                   hintText: '0',
                   prefixText: 'Rp ',
@@ -659,20 +620,24 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
                     borderRadius: BorderRadius.circular(10),
                     borderSide: BorderSide(color: borderColor),
                   ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                  ),
                 ),
                 onChanged: (_) => setState(() {}),
               ),
             ),
           ],
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
         ],
 
         // Optional Notes
         Text(
-          'Catatan Tutup Shift',
+          'Catatan (Opsional)',
           style: TextStyle(
-            fontSize: 13,
+            fontSize: 12.5,
             fontWeight: FontWeight.w600,
             color: textColor,
           ),
@@ -687,23 +652,26 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
             hintStyle: TextStyle(fontSize: 12, color: mutedColor),
             filled: true,
             fillColor: inputBg,
-            contentPadding: const EdgeInsets.all(12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: borderColor),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(color: borderColor),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
             ),
           ),
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 18),
 
         // Action Buttons
         Row(
@@ -712,9 +680,9 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
               child: OutlinedButton(
                 onPressed: () => Navigator.of(context).pop(null),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   side: BorderSide(color: borderColor),
                 ),
@@ -737,28 +705,29 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
                           ? _calculateDifference
                           : _submitCloseShift),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: !_hasCalculated
-                      ? AppColors.primary
-                      : const Color(0xFFDC2626),
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 child: _isClosing
                     ? const SizedBox(
-                        width: 20,
-                        height: 20,
+                        width: 18,
+                        height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: Colors.white,
                         ),
                       )
                     : Text(
-                        !_hasCalculated ? 'Hitung Selisih' : 'Tutup Shift',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        !_hasCalculated ? 'Hitung Selisih' : 'Konfirmasi Tutup Shift',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                        ),
                       ),
               ),
             ),
@@ -781,7 +750,6 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
     bool isRecommended = false,
   }) {
     final isSelected = _handoverOption == option;
-    final primaryColor = AppColors.primary;
 
     return InkWell(
       onTap: () {
@@ -789,37 +757,69 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
           _handoverOption = option;
         });
       },
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 150),
         margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
               ? (isDark
-                    ? primaryColor.withValues(alpha: 0.15)
-                    : AppColors.darkCharcoal)
-              : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC)),
-          borderRadius: BorderRadius.circular(12),
+                    ? const Color(0xFF1E293B)
+                    : const Color(0xFFF1F5F9))
+              : (isDark
+                    ? const Color(0xFF0F172A)
+                    : const Color(0xFFF8FAFC)),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : borderColor,
+            width: isSelected ? 1.5 : 1.0,
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Row(
+            // Radio Circle
+            Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? AppColors.primary : borderColor,
+                  width: 2,
+                ),
+                color: isSelected ? AppColors.primary : Colors.transparent,
+              ),
+              child: isSelected
+                  ? const Center(
+                      child: Icon(Icons.check, size: 12, color: Colors.white),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 10),
+
+            // Title & Subtitle
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
                     children: [
                       Flexible(
                         child: Text(
                           title,
                           style: TextStyle(
                             fontSize: 13,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w600,
                             color: isSelected
-                                ? AppColors.white
-                                : AppColors.textPrimary,
+                                ? (isDark ? Colors.white : AppColors.primary)
+                                : textColor,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (isRecommended) ...[
@@ -830,92 +830,80 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.white.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
+                            color: isDark
+                                ? const Color(0xFF334155)
+                                : const Color(0xFFE2E8F0),
+                            borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
+                          child: Text(
                             'SOP Toko',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 9.5,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.white,
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF0F172A),
                             ),
                           ),
                         ),
                       ],
                     ],
                   ),
-                ),
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSelected
-                          ? AppColors.white
-                          : mutedColor.withValues(alpha: 0.5),
-                      width: 2,
-                    ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 12, color: mutedColor),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  child: isSelected
-                      ? Center(
-                          child: Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.white,
-                            ),
-                          ),
-                        )
-                      : null,
-                ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(height: 4),
-            Text(subtitle, style: TextStyle(fontSize: 11, color: mutedColor)),
-            const SizedBox(height: 8),
-            Row(
+            const SizedBox(width: 10),
+
+            // Amounts Badge Column
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: borderColor),
-                  ),
-                  child: Text(
-                    'Setor: ${_currencyFormatter.format(depositAmount)}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF0284C7),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Setor: ',
+                      style: TextStyle(fontSize: 10.5, color: mutedColor),
                     ),
-                  ),
+                    Text(
+                      _currencyFormatter.format(depositAmount),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: isDark
+                            ? const Color(0xFF38BDF8)
+                            : const Color(0xFF0284C7),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: borderColor),
-                  ),
-                  child: Text(
-                    'Sisa Laci: ${_currencyFormatter.format(remainingAmount)}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF10B981),
+                const SizedBox(height: 2),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Sisa: ',
+                      style: TextStyle(fontSize: 10.5, color: mutedColor),
                     ),
-                  ),
+                    Text(
+                      _currencyFormatter.format(remainingAmount),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: isDark
+                            ? const Color(0xFF34D399)
+                            : const Color(0xFF059669),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -938,22 +926,14 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: const Color(0xFF10B981).withValues(alpha: 0.12),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.check_circle_rounded,
-            color: Color(0xFF10B981),
-            size: 38,
-          ),
+        const Icon(
+          Icons.check_circle_rounded,
+          color: AppColors.primary,
+          size: 48,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Text(
-          'Shift Berhasil Ditutup!',
+          'Shift Berhasil Ditutup',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -962,7 +942,7 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Laporan Z-Report telah tersimpan di sistem.',
+          'Laporan shift tersimpan di riwayat',
           style: TextStyle(fontSize: 13, color: mutedColor),
           textAlign: TextAlign.center,
         ),
@@ -1007,7 +987,7 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
                     ? 'LEBIH +${_currencyFormatter.format(diff)}'
                     : 'KURANG ${_currencyFormatter.format(diff)}',
                 diff == 0
-                    ? const Color(0xFF10B981)
+                    ? AppColors.primary
                     : diff > 0
                     ? const Color(0xFF0284C7)
                     : const Color(0xFFEF4444),
@@ -1028,7 +1008,7 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
               _buildRow(
                 'Ditinggal di Laci',
                 _currencyFormatter.format(_calculatedRemainingCash),
-                const Color(0xFF10B981),
+                AppColors.primary,
                 mutedColor,
                 isBold: true,
               ),
@@ -1036,7 +1016,7 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
           ),
         ),
 
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
 
         // Actions: Cetak Struk & WhatsApp Row
         Row(
@@ -1046,23 +1026,21 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
                 onPressed: _printZReport,
                 icon: Icon(
                   Icons.print_rounded,
-                  size: 17,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  size: 16,
+                  color: textColor,
                 ),
                 label: Text(
                   'Cetak Struk',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    color: textColor,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
-                  backgroundColor: isDark
-                      ? const Color(0xFF0F172A)
-                      : const Color(0xFFF8FAFC),
+                  backgroundColor: inputBg,
                   side: BorderSide(color: borderColor),
-                  minimumSize: const Size.fromHeight(44),
+                  minimumSize: const Size.fromHeight(42),
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -1077,27 +1055,27 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
                 onPressed: _shareWhatsApp,
                 icon: const Icon(
                   Icons.send_rounded,
-                  size: 16,
+                  size: 15,
                   color: Color(0xFF16A34A),
                 ),
                 label: const Text(
                   'WhatsApp',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF16A34A),
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
                   backgroundColor: isDark
-                      ? const Color(0xFF064E3B).withValues(alpha: 0.25)
+                      ? const Color(0xFF0F172A)
                       : const Color(0xFFF0FDF4),
                   side: BorderSide(
                     color: isDark
-                        ? const Color(0xFF059669).withValues(alpha: 0.5)
+                        ? const Color(0xFF16A34A)
                         : const Color(0xFF86EFAC),
                   ),
-                  minimumSize: const Size.fromHeight(44),
+                  minimumSize: const Size.fromHeight(42),
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -1124,11 +1102,10 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
               ),
             );
           },
-
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(46),
+            minimumSize: const Size.fromHeight(44),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
@@ -1136,7 +1113,7 @@ class _CloseShiftDialogState extends State<CloseShiftDialog> {
           ),
           child: const Text(
             'Selesai & Kunci Layar',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
           ),
         ),
       ],

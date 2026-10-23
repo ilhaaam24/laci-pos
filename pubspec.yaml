@@ -1,6 +1,6 @@
 name: laci
 description: "A new Flutter project."
-version: 1.0.0+6
+version: 1.0.0+7
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 environment:
@@ -49,7 +49,7 @@ dependencies:
   month_picker_dialog: ^6.7.2
   syncfusion_flutter_datepicker: ^25.1.37
   flutter_local_notifications: ^21.0.0
-  workmanager: ^0.9.0+3
+  workmanager: ^0.10.10
 
   # Offline / Local Database
   drift: ^2.22.1

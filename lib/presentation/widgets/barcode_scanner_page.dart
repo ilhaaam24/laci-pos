@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../core/style/app_colors.dart';
+import '../pages/kasir/kasir_page.dart';
 
 class BarcodeScannerPage extends StatefulWidget {
   final String title;
@@ -16,7 +17,12 @@ class BarcodeScannerPage extends StatefulWidget {
     BuildContext context, {
     String title = 'Pindai Barcode / SKU',
     String instruction = 'Arahkan kamera ke barcode produk',
-  }) {
+  }) async {
+    // Release active camera from KasirPage if running to prevent hardware lock
+    KasirPageState.stopActiveScanner();
+    await Future.delayed(const Duration(milliseconds: 150));
+    if (!context.mounted) return null;
+
     return Navigator.push<String>(
       context,
       MaterialPageRoute(
@@ -39,6 +45,13 @@ class _BarcodeScannerPageState extends State<BarcodeScannerPage> {
 
   bool _isScanned = false;
   bool _isTorchOn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Safety check to ensure KasirPage scanner has released camera session
+    KasirPageState.stopActiveScanner();
+  }
 
   @override
   void dispose() {
@@ -104,23 +117,69 @@ class _BarcodeScannerPageState extends State<BarcodeScannerPage> {
       body: Stack(
         alignment: Alignment.center,
         children: [
-          MobileScanner(controller: _controller, onDetect: _onBarcodeDetect),
+          MobileScanner(
+            controller: _controller,
+            onDetect: _onBarcodeDetect,
+            errorBuilder: (context, error) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.videocam_off_outlined,
+                        color: Colors.amber,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Kamera Sedang Tidak Tersedia',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Kamera sedang digunakan atau izin belum aktif.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          KasirPageState.stopActiveScanner();
+                          await Future.delayed(
+                            const Duration(milliseconds: 250),
+                          );
+                          _controller.start();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                        ),
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: const Text('Coba Lagi'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
           // Viewfinder Frame & Corners
           _buildViewfinderOverlay(),
           // Instruction hint pill
           Positioned(
             bottom: 50,
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 18,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.75),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.2),
-                ),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,

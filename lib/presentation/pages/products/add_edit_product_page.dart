@@ -12,6 +12,8 @@ import '../../../domain/entities/product_entity.dart';
 import '../../../domain/entities/product_variant.dart';
 import '../../blocs/product/product_bloc.dart';
 import '../../blocs/category/category_bloc.dart';
+import '../../blocs/business/business_bloc.dart';
+import '../../widgets/upgrade_pro_sheet.dart';
 import '../../../core/services/image_upload_service.dart';
 import '../../../core/di/injection.dart';
 import '../../../core/style/app_colors.dart';
@@ -96,6 +98,21 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
     if (_selectedCategoryId == null) {
       AppToast.showWarning(context, 'Silakan pilih kategori produk');
       return;
+    }
+
+    if (widget.product == null) {
+      final bState = context.read<BusinessBloc>().state;
+      final isPro = bState.businessInfo?.isPro ?? false;
+      final currentProductCount =
+          context.read<ProductBloc>().state.products.length;
+
+      if (!isPro && currentProductCount >= 150) {
+        showUpgradeProSheet(
+          context,
+          featureName: 'Katalog Produk Lebih dari 150 Item',
+        );
+        return;
+      }
     }
 
     setState(() => _isSaving = true);

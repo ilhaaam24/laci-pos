@@ -172,6 +172,16 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
   }
 
   Future<void> _onUploadLogo(ImageSource source) async {
+    final isPro =
+        context.read<BusinessBloc>().state.businessInfo?.isPro ?? false;
+    if (!isPro) {
+      showUpgradeProSheet(
+        context,
+        featureName: 'Logo Toko & Bebas Watermark',
+      );
+      return;
+    }
+
     setState(() => _isUploadingLogo = true);
     try {
       final url = await getIt<CloudinaryService>().uploadImage(source);

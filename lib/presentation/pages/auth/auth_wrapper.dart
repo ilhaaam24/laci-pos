@@ -19,6 +19,8 @@ import '../main_page.dart';
 import 'login_page.dart';
 import 'business_setup_page.dart';
 import 'email_verification_page.dart';
+import '../../../core/services/onboarding_service.dart';
+import '../onboarding/onboarding_page.dart';
 
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
@@ -29,6 +31,22 @@ class AuthWrapper extends StatefulWidget {
 
 class _AuthWrapperState extends State<AuthWrapper> {
   String? _lastUserId;
+  bool _hasSeenOnboarding = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkOnboardingStatus();
+  }
+
+  Future<void> _checkOnboardingStatus() async {
+    final seen = await OnboardingService.hasCompletedOnboarding();
+    if (mounted) {
+      setState(() {
+        _hasSeenOnboarding = seen;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -179,6 +197,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
             (authState is AuthLoading && _lastUserId == null)) {
           if (authState is Unauthenticated) {
             _lastUserId = null;
+          }
+          if (!_hasSeenOnboarding) {
+            return OnboardingPage(
+              onComplete: () {
+                setState(() {
+                  _hasSeenOnboarding = true;
+                });
+              },
+            );
           }
           return const LoginPage();
         } else {

@@ -122,7 +122,6 @@ void main() {
 
     expect(find.text('Langkah 4 dari 6'), findsOneWidget);
     expect(find.text('4. Filter Kategori & Tampilan'), findsOneWidget);
-    expect(find.byIcon(Icons.category_outlined), findsOneWidget);
     expect(find.text('Kembali'), findsOneWidget);
     expect(find.text('Lanjut'), findsOneWidget);
     expect(find.text('Lewati'), findsOneWidget);

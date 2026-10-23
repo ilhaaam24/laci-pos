@@ -60,7 +60,7 @@ class KasirPage extends StatefulWidget {
   State<KasirPage> createState() => KasirPageState();
 }
 
-class KasirPageState extends State<KasirPage> {
+class KasirPageState extends State<KasirPage> with WidgetsBindingObserver {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
@@ -92,6 +92,7 @@ class KasirPageState extends State<KasirPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     context.read<CategoryBloc>().add(LoadCategories());
     context.read<ProductBloc>().add(LoadProducts());
     context.read<CustomerBloc>().add(LoadCustomers());
@@ -138,10 +139,37 @@ class KasirPageState extends State<KasirPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _embeddedScannerController?.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      stopScanMode();
+    }
+  }
+
+  /// Closes the embedded barcode scanner and releases camera hardware
+  void stopScanMode() {
+    if (_isScanMode) {
+      setState(() {
+        _isScanMode = false;
+        _embeddedScannerController?.dispose();
+        _embeddedScannerController = null;
+        _isScannerTorchOn = false;
+        _lastScannedProductName = null;
+      });
+    }
+  }
+
+  /// Static helper to shut down scanner from anywhere in the app
+  static void stopActiveScanner() {
+    KasirPage.globalKey.currentState?.stopScanMode();
   }
 
   void _toggleScanMode() {

@@ -667,6 +667,15 @@ class _ReportPageState extends State<ReportPage> {
     Future<void> Function() action, {
     required String successMessage,
   }) async {
+    final businessInfo = context.read<BusinessBloc>().state.businessInfo;
+    if (businessInfo?.isPro != true) {
+      showUpgradeProSheet(
+        context,
+        featureName: 'Export Laporan Rekap PDF & Excel',
+      );
+      return;
+    }
+
     setState(() => _isExporting = true);
     try {
       await action();

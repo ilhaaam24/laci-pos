@@ -1039,6 +1039,19 @@ class _UsersManagementPageState extends State<UsersManagementPage> {
                 ),
               ),
               onPressed: () {
+                final bState = context.read<BusinessBloc>().state;
+                final isPro = bState.businessInfo?.isPro ?? false;
+                final usersCount = context.read<UsersBloc>().state.users.length;
+
+                if (!isPro && usersCount >= 1) {
+                  Navigator.pop(dialogContext);
+                  showUpgradeProSheet(
+                    context,
+                    featureName: 'Manajemen Multi-Kasir & Staf',
+                  );
+                  return;
+                }
+
                 final name = nameController.text.trim();
                 final pin = pinController.text.trim();
                 final email = emailController.text.trim();

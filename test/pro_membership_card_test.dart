@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:laci/core/style/app_colors.dart';
 import 'package:laci/domain/entities/business_entity.dart';
 import 'package:laci/presentation/widgets/pro_badge.dart';
 
@@ -14,11 +12,17 @@ Widget _buildTestProMembershipCard({
 
   if (isPro) {
     final remainingDays = businessInfo.remainingProDays;
-    final planLabel = businessInfo.subscriptionPlan == 'yearly'
-        ? 'Paket Tahunan'
-        : businessInfo.subscriptionPlan == 'monthly'
-            ? 'Paket Bulanan'
-            : 'Lisensi Pro';
+    final isLifetime =
+        businessInfo.subscriptionPlan == 'lifetime' || remainingDays > 3650;
+    final planLabel = isLifetime
+        ? 'Lisensi Lifetime'
+        : businessInfo.subscriptionPlan == 'yearly'
+            ? 'Paket Tahunan'
+            : businessInfo.subscriptionPlan == 'monthly'
+                ? 'Paket Bulanan'
+                : 'Lisensi Pro';
+    final expiryLabel =
+        isLifetime ? 'Aktif Selamanya' : 'Sisa masa aktif: $remainingDays hari';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -29,6 +33,13 @@ Widget _buildTestProMembershipCard({
           color: const Color(0xFFF59E0B).withValues(alpha: 0.6),
           width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -75,7 +86,7 @@ Widget _buildTestProMembershipCard({
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '$planLabel • Sisa masa aktif: $remainingDays hari',
+                  '$planLabel • $expiryLabel',
                   style: TextStyle(
                     fontSize: 11.5,
                     color: isDark
@@ -88,98 +99,158 @@ Widget _buildTestProMembershipCard({
               ],
             ),
           ),
-          const SizedBox(width: 4),
-          IconButton(
-            icon: const Icon(Icons.info_outline_rounded, size: 20),
-            color: const Color(0xFFD97706),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: onUpgradeTap,
+          const SizedBox(width: 6),
+          // Verified Active Badge (No Paywall triggered)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF10B981).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.check_circle_rounded,
+                  size: 13,
+                  color: Color(0xFF059669),
+                ),
+                SizedBox(width: 4),
+                Text(
+                  'Aktif',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF059669),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  // Free Tier Card
-  return InkWell(
-    onTap: onUpgradeTap,
-    borderRadius: BorderRadius.circular(14),
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
-          width: 1.2,
-        ),
+  // Free Tier Card with CTA Button
+  return Container(
+    decoration: BoxDecoration(
+      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(
+        color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+        width: 1.2,
       ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 36,
-            height: 36,
-            child: SvgPicture.asset(
-              "assets/icons/premium.svg",
-              fit: BoxFit.contain,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onUpgradeTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.workspace_premium_rounded,
+                  color: Color(0xFFD97706),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Flexible(
-                      child: Text(
-                        'Upgrade ke Laci POS Pro',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'Upgrade ke Laci POS Pro',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF0F172A),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                        const SizedBox(width: 6),
+                        const ProBadge(),
+                      ],
                     ),
-                    const SizedBox(width: 6),
-                    const ProBadge(),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Buka semua fitur tanpa batas',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
-                const SizedBox(height: 3),
-                const Text(
-                  'Akses multi-kasir, produk unlimited, dan laporan laba kotor',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.white,
-                    height: 1.25,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF59E0B),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Text(
-              'Lihat Paket',
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
               ),
-            ),
+              const SizedBox(width: 8),
+              // Dedicated CTA Button
+              ElevatedButton(
+                onPressed: onUpgradeTap,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF59E0B),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  minimumSize: const Size(0, 32),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.bolt_rounded, size: 14),
+                    SizedBox(width: 3),
+                    Text(
+                      'Aktivasi',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     ),
   );
@@ -223,7 +294,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Upgrade ke Laci POS Pro'), findsOneWidget);
-        expect(find.text('Lihat Paket'), findsOneWidget);
+        expect(find.text('Aktivasi'), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
 
@@ -262,6 +333,8 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Laci POS Pro Aktif'), findsOneWidget);
+        expect(find.text('Aktif'), findsOneWidget);
+        expect(find.byIcon(Icons.info_outline_rounded), findsNothing);
         expect(tester.takeException(), isNull);
       });
     }

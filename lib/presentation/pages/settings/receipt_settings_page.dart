@@ -111,7 +111,12 @@ class _ReceiptSettingsPageState extends State<ReceiptSettingsPage> {
   Future<void> _saveSettings() async {
     setState(() => _isSaving = true);
     try {
-      await _receiptService.saveConfig(_currentConfig);
+      final bState = context.read<BusinessBloc>().state;
+      final isPro = bState.businessInfo?.isPro ?? false;
+      final safeConfig = isPro
+          ? _currentConfig
+          : _currentConfig.copyWith(showLogo: false, showWatermark: true);
+      await _receiptService.saveConfig(safeConfig);
       if (mounted) {
         AppToast.showSuccess(context, 'Pengaturan struk berhasil disimpan!');
       }
