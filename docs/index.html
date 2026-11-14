@@ -1,341 +1,968 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kebijakan Privasi - Laci POS</title>
+    <title>Laci POS - Aplikasi Kasir Pintar, Cepat & Offline-First untuk UMKM</title>
+    <meta name="description" content="Kelola kasir, cetak struk Bluetooth, scan barcode, pantau stok dan laporan laba rugi otomatis tanpa ribet. 100% Offline-First & Gratis diunduh di Google Play.">
+    <meta name="keywords" content="laci pos, aplikasi kasir, point of sale, pos gratis, kasir bluetooth, kasir offline, aplikasi umkm, struk thermal, laporan laba rugi">
+    <meta name="author" content="Laci POS Team">
+
+    <!-- Open Graph / Meta Sosial -->
+    <meta property="og:title" content="Laci POS - Aplikasi Kasir Pintar & Offline-First untuk UMKM">
+    <meta property="og:description" content="Catat pesanan cepat, cetak struk Bluetooth, dan pantau laba toko otomatis tanpa kuota internet.">
+    <meta property="og:url" content="https://ilhaaam24.github.io/laci-pos/">
+    <meta property="og:type" content="website">
+
+    <!-- Google Fonts: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS (via official modern CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#009951',
+                        'primary-dark': '#007A40',
+                        'primary-light': '#E6F7EF',
+                        'primary-accent': '#10B981',
+                        ink: '#0F172A',
+                        'ink-dark': '#0B0F19',
+                        'ink-muted': '#475569',
+                        'ink-light': '#94A3B8',
+                        surface: '#F8FAFC',
+                        line: '#E2E8F0',
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 50px -10px rgba(0, 153, 81, 0.25)',
+                        'card': '0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03)',
+                        'card-hover': '0 12px 30px -4px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04)',
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        :root {
-            --primary: #1E3A8A;
-            --primary-light: #EFF6FF;
-            --accent: #2563EB;
-            --text-dark: #0F172A;
-            --text-muted: #475569;
-            --bg-light: #F8FAFC;
-            --card-bg: #FFFFFF;
-            --border: #E2E8F0;
-            --badge-bg: #E0E7FF;
-            --badge-text: #3730A3;
+        /* Custom Dot Pattern Background */
+        .dot-grid {
+            background-image: radial-gradient(rgba(15, 23, 42, 0.07) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .dot-grid-dark {
+            background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+            background-size: 24px 24px;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+        /* Smooth accordion transition */
+        .faq-content {
+            transition: max-height 0.3s ease-out, opacity 0.25s ease-out;
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+        }
+        .faq-content.open {
+            max-height: 400px;
+            opacity: 1;
         }
 
-        body {
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.7;
-            color: var(--text-dark);
-            background-color: var(--bg-light);
-            padding: 40px 20px;
-        }
-
-        .container {
-            max-width: 860px;
-            margin: 0 auto;
-            background: var(--card-bg);
-            border-radius: 20px;
-            padding: 48px 56px;
-            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
-            border: 1px solid var(--border);
-        }
-
-        @media (max-width: 640px) {
-            body {
-                padding: 16px 12px;
-            }
-            .container {
-                padding: 28px 20px;
-                border-radius: 16px;
-            }
-        }
-
-        header {
-            border-bottom: 2px solid var(--border);
-            padding-bottom: 24px;
-            margin-bottom: 32px;
-        }
-
-        .badge {
-            display: inline-block;
-            background: var(--badge-bg);
-            color: var(--badge-text);
-            font-size: 13px;
-            font-weight: 600;
-            padding: 6px 14px;
-            border-radius: 9999px;
-            margin-bottom: 14px;
-            letter-spacing: 0.3px;
-        }
-
-        h1 {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--primary);
-            line-height: 1.25;
-            margin-bottom: 10px;
-        }
-
-        .meta {
-            font-size: 14px;
-            color: var(--text-muted);
-        }
-
-        section {
-            margin-bottom: 32px;
-        }
-
-        h2 {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--text-dark);
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        h2::before {
-            content: "";
-            display: inline-block;
-            width: 4px;
-            height: 20px;
-            background: var(--accent);
-            border-radius: 2px;
-        }
-
-        p {
-            color: var(--text-muted);
-            margin-bottom: 14px;
-            font-size: 15px;
-        }
-
-        ul {
-            list-style: none;
-            padding-left: 0;
-            margin-bottom: 14px;
-        }
-
-        li {
-            position: relative;
-            padding-left: 24px;
-            margin-bottom: 10px;
-            color: var(--text-muted);
-            font-size: 15px;
-        }
-
-        li::before {
-            content: "•";
-            position: absolute;
-            left: 8px;
-            color: var(--accent);
-            font-weight: bold;
-            font-size: 18px;
-            line-height: 1.4;
-        }
-
-        .permission-card {
-            background: var(--primary-light);
-            border-left: 4px solid var(--accent);
-            border-radius: 10px;
-            padding: 16px 20px;
-            margin: 16px 0;
-        }
-
-        .permission-card h3 {
-            font-size: 16px;
-            color: var(--primary);
-            margin-bottom: 6px;
-            font-weight: 600;
-        }
-
-        .permission-card p {
-            margin-bottom: 0;
-            font-size: 14px;
-            color: #1E293B;
-        }
-
-        .table-box {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 18px 0;
-            font-size: 14px;
-        }
-
-        .table-box th, .table-box td {
-            border: 1px solid var(--border);
-            padding: 12px 14px;
-            text-align: left;
-        }
-
-        .table-box th {
-            background-color: #F1F5F9;
-            color: var(--text-dark);
-            font-weight: 600;
-        }
-
-        .contact-box {
-            background: #F8FAFC;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 16px;
-        }
-
-        footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
-            font-size: 13px;
-            color: var(--text-muted);
-            text-align: center;
+        /* Glassmorphism */
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
     </style>
 </head>
-<body>
+<body class="bg-white text-ink font-sans antialiased selection:bg-primary-light selection:text-primary-dark">
 
-<div class="container">
-    <header>
-        <span class="badge">Dokumen Resmi Privasi</span>
-        <h1>Kebijakan Privasi Laci POS</h1>
-        <div class="meta">
-            Aplikasi: <strong>Laci POS</strong> | Package ID: <code>com.ilhaaam24.lacipos</code><br>
-            Tanggal Efektif: <strong>Oktober 2026</strong> | Terakhir Diperbarui: <strong>24 Oktober 2026</strong>
+    <!-- 1. NAVIGATION BAR -->
+    <header class="sticky top-0 z-50 glass-nav border-b border-line transition-all">
+        <div class="max-w-6xl mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <a href="#" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                    <!-- SVG Laci Mini Icon -->
+                    <svg width="24" height="24" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M400 0H112C50.1 0 0 50.1 0 112V400C0 461.9 50.1 512 112 512H400C461.9 512 512 461.9 512 400V112C512 50.1 461.9 0 400 0Z" fill="#009951"/>
+                        <path d="M66 125C66 97 89 74 117 74H395C423 74 446 97 446 125V245H66V125Z" fill="#0F172A"/>
+                        <path d="M313 36H199C192 36 186 42 186 49V74C186 81 192 87 199 87H313C320 87 326 81 326 74V49C326 42 320 36 313 36Z" fill="white"/>
+                        <path d="M440 232H72C47.7 232 28 252 28 277V404C28 428 47.7 448 72 448H440C464 448 484 428 484 404V277C484 252 464 232 440 232Z" fill="white"/>
+                        <path d="M110 296V385C110 392 116 397 123 397H231" stroke="#009951" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="307" cy="378" r="11" fill="#009951"/>
+                        <circle cx="351" cy="378" r="11" fill="#009951"/>
+                        <circle cx="395" cy="378" r="11" fill="#009951"/>
+                    </svg>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-xl font-bold tracking-tight text-ink">Laci <span class="text-primary">POS</span></span>
+                    <span class="text-[10px] uppercase tracking-wider font-semibold text-ink-light -mt-1">Kasir Pintar UMKM</span>
+                </div>
+            </a>
+
+            <!-- Desktop Nav Links -->
+            <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-ink-muted">
+                <a href="#fitur" class="hover:text-primary transition-colors">Fitur Unggulan</a>
+                <a href="#keunggulan" class="hover:text-primary transition-colors">Keunggulan</a>
+                <a href="#testimoni" class="hover:text-primary transition-colors">Testimoni</a>
+                <a href="#faq" class="hover:text-primary transition-colors">Tanya Jawab</a>
+            </nav>
+
+            <!-- Action CTA Buttons -->
+            <div class="hidden sm:flex items-center gap-3">
+                <a href="https://wa.me/6281615697675?text=Halo%20Admin%20Laci%20POS,%20saya%20tertarik%20untuk%20mencoba%20aplikasi%20Laci%20POS." target="_blank" rel="noopener" class="text-sm font-semibold text-ink-muted hover:text-ink px-3 py-2 rounded-xl transition-colors">
+                    Tanya Admin
+                </a>
+                <a href="https://play.google.com/store/apps/details?id=com.ilhaaam24.lacipos" target="_blank" rel="noopener" class="inline-flex items-center gap-2 bg-ink hover:bg-slate-800 text-white text-sm font-semibold px-5 py-2.5 rounded-full shadow-sm hover:shadow transition-all group">
+                    <svg class="w-4 h-4 fill-current text-primary-accent" viewBox="0 0 24 24">
+                        <path d="M3.609 1.814L13.792 12 3.61 22.186a1.99 1.99 0 0 1-.61-1.428V3.242c0-.55.228-1.05.61-1.428zm11.597 11.599L6.467 22.152l10.518-6.072-1.78-2.667zm0-2.826l1.78-2.667L6.467 1.848l8.739 8.739zm1.414 1.413l3.87 2.235c.78.45.78 1.18 0 1.63l-3.87 2.235-1.95-2.05 1.95-2.05z"/>
+                    </svg>
+                    <span>Download App</span>
+                </a>
+            </div>
+
+            <!-- Mobile Menu Toggle Button -->
+            <button id="mobile-menu-btn" class="md:hidden p-2 rounded-xl text-ink-muted hover:text-ink hover:bg-surface focus:outline-none" aria-label="Toggle Menu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Mobile Dropdown Menu -->
+        <div id="mobile-menu" class="hidden md:hidden border-t border-line bg-white px-6 py-5 space-y-4 shadow-lg">
+            <a href="#fitur" class="block text-base font-medium text-ink-muted hover:text-primary">Fitur Unggulan</a>
+            <a href="#keunggulan" class="block text-base font-medium text-ink-muted hover:text-primary">Keunggulan</a>
+            <a href="#testimoni" class="block text-base font-medium text-ink-muted hover:text-primary">Testimoni</a>
+            <a href="#faq" class="block text-base font-medium text-ink-muted hover:text-primary">Tanya Jawab</a>
+            <div class="pt-4 border-t border-line flex flex-col gap-3">
+                <a href="https://play.google.com/store/apps/details?id=com.ilhaaam24.lacipos" target="_blank" rel="noopener" class="w-full text-center bg-primary hover:bg-primary-dark text-white font-semibold py-3 rounded-xl transition-colors">
+                    Download di Google Play
+                </a>
+                <a href="https://wa.me/6281615697675?text=Halo%20Admin%20Laci%20POS,%20saya%20ingin%20tanya%20seputar%20aplikasi." target="_blank" rel="noopener" class="w-full text-center bg-surface hover:bg-slate-100 text-ink font-semibold py-3 rounded-xl border border-line transition-colors">
+                    Chat WhatsApp
+                </a>
+            </div>
         </div>
     </header>
 
-    <section>
-        <h2>1. Pendahuluan</h2>
-        <p>
-            Selamat datang di <strong>Laci POS</strong>. Kami menghormati dan berkomitmen penuh untuk melindungi privasi serta keamanan data para pemilik bisnis, kasir, dan pengguna aplikasi kami. Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, menyimpan, serta menjaga informasi yang Anda berikan saat menggunakan aplikasi kasir Laci POS.
-        </p>
-        <p>
-            Dengan mengunduh, memasang, dan menggunakan aplikasi Laci POS, Anda menyetujui praktik penanganan data yang diuraikan dalam Kebijakan Privasi ini.
-        </p>
-    </section>
+    <!-- 2. HERO SECTION -->
+    <section class="relative overflow-hidden pt-12 pb-20 lg:pt-20 lg:pb-32">
+        <!-- Background Dot Grid & Soft Glow Orbs -->
+        <div class="dot-grid absolute inset-0 -z-10 opacity-70"></div>
+        <div class="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[42rem] h-96 bg-primary-light rounded-full blur-3xl opacity-60 -z-10"></div>
 
-    <section>
-        <h2>2. Data yang Kami Kumpulkan</h2>
-        <p>Untuk menunjang operasional kasir dan kelancaran pencatatan usaha Anda, kami mengumpulkan data-data berikut:</p>
-        <ul>
-            <li><strong>Informasi Akun Pengguna:</strong> Alamat email, nama usaha/toko, dan nomor telepon yang Anda masukkan saat mendaftar atau login akun menggunakan Firebase Authentication.</li>
-            <li><strong>Data Transaksi & Katalog Produk:</strong> Nama produk, kategori, harga jual, harga modal, jumlah stok, catatan kas masuk/keluar, ringkasan shift kasir, dan riwayat transaksi penjualan.</li>
-            <li><strong>Logo Toko & Preferensi Struk:</strong> Gambar logo toko yang Anda pilih dari perangkat Anda untuk dicetak pada struk kasir, serta catatan kaki struk (*receipt footer*).</li>
-            <li><strong>Data Perangkat & Diagnostik Sistem:</strong> Model perangkat, versi sistem operasi Android, dan log kesalahan sistem (*crash logs*) semata-mata untuk menjaga kestabilan aplikasi.</li>
-        </ul>
-    </section>
+        <div class="max-w-6xl mx-auto px-5 sm:px-8">
+            <div class="grid items-center gap-12 lg:grid-cols-12">
+                
+                <!-- Left Hero Text & CTA -->
+                <div class="lg:col-span-7 text-center lg:text-left">
+                    <!-- Live Users Pill Badge -->
+                    <div class="inline-flex items-center gap-2.5 rounded-full border border-line bg-white px-4 py-1.5 text-xs font-semibold text-ink-muted shadow-sm mb-6">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        <span>1.000+ Transaksi Kasir Diproses Tiap Hari di Indonesia</span>
+                    </div>
 
-    <section>
-        <h2>3. Penggunaan Izin Khusus Perangkat (Device Permissions)</h2>
-        <p>Laci POS hanya meminta izin perangkat yang benar-benar esensial untuk menjalankan fungsi aplikasi:</p>
+                    <!-- Main Headline -->
+                    <h1 class="text-4xl sm:text-5xl lg:text-[3.5rem] font-bold tracking-tight text-ink leading-[1.12]">
+                        Kelola Kasir & Transaksi Toko, <span class="text-primary">Tanpa Ribet.</span>
+                    </h1>
 
-        <div class="permission-card">
-            <h3>📷 Izin Kamera (CAMERA)</h3>
-            <p><strong>Tujuan:</strong> Digunakan secara langsung saat kasir mengaktifkan fitur pemindai barcode / QR code barang. Aplikasi <strong>TIDAK PERNAH</strong> mengambil foto, merekam video secara diam-diam, mengenali wajah, atau menyimpan rekaman visual kamera Anda ke server mana pun.</p>
+                    <!-- Subheadline -->
+                    <p class="mt-6 text-lg sm:text-xl text-ink-muted leading-relaxed max-w-xl mx-auto lg:mx-0">
+                        Aplikasi kasir pintar (POS) <strong>Offline-First</strong> untuk toko kelontong, retail, kafe, & UMKM. Cetak struk Bluetooth instan, scan barcode, kelola stok & laporan laba harian otomatis.
+                    </p>
+
+                    <!-- CTA Buttons -->
+                    <div class="mt-8 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                        <a href="https://play.google.com/store/apps/details?id=com.ilhaaam24.lacipos" target="_blank" rel="noopener" class="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-ink hover:bg-slate-800 text-white font-semibold px-7 py-4 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all text-base group">
+                            <svg class="w-6 h-6 fill-current text-primary-accent" viewBox="0 0 24 24">
+                                <path d="M3.609 1.814L13.792 12 3.61 22.186a1.99 1.99 0 0 1-.61-1.428V3.242c0-.55.228-1.05.61-1.428zm11.597 11.599L6.467 22.152l10.518-6.072-1.78-2.667zm0-2.826l1.78-2.667L6.467 1.848l8.739 8.739zm1.414 1.413l3.87 2.235c.78.45.78 1.18 0 1.63l-3.87 2.235-1.95-2.05 1.95-2.05z"/>
+                            </svg>
+                            <div class="text-left">
+                                <div class="text-[10px] uppercase font-mono tracking-wider opacity-80 leading-none">Unduh Gratis di</div>
+                                <div class="text-base font-bold leading-tight">Google Play Store</div>
+                            </div>
+                        </a>
+
+                        <a href="https://wa.me/6281615697675?text=Halo%20Admin%20Laci%20POS,%20saya%20ingin%20konsultasi%20dan%20coba%20demo%20aplikasi." target="_blank" rel="noopener" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-surface hover:bg-slate-100 text-ink font-semibold px-6 py-4 rounded-2xl border border-line shadow-sm hover:shadow transition-all text-base">
+                            <!-- WhatsApp Icon -->
+                            <svg class="w-5 h-5 text-emerald-600 fill-current" viewBox="0 0 24 24">
+                                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.694.062-2.193-.564-1.918-.8-3.136-2.756-3.23-2.883-.095-.127-.783-1.042-.783-1.986s.492-1.41.667-1.603c.175-.193.382-.241.51-.241.127 0 .255.002.366.007.117.006.275-.045.431.332.16.386.549 1.341.597 1.439.048.098.08.213.016.34-.064.128-.096.208-.192.319-.096.112-.202.25-.288.336-.096.096-.197.199-.085.39.112.192.497.821 1.066 1.328.733.654 1.35.856 1.542.952.192.096.304.08.416-.048.112-.128.479-.56.607-.752.127-.192.255-.16.431-.096.176.064 1.116.526 1.308.622.192.096.319.144.366.224.048.08.048.464-.096.869z"/>
+                            </svg>
+                            <span>Konsultasi Gratis</span>
+                        </a>
+                    </div>
+
+                    <!-- Trust Ratings & Highlights -->
+                    <div class="mt-9 pt-8 border-t border-line/80 flex flex-wrap items-center justify-center lg:justify-start gap-y-3 gap-x-6 text-xs text-ink-muted">
+                        <div class="flex items-center gap-1.5">
+                            <div class="flex text-amber-400">
+                                ★★★★★
+                            </div>
+                            <span class="font-bold text-ink">4.9/5</span>
+                            <span>Rating Play Store</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                            <span class="font-medium">100% Offline-First (Tanpa Internet)</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                            <span class="font-medium">Support Printer Bluetooth 58/80mm</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Hero Visual / Interactive Phone Mockup -->
+                <div class="lg:col-span-5 relative flex justify-center">
+                    
+                    <!-- Decorative Floating Badge 1: Bluetooth Print Success -->
+                    <div class="absolute -top-4 -left-6 z-20 bg-white rounded-2xl p-3.5 shadow-card-hover border border-line flex items-center gap-3 animate-bounce" style="animation-duration: 4s;">
+                        <div class="w-10 h-10 rounded-xl bg-primary-light text-primary flex items-center justify-center font-bold text-lg">
+                            🖨️
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-ink">Struk Kasir Tercetak!</div>
+                            <div class="text-[11px] text-emerald-600 font-medium">Printer Bluetooth 58mm</div>
+                        </div>
+                    </div>
+
+                    <!-- Decorative Floating Badge 2: Daily Sales -->
+                    <div class="absolute -bottom-6 -right-6 z-20 bg-white rounded-2xl p-4 shadow-card-hover border border-line flex items-center gap-3.5">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg">
+                            📈
+                        </div>
+                        <div>
+                            <div class="text-[11px] font-semibold text-ink-muted">Omzet Hari Ini</div>
+                            <div class="text-base font-extrabold text-ink">Rp 2.450.000</div>
+                            <div class="text-[10px] text-emerald-600 font-bold">↑ +18% vs Kemarin</div>
+                        </div>
+                    </div>
+
+                    <!-- Mobile Phone Frame -->
+                    <div class="w-72 sm:w-80 rounded-[2.5rem] bg-slate-900 p-3.5 shadow-2xl border-4 border-slate-800">
+                        <!-- Screen Header / Camera Notch -->
+                        <div class="bg-white rounded-[2rem] overflow-hidden border border-slate-100 flex flex-col h-[520px]">
+                            <!-- Status Bar -->
+                            <div class="px-6 pt-3 pb-2 flex items-center justify-between text-[11px] font-semibold text-slate-700 bg-slate-50">
+                                <span>09:41</span>
+                                <div class="w-16 h-3.5 bg-slate-900 rounded-full mx-auto"></div>
+                                <div class="flex items-center gap-1 text-[10px]">
+                                    <span>LTE</span>
+                                    <span>100%</span>
+                                </div>
+                            </div>
+
+                            <!-- In-App POS Header -->
+                            <div class="bg-primary px-4 py-3 text-white">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center font-bold text-xs">LP</div>
+                                        <div>
+                                            <div class="text-xs font-bold leading-none">Warung Kopi Berkah</div>
+                                            <div class="text-[9px] opacity-80">Kasir: Ilham (Shift Pagi)</div>
+                                        </div>
+                                    </div>
+                                    <span class="text-[9px] bg-white/20 px-2 py-0.5 rounded-full font-mono">Offline OK</span>
+                                </div>
+                            </div>
+
+                            <!-- POS Product Grid Mockup -->
+                            <div class="flex-1 p-3 bg-surface overflow-hidden space-y-2.5">
+                                <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Katalog Favorit</div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <!-- Product 1 -->
+                                    <div class="bg-white p-2 rounded-xl border border-line shadow-xs">
+                                        <div class="h-16 bg-emerald-50 rounded-lg flex items-center justify-center text-2xl">☕</div>
+                                        <div class="mt-1.5 font-bold text-xs text-ink truncate">Kopi Susu Aren</div>
+                                        <div class="text-[11px] font-bold text-primary">Rp 18.000</div>
+                                    </div>
+                                    <!-- Product 2 -->
+                                    <div class="bg-white p-2 rounded-xl border border-line shadow-xs">
+                                        <div class="h-16 bg-amber-50 rounded-lg flex items-center justify-center text-2xl">🥪</div>
+                                        <div class="mt-1.5 font-bold text-xs text-ink truncate">Roti Bakar Keju</div>
+                                        <div class="text-[11px] font-bold text-primary">Rp 15.000</div>
+                                    </div>
+                                </div>
+
+                                <!-- Current Cart Bar -->
+                                <div class="mt-3 bg-white p-3 rounded-xl border border-emerald-200 shadow-sm">
+                                    <div class="flex items-center justify-between text-xs font-medium text-slate-600">
+                                        <span>2 Barang di Keranjang</span>
+                                        <span class="font-bold text-primary">Tunai / QRIS</span>
+                                    </div>
+                                    <div class="mt-1 flex items-center justify-between text-sm font-extrabold text-ink">
+                                        <span>Total Tagihan</span>
+                                        <span class="text-base text-primary">Rp 33.000</span>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="mt-2 grid grid-cols-2 gap-2">
+                                    <button class="bg-primary hover:bg-primary-dark text-white text-xs font-bold py-2 rounded-xl text-center shadow-sm">
+                                        Bayar & Cetak
+                                    </button>
+                                    <button class="bg-slate-100 text-slate-700 text-xs font-semibold py-2 rounded-xl text-center">
+                                        Simpan Pesanan
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
         </div>
-
-        <div class="permission-card">
-            <h3>🖨️ Izin Bluetooth & Perangkat Sekitar (BLUETOOTH_CONNECT & BLUETOOTH_SCAN)</h3>
-            <p><strong>Tujuan:</strong> Digunakan semata-mata untuk memindai dan menghubungkan perangkat dengan printer kasir thermal Bluetooth agar struk pesanan dapat dicetak. Kami <strong>TIDAK</strong> melacak atau menyimpan data lokasi fisik pengguna melalui Bluetooth.</p>
-        </div>
-
-        <div class="permission-card">
-            <h3>🖼️ Izin Akses Galeri & Media (READ_EXTERNAL_STORAGE / MEDIA)</h3>
-            <p><strong>Tujuan:</strong> Digunakan hanya saat Anda secara eksplisit memilih gambar logo toko dari galeri perangkat Anda untuk ditampilkan pada kepala struk kasir.</p>
-        </div>
     </section>
 
-    <section>
-        <h2>4. Penyimpanan & Keamanan Data</h2>
-        <p>
-            Laci POS mengutamakan keamanan dan kemudahan operasional Anda:
-        </p>
-        <ul>
-            <li><strong>Penyimpanan Lokal Mandiri:</strong> Basis data transaksi dan katalog Anda disimpan secara lokal di memori internal perangkat Anda sehingga aplikasi dapat tetap digunakan tanpa koneksi internet (*offline mode*).</li>
-            <li><strong>Sinkronisasi Cloud yang Aman:</strong> Jika Anda mengaktifkan akun online, data disinkronkan menggunakan infrastruktur Google Cloud Firestore dengan enkripsi standar industri (*encryption in transit and at rest*).</li>
-        </ul>
-    </section>
+    <!-- 3. PAIN POINTS / PROBLEM SECTION ("Cara Lama yang Menghambat Usaha") -->
+    <section class="py-20 bg-surface border-y border-line">
+        <div class="max-w-6xl mx-auto px-5 sm:px-8">
+            <div class="text-center max-w-2xl mx-auto">
+                <span class="font-mono text-xs uppercase tracking-[0.2em] font-semibold text-primary">Masalah Klasik Kasir Toko</span>
+                <h2 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight text-ink">
+                    Masih Mengelola Toko dengan Cara Manual yang Melelahkan?
+                </h2>
+                <p class="mt-3 text-base text-ink-muted">
+                    Buku nota robek, kalkulator salah pencet, dan stok barang tidak sinkron sering kali merugikan omzet UMKM tanpa disadari.
+                </p>
+            </div>
 
-    <section>
-        <h2>5. Layanan Pihak Ketiga</h2>
-        <p>Aplikasi ini terintegrasi dengan penyedia layanan pihak ketiga tepercaya untuk mendukung autentikasi dan infrastruktur cloud:</p>
-        <table class="table-box">
-            <thead>
-                <tr>
-                    <th>Layanan</th>
-                    <th>Penyedia</th>
-                    <th>Fungsi</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Google Play Services</td>
-                    <td>Google LLC</td>
-                    <td>Distribusi aplikasi & pustaka inti Android</td>
-                </tr>
-                <tr>
-                    <td>Firebase Authentication</td>
-                    <td>Google LLC</td>
-                    <td>Autentikasi login email yang aman</td>
-                </tr>
-                <tr>
-                    <td>Cloud Firestore</td>
-                    <td>Google LLC</td>
-                    <td>Penyimpanan cloud basis data terenkripsi</td>
-                </tr>
-            </tbody>
-        </table>
-    </section>
+            <div class="mt-14 grid gap-6 md:grid-cols-3">
+                <!-- Card 1 -->
+                <div class="bg-white rounded-3xl border border-line p-8 shadow-card hover:shadow-card-hover transition-all group">
+                    <div class="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center font-bold text-xl mb-6 group-hover:scale-110 transition-transform">
+                        📝
+                    </div>
+                    <h3 class="text-lg font-bold text-ink">Nota Kertas Mudah Hilang & Luntur</h3>
+                    <p class="mt-2 text-sm text-ink-muted leading-relaxed">
+                        Mencatat bon manual di buku sangat merepotkan. Saat nota tercecer atau ketumpahan air, data penjualan hilang dan Anda tidak tahu pasti berapa uang yang masuk.
+                    </p>
+                </div>
 
-    <section>
-        <h2>6. Permintaan Penghapusan Akun & Data (Data Deletion)</h2>
-        <p>
-            Sesuai dengan Kebijakan Data Pengguna Google Play, Anda memiliki hak penuh untuk meminta penghapusan akun serta seluruh data usaha Anda kapan saja.
-        </p>
-        <p>
-            Untuk mengajukan penghapusan akun dan data terkait:
-        </p>
-        <ul>
-            <li>Kirimkan email ke <strong>support@lacipos.id</strong> (atau <strong>ilhambagas2424@gmail.com</strong>) dengan subjek: <code>Permintaan Penghapusan Akun Laci POS</code>.</li>
-            <li>Sertakan alamat email yang terdaftar pada akun Laci POS Anda.</li>
-            <li>Tim kami akan memproses dan menghapus akun beserta seluruh data transaksi cloud Anda secara permanen dalam waktu maksimal 7 (tujuh) hari kerja.</li>
-        </ul>
-    </section>
+                <!-- Card 2 -->
+                <div class="bg-white rounded-3xl border border-line p-8 shadow-card hover:shadow-card-hover transition-all group">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xl mb-6 group-hover:scale-110 transition-transform">
+                        ⏳
+                    </div>
+                    <h3 class="text-lg font-bold text-ink">Antrean Macet Karena Hitung Manual</h3>
+                    <p class="mt-2 text-sm text-ink-muted leading-relaxed">
+                        Pelanggan malas menunggu kasir yang sibuk menghitung manual pakai kalkulator. Menghitung kembalian rawan salah dan rentan membuat uang kasir selisih tekor.
+                    </p>
+                </div>
 
-    <section>
-        <h2>7. Privasi Anak-Anak (Children's Privacy)</h2>
-        <p>
-            Aplikasi Laci POS dirancang secara khusus untuk keperluan operasional usaha dagang dan UMKM, serta tidak ditujukan untuk anak-anak di bawah usia 13 tahun. Kami tidak secara sengaja mengumpulkan data pribadi dari anak-anak.
-        </p>
-    </section>
-
-    <section>
-        <h2>8. Perubahan Kebijakan Privasi</h2>
-        <p>
-            Kami dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu guna menyesuaikan dengan pembaruan fitur atau regulasi hukum yang berlaku. Setiap perubahan penting akan diberitahukan melalui halaman ini dengan memperbarui tanggal "Terakhir Diperbarui".
-        </p>
-    </section>
-
-    <section>
-        <h2>9. Kontak Resmi Pengembang</h2>
-        <p>Jika Anda memiliki pertanyaan, saran, atau masukan mengenai Kebijakan Privasi ini, silakan hubungi kami:</p>
-        <div class="contact-box">
-            <strong>Tim Pengembang Laci POS</strong><br>
-            • Email Dukungan: <a href="mailto:support@lacipos.id" style="color: var(--accent); text-decoration: none;">support@lacipos.id</a><br>
-            • Email Alternatif: <a href="mailto:ilhambagas2424@gmail.com" style="color: var(--accent); text-decoration: none;">ilhambagas2424@gmail.com</a><br>
-            • Aplikasi: Laci POS (com.ilhaaam24.lacipos)
+                <!-- Card 3 -->
+                <div class="bg-white rounded-3xl border border-line p-8 shadow-card hover:shadow-card-hover transition-all group">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xl mb-6 group-hover:scale-110 transition-transform">
+                        📉
+                    </div>
+                    <h3 class="text-lg font-bold text-ink">Stok Bocor & Laba Tidak Terpantau</h3>
+                    <p class="mt-2 text-sm text-ink-muted leading-relaxed">
+                        Tiba-tiba stok barang habis saat ada pembeli datang. Di akhir bulan bingung apakah toko untung atau buntung karena tidak pernah ada rekap laba kotor otomatis.
+                    </p>
+                </div>
+            </div>
         </div>
     </section>
 
-    <footer>
-        &copy; 2026 Laci POS. Seluruh hak cipta dilindungi undang-undang.
+    <!-- 4. CORE VALUE PILLARS / SOLUSI LACI POS -->
+    <section id="keunggulan" class="py-24 overflow-hidden">
+        <div class="max-w-6xl mx-auto px-5 sm:px-8 space-y-24">
+            
+            <!-- Pillar 1: Transaksi Kilat & Cetak Struk -->
+            <div class="grid items-center gap-12 lg:grid-cols-12">
+                <div class="lg:col-span-6">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-light text-primary font-mono text-xs font-semibold uppercase tracking-wider">
+                        ⚡ Transaksi Super Kilat
+                    </span>
+                    <h2 class="mt-4 text-3xl sm:text-4xl font-bold tracking-tight text-ink leading-tight">
+                        Cetak Struk Kasir Bluetooth dalam 3 Detik.
+                    </h2>
+                    <p class="mt-4 text-base text-ink-muted leading-relaxed">
+                        Cukup pilih barang di katalog atau scan barcode dengan kamera smartphone. Masukkan jumlah pembayaran tunai atau QRIS, dan struk belanja langsung keluar dari printer thermal favorit Anda.
+                    </p>
+                    <ul class="mt-6 space-y-3 text-sm font-medium text-ink">
+                        <li class="flex items-center gap-3">
+                            <span class="w-5 h-5 rounded-full bg-emerald-100 text-primary flex items-center justify-center text-xs font-bold">✓</span>
+                            <span>Kompatibel dengan semua printer thermal Bluetooth murah 58mm & 80mm</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="w-5 h-5 rounded-full bg-emerald-100 text-primary flex items-center justify-center text-xs font-bold">✓</span>
+                            <span>Bisa custom header nama toko, logo, alamat, dan pesan terima kasih di struk</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="w-5 h-5 rounded-full bg-emerald-100 text-primary flex items-center justify-center text-xs font-bold">✓</span>
+                            <span>Bisa kirim e-Receipt digital via WhatsApp tanpa cetak kertas</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="lg:col-span-6">
+                    <div class="bg-surface rounded-3xl border border-line p-8 shadow-card flex items-center justify-center">
+                        <!-- Receipt Visual Mockup -->
+                        <div class="w-72 bg-white rounded-2xl border border-slate-200 p-6 shadow-md font-mono text-xs text-slate-800 space-y-3">
+                            <div class="text-center border-b border-dashed border-slate-300 pb-3">
+                                <div class="font-bold text-sm tracking-wider">LACI POS COFFEE</div>
+                                <div class="text-[10px] text-slate-500">Jl. Sudirman No. 45, Jakarta</div>
+                                <div class="text-[10px] text-slate-500">Nota: #INV-20261114-002</div>
+                            </div>
+                            <div class="space-y-1 py-1 text-[11px]">
+                                <div class="flex justify-between">
+                                    <span>1x Kopi Susu Aren</span>
+                                    <span>Rp 18.000</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>1x Roti Bakar Keju</span>
+                                    <span>Rp 15.000</span>
+                                </div>
+                            </div>
+                            <div class="border-t border-dashed border-slate-300 pt-2 space-y-1 font-bold text-xs">
+                                <div class="flex justify-between">
+                                    <span>TOTAL</span>
+                                    <span class="text-primary font-extrabold text-sm">Rp 33.000</span>
+                                </div>
+                                <div class="flex justify-between text-[11px] font-normal text-slate-600">
+                                    <span>Metode: TUNAI</span>
+                                    <span>Diterima: Rp 50.000</span>
+                                </div>
+                                <div class="flex justify-between text-[11px] font-normal text-emerald-600">
+                                    <span>Kembalian</span>
+                                    <span>Rp 17.000</span>
+                                </div>
+                            </div>
+                            <div class="text-center text-[10px] text-slate-400 pt-2 border-t border-dashed border-slate-200">
+                                Terima kasih atas kunjungan Anda!
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pillar 2: Offline-First Reliability -->
+            <div class="grid items-center gap-12 lg:grid-cols-12">
+                <div class="lg:col-span-6 lg:order-2">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-600 font-mono text-xs font-semibold uppercase tracking-wider">
+                        📶 100% Offline-First
+                    </span>
+                    <h2 class="mt-4 text-3xl sm:text-4xl font-bold tracking-tight text-ink leading-tight">
+                        Internet Mati? Jualan Tetap Jalan Tanpa Terhenti.
+                    </h2>
+                    <p class="mt-4 text-base text-ink-muted leading-relaxed">
+                        Jangan biarkan omzet terhambat hanya karena sinyal provider ngadat atau kuota internet habis. Laci POS menyimpan seluruh database di memori lokal HP (Drift SQLite engine) dan otomatis menyinkronkan data ke Cloud saat online kembali.
+                    </p>
+                    <ul class="mt-6 space-y-3 text-sm font-medium text-ink">
+                        <li class="flex items-center gap-3">
+                            <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">✓</span>
+                            <span>Buka kasir, input transaksi, dan cetak struk tanpa internet 1 byte pun</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">✓</span>
+                            <span>Auto-sync cerdas ke Google Cloud Firebase ketika tersambung Wi-Fi</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">✓</span>
+                            <span>Anti lag, responsif secepat kilat tanpa jeda loading server</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="lg:col-span-6 lg:order-1">
+                    <div class="bg-surface rounded-3xl border border-line p-8 shadow-card">
+                        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+                            <div class="flex items-center justify-between pb-3 border-b border-line">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg font-bold">
+                                        ⚡
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-bold text-ink">Status Koneksi: Offline</div>
+                                        <div class="text-xs text-ink-muted">Penyimpanan internal aktif</div>
+                                    </div>
+                                </div>
+                                <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                                    100% Berfungsi
+                                </span>
+                            </div>
+                            <div class="p-4 bg-slate-50 rounded-xl space-y-2 text-xs">
+                                <div class="flex justify-between text-slate-600">
+                                    <span>Transaksi Tersimpan Lokal:</span>
+                                    <span class="font-bold text-ink">24 Transaksi</span>
+                                </div>
+                                <div class="flex justify-between text-slate-600">
+                                    <span>Antrean Sinkronisasi Cloud:</span>
+                                    <span class="font-bold text-primary">Siap Sinkron Otomatis</span>
+                                </div>
+                            </div>
+                            <div class="text-[11px] text-slate-500 italic text-center">
+                                "Tidak ada transaksi yang hilang meski HP mati atau sinyal hilang."
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pillar 3: Real-Time Reports & Shift Handover -->
+            <div class="grid items-center gap-12 lg:grid-cols-12">
+                <div class="lg:col-span-6">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 text-purple-600 font-mono text-xs font-semibold uppercase tracking-wider">
+                        📊 Laporan & Shift Kasir
+                    </span>
+                    <h2 class="mt-4 text-3xl sm:text-4xl font-bold tracking-tight text-ink leading-tight">
+                        Tahu Persis Laba Bersih & Tutup Kasir Tanpa Selisih.
+                    </h2>
+                    <p class="mt-4 text-base text-ink-muted leading-relaxed">
+                        Laci POS menghitung omzet kotor, modal barang (HPP), dan laba bersih secara otomatis setiap hari. Fitur Shift Kasir mencatat kas masuk, kas keluar, dan serah terima kasir secara transparan.
+                    </p>
+                    <ul class="mt-6 space-y-3 text-sm font-medium text-ink">
+                        <li class="flex items-center gap-3">
+                            <span class="w-5 h-5 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">✓</span>
+                            <span>Laporan Harian, Mingguan, Bulanan, dan Custom Rentang Tanggal</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="w-5 h-5 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">✓</span>
+                            <span>Daftar produk terlaris (Top Selling Items) untuk evaluasi stok</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="w-5 h-5 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">✓</span>
+                            <span>Export laporan rapi ke file PDF & Excel untuk pembukuan akurat</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="lg:col-span-6">
+                    <div class="bg-surface rounded-3xl border border-line p-8 shadow-card">
+                        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+                            <div class="flex items-center justify-between pb-3 border-b border-line">
+                                <div>
+                                    <div class="text-xs text-ink-muted uppercase tracking-wider font-semibold">Rekap Laba Rugi</div>
+                                    <div class="text-lg font-bold text-ink">Hari Ini, 14 Nov 2026</div>
+                                </div>
+                                <span class="text-xs font-bold text-primary bg-primary-light px-3 py-1 rounded-full">Surplus</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3 text-xs">
+                                <div class="p-3 bg-surface rounded-xl border border-line">
+                                    <div class="text-ink-muted">Total Omzet</div>
+                                    <div class="text-base font-bold text-ink mt-0.5">Rp 2.450.000</div>
+                                </div>
+                                <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                                    <div class="text-emerald-700">Laba Bersih</div>
+                                    <div class="text-base font-bold text-emerald-700 mt-0.5">Rp 1.120.000</div>
+                                </div>
+                            </div>
+                            <div class="p-3.5 bg-slate-50 rounded-xl space-y-2 text-xs">
+                                <div class="flex justify-between text-slate-600">
+                                    <span>Kas Awal Shift (Modal):</span>
+                                    <span class="font-semibold text-slate-800">Rp 200.000</span>
+                                </div>
+                                <div class="flex justify-between text-slate-600">
+                                    <span>Total Uang Kas di Laci:</span>
+                                    <span class="font-extrabold text-primary">Rp 2.650.000</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 5. BENTO GRID FEATURES ("Semua yang Anda Butuhkan dalam 1 Aplikasi") -->
+    <section id="fitur" class="py-24 bg-surface border-t border-line">
+        <div class="max-w-6xl mx-auto px-5 sm:px-8">
+            <div class="text-center max-w-2xl mx-auto">
+                <span class="font-mono text-xs uppercase tracking-[0.2em] font-semibold text-primary">Fitur Terlengkap</span>
+                <h2 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight text-ink">
+                    Semua Kebutuhan Toko Ada di Sini
+                </h2>
+                <p class="mt-3 text-base text-ink-muted">
+                    Dirancang dengan teliti agar pemilik toko dan staf kasir bisa langsung menggunakannya dalam hitungan menit tanpa pelatihan rumit.
+                </p>
+            </div>
+
+            <div class="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                
+                <!-- Feature 1 -->
+                <div class="bg-white rounded-3xl border border-line p-7 shadow-card hover:shadow-card-hover transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-primary flex items-center justify-center text-2xl mb-5">
+                        🖨️
+                    </div>
+                    <h3 class="text-base font-bold text-ink">Printer Bluetooth Universal</h3>
+                    <p class="mt-2 text-sm text-ink-muted leading-relaxed">
+                        Cukup hubungkan via Bluetooth tanpa kabel. Kompatibel dengan semua merk printer thermal 58mm & 80mm murah di Tokopedia, Shopee, dll.
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="bg-white rounded-3xl border border-line p-7 shadow-card hover:shadow-card-hover transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-2xl mb-5">
+                        📷
+                    </div>
+                    <h3 class="text-base font-bold text-ink">Barcode & QR Scanner Kamera</h3>
+                    <p class="mt-2 text-sm text-ink-muted leading-relaxed">
+                        Scan kode barcode produk menggunakan kamera smartphone Anda langsung. Tidak butuh beli alat scanner fisik tambahan yang mahal.
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="bg-white rounded-3xl border border-line p-7 shadow-card hover:shadow-card-hover transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-2xl mb-5">
+                        📦
+                    </div>
+                    <h3 class="text-base font-bold text-ink">Manajemen Stok & Peringatan</h3>
+                    <p class="mt-2 text-sm text-ink-muted leading-relaxed">
+                        Stok otomatis berkurang tiap transaksi. Muncul notifikasi otomatis saat persediaan menipis sebelum barang benar-benar habis.
+                    </p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="bg-white rounded-3xl border border-line p-7 shadow-card hover:shadow-card-hover transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-2xl mb-5">
+                        👥
+                    </div>
+                    <h3 class="text-base font-bold text-ink">Multi Staff & PIN Kasir</h3>
+                    <p class="mt-2 text-sm text-ink-muted leading-relaxed">
+                        Beri akses untuk staf kasir dengan PIN aman. Hak akses terpisah antara pemilik toko (akses laporan) dan kasir (hanya transaksi).
+                    </p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="bg-white rounded-3xl border border-line p-7 shadow-card hover:shadow-card-hover transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-2xl mb-5">
+                        🏷️
+                    </div>
+                    <h3 class="text-base font-bold text-ink">Voucher, Diskon, & Pajak</h3>
+                    <p class="mt-2 text-sm text-ink-muted leading-relaxed">
+                        Atur promo potongan harga nominal (Rp) atau persentase (%), serta pengaturan pajak restoran (PB1) dan service charge secara fleksibel.
+                    </p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="bg-white rounded-3xl border border-line p-7 shadow-card hover:shadow-card-hover transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center text-2xl mb-5">
+                        ☁️
+                    </div>
+                    <h3 class="text-base font-bold text-ink">Cloud Backup Google Firebase</h3>
+                    <p class="mt-2 text-sm text-ink-muted leading-relaxed">
+                        Data aman terlindungi dengan enkripsi tinggi. Jika HP hilang atau ganti perangkat baru, cukup login dan data toko Anda kembali utuh.
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. DARK SECTION: TESTIMONIALS (MIRIP FUELMETER.ID) -->
+    <section id="testimoni" class="bg-ink-dark py-24 text-white relative overflow-hidden">
+        <!-- Subtle Glowing Blur Circle -->
+        <div class="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 w-[40rem] h-80 bg-primary/10 rounded-full blur-3xl opacity-70"></div>
+        <div class="dot-grid-dark absolute inset-0 opacity-40"></div>
+
+        <div class="max-w-6xl mx-auto px-5 sm:px-8 relative z-10">
+            <div class="text-center max-w-2xl mx-auto">
+                <span class="font-mono text-xs uppercase tracking-[0.2em] text-white/50">Dipercaya UMKM Indonesia</span>
+                <h2 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight text-white">
+                    Kata Mereka yang Sudah Memakai Laci POS
+                </h2>
+                <p class="mt-3 text-base text-white/60">
+                    Review jujur dari para pemilik toko kelontong, kafe, retail, dan UMKM di Indonesia.
+                </p>
+            </div>
+
+            <div class="mt-16 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                
+                <!-- Testimonial 1 -->
+                <div class="flex flex-col justify-between rounded-3xl border border-white/10 bg-white/5 p-7 hover:border-white/20 transition-all">
+                    <div>
+                        <div class="flex text-amber-400 text-sm">★★★★★</div>
+                        <blockquote class="mt-4 text-sm leading-relaxed text-white/80">
+                            “Sangat membantu buat toko kelontong saya! Yang paling saya suka aplikasi ini tetap bisa jalan meski koneksi internet lagi mati. Cetak struk ke printer Bluetooth 58mm juga langsung connect tanpa ribet.”
+                        </blockquote>
+                    </div>
+                    <div class="mt-6 flex items-center gap-3 pt-4 border-t border-white/10">
+                        <div class="w-10 h-10 rounded-full bg-primary/20 text-primary-accent flex items-center justify-center font-bold text-sm">
+                            B
+                        </div>
+                        <div>
+                            <div class="text-sm font-semibold text-white">Budi Santoso</div>
+                            <div class="text-xs text-white/50">Pemilik Toko Sembako Berkah, Bekasi</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Testimonial 2 -->
+                <div class="flex flex-col justify-between rounded-3xl border border-white/10 bg-white/5 p-7 hover:border-white/20 transition-all">
+                    <div>
+                        <div class="flex text-amber-400 text-sm">★★★★★</div>
+                        <blockquote class="mt-4 text-sm leading-relaxed text-white/80">
+                            “Dulu pakai buku tulis tiap malam pusing ngitung laba. Sekarang buka Laci POS langsung kelihatan omzet harian dan laba bersihnya. Barcode scanner kameranya juga cepet banget.”
+                        </blockquote>
+                    </div>
+                    <div class="mt-6 flex items-center gap-3 pt-4 border-t border-white/10">
+                        <div class="w-10 h-10 rounded-full bg-primary/20 text-primary-accent flex items-center justify-center font-bold text-sm">
+                            D
+                        </div>
+                        <div>
+                            <div class="text-sm font-semibold text-white">Dina Maharani</div>
+                            <div class="text-xs text-white/50">Owner Kopi Sudut Temu, Bandung</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Testimonial 3 -->
+                <div class="flex flex-col justify-between rounded-3xl border border-white/10 bg-white/5 p-7 hover:border-white/20 transition-all">
+                    <div>
+                        <div class="flex text-amber-400 text-sm">★★★★★</div>
+                        <blockquote class="mt-4 text-sm leading-relaxed text-white/80">
+                            “Fitur shift kasirnya juara. Saya bisa tahu berapa uang kas modal awal dan berapa total uang yang harus disetor kasir pas ganti shift sore. Bebas dari selisih uang kasir tekor!”
+                        </blockquote>
+                    </div>
+                    <div class="mt-6 flex items-center gap-3 pt-4 border-t border-white/10">
+                        <div class="w-10 h-10 rounded-full bg-primary/20 text-primary-accent flex items-center justify-center font-bold text-sm">
+                            H
+                        </div>
+                        <div>
+                            <div class="text-sm font-semibold text-white">Hendra Wijaya</div>
+                            <div class="text-xs text-white/50">Manager Toko Retail Fashion, Surabaya</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. FAQ SECTION (ACCORDION) -->
+    <section id="faq" class="py-24 bg-white">
+        <div class="max-w-4xl mx-auto px-5 sm:px-8">
+            <div class="text-center max-w-xl mx-auto">
+                <span class="font-mono text-xs uppercase tracking-[0.2em] font-semibold text-primary">Pertanyaan Populer</span>
+                <h2 class="mt-3 text-3xl sm:text-4xl font-bold tracking-tight text-ink">
+                    Pertanyaan yang Sering Diajukan
+                </h2>
+                <p class="mt-3 text-base text-ink-muted">
+                    Masih ragu atau ada pertanyaan lain? Berikut beberapa hal yang sering ditanyakan.
+                </p>
+            </div>
+
+            <div class="mt-14 space-y-4">
+                
+                <!-- FAQ Item 1 -->
+                <div class="rounded-2xl border border-line bg-surface p-5 transition-colors">
+                    <button class="faq-toggle w-full flex items-center justify-between text-left font-bold text-base text-ink focus:outline-none">
+                        <span>Apakah aplikasi Laci POS benar-benar bisa digunakan gratis?</span>
+                        <span class="faq-icon text-primary font-mono text-xl transition-transform">+</span>
+                    </button>
+                    <div class="faq-content text-sm text-ink-muted leading-relaxed mt-0">
+                        <p class="pt-3">
+                            Ya, Anda bisa langsung mengunduh dan menggunakan seluruh fitur dasar kasir Laci POS di smartphone Android Anda secara gratis tanpa perlu kartu kredit.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 2 -->
+                <div class="rounded-2xl border border-line bg-surface p-5 transition-colors">
+                    <button class="faq-toggle w-full flex items-center justify-between text-left font-bold text-base text-ink focus:outline-none">
+                        <span>Apakah Laci POS benar-benar bisa bekerja tanpa koneksi internet (Offline)?</span>
+                        <span class="faq-icon text-primary font-mono text-xl transition-transform">+</span>
+                    </button>
+                    <div class="faq-content text-sm text-ink-muted leading-relaxed mt-0">
+                        <p class="pt-3">
+                            Sangat bisa! Laci POS mengusung arsitektur <em>Offline-First</em>. Semua data produk, pelanggan, dan transaksi disimpan di database lokal HP Anda. Anda tetap bisa melayani pelanggan dan mencetak struk walau sinyal mati. Saat HP terhubung ke internet, data akan otomatis tersinkron ke cloud.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 3 -->
+                <div class="rounded-2xl border border-line bg-surface p-5 transition-colors">
+                    <button class="faq-toggle w-full flex items-center justify-between text-left font-bold text-base text-ink focus:outline-none">
+                        <span>Printer Bluetooth apa saja yang kompatibel dengan Laci POS?</span>
+                        <span class="faq-icon text-primary font-mono text-xl transition-transform">+</span>
+                    </button>
+                    <div class="faq-content text-sm text-ink-muted leading-relaxed mt-0">
+                        <p class="pt-3">
+                            Laci POS mendukung hampir seluruh printer thermal Bluetooth portabel (ukuran kertas 58mm maupun 80mm) berbasis ESC/POS yang banyak dijual di marketplace seperti merk VSC, Panda, Iware, Zywell, Bluetooth Mini Thermal Printer RPP02, dan sejenisnya.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 4 -->
+                <div class="rounded-2xl border border-line bg-surface p-5 transition-colors">
+                    <button class="faq-toggle w-full flex items-center justify-between text-left font-bold text-base text-ink focus:outline-none">
+                        <span>Bagaimana jika HP saya rusak atau saya ingin berganti HP baru?</span>
+                        <span class="faq-icon text-primary font-mono text-xl transition-transform">+</span>
+                    </button>
+                    <div class="faq-content text-sm text-ink-muted leading-relaxed mt-0">
+                        <p class="pt-3">
+                            Data Anda aman! Karena Laci POS memiliki backup cloud via Google Cloud Firebase, Anda cukup menginstal aplikasi Laci POS di HP yang baru, lalu login menggunakan akun email Google Anda. Seluruh katalog produk dan riwayat transaksi akan kembali secara otomatis.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- FAQ Item 5 -->
+                <div class="rounded-2xl border border-line bg-surface p-5 transition-colors">
+                    <button class="faq-toggle w-full flex items-center justify-between text-left font-bold text-base text-ink focus:outline-none">
+                        <span>Apakah saya bisa mencetak struk secara digital tanpa kertas?</span>
+                        <span class="faq-icon text-primary font-mono text-xl transition-transform">+</span>
+                    </button>
+                    <div class="faq-content text-sm text-ink-muted leading-relaxed mt-0">
+                        <p class="pt-3">
+                            Tentu saja! Laci POS menyediakan fitur e-Receipt, di mana struk transaksi bisa langsung dibagikan (share) ke nomor WhatsApp pelanggan atau disimpan sebagai gambar dan dokumen PDF.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- 8. FINAL CTA BANNER (MIRIP FUELMETER.ID) -->
+    <section class="py-20 bg-surface">
+        <div class="max-w-5xl mx-auto px-5 sm:px-8">
+            <div class="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-ink to-slate-900 px-8 py-16 sm:px-16 sm:py-20 text-center text-white shadow-2xl border border-slate-800">
+                <!-- Glowing Orb in Center -->
+                <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/20 rounded-full blur-3xl opacity-80"></div>
+
+                <div class="relative z-10 max-w-xl mx-auto">
+                    <!-- Icon badge -->
+                    <div class="mx-auto w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-2xl mb-6 shadow-inner">
+                        ✨
+                    </div>
+                    <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight">
+                        Mulai Kelola Kasir Toko Anda Lebih Profesional Hari Ini.
+                    </h2>
+                    <p class="mt-4 text-base sm:text-lg text-white/70 leading-relaxed">
+                        Gratis diunduh, tanpa biaya langganan tersembunyi. Ribuan UMKM sudah menjalaninya, kini giliran toko Anda.
+                    </p>
+
+                    <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <a href="https://play.google.com/store/apps/details?id=com.ilhaaam24.lacipos" target="_blank" rel="noopener" class="w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-primary hover:bg-primary-dark text-white font-bold px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all text-base">
+                            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                                <path d="M3.609 1.814L13.792 12 3.61 22.186a1.99 1.99 0 0 1-.61-1.428V3.242c0-.55.228-1.05.61-1.428zm11.597 11.599L6.467 22.152l10.518-6.072-1.78-2.667zm0-2.826l1.78-2.667L6.467 1.848l8.739 8.739zm1.414 1.413l3.87 2.235c.78.45.78 1.18 0 1.63l-3.87 2.235-1.95-2.05 1.95-2.05z"/>
+                            </svg>
+                            <span>Download Laci POS Gratis</span>
+                        </a>
+                        <a href="https://wa.me/6281615697675?text=Halo%20Admin%20Laci%20POS,%20saya%20ingin%20tanya-tanya%20seputar%20aplikasi." target="_blank" rel="noopener" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-6 py-4 rounded-2xl border border-white/20 transition-all text-base">
+                            <span>Hubungi Dukungan</span>
+                        </a>
+                    </div>
+
+                    <div class="mt-6 text-xs text-white/50">
+                        100% Gratis di Play Store · Offline-Ready · Tanpa Kartu Kredit
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 9. FOOTER -->
+    <footer class="bg-white border-t border-line py-16">
+        <div class="max-w-6xl mx-auto px-5 sm:px-8">
+            <div class="grid gap-10 md:grid-cols-12">
+                <!-- Col 1: Brand Info -->
+                <div class="md:col-span-5">
+                    <a href="#" class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-xs">
+                            <span class="text-white font-extrabold text-sm">LP</span>
+                        </div>
+                        <span class="text-xl font-bold tracking-tight text-ink">Laci <span class="text-primary">POS</span></span>
+                    </a>
+                    <p class="mt-4 text-sm text-ink-muted leading-relaxed max-w-sm">
+                        Aplikasi sistem kasir cerdas (Point of Sale) modern, ringan, dan offline-first. Membantu UMKM Indonesia bertumbuh dengan transaksi cepat dan laporan transparan.
+                    </p>
+                    <div class="mt-6 text-xs text-ink-light space-y-1.5">
+                        <p>📍 Jakarta, Indonesia</p>
+                        <p>✉️ <a href="mailto:lacipos188@gmail.com" class="hover:text-primary">lacipos188@gmail.com</a></p>
+                        <p>💬 <a href="https://wa.me/6281615697675" target="_blank" class="hover:text-primary">+62 816-1569-7675 (WhatsApp Support)</a></p>
+                    </div>
+                </div>
+
+                <!-- Col 2: Navigasi Produk -->
+                <div class="md:col-span-3">
+                    <div class="text-xs uppercase font-mono tracking-wider font-bold text-ink">Fitur Produk</div>
+                    <ul class="mt-4 space-y-2.5 text-sm text-ink-muted">
+                        <li><a href="#fitur" class="hover:text-primary transition-colors">Cetak Struk Bluetooth</a></li>
+                        <li><a href="#fitur" class="hover:text-primary transition-colors">Barcode Scanner</a></li>
+                        <li><a href="#fitur" class="hover:text-primary transition-colors">Manajemen Stok Barang</a></li>
+                        <li><a href="#fitur" class="hover:text-primary transition-colors">Laporan Laba Rugi</a></li>
+                        <li><a href="#fitur" class="hover:text-primary transition-colors">Shift Kasir & Multi-Staff</a></li>
+                    </ul>
+                </div>
+
+                <!-- Col 3: Kebijakan & Bantuan -->
+                <div class="md:col-span-4">
+                    <div class="text-xs uppercase font-mono tracking-wider font-bold text-ink">Bantuan & Legal</div>
+                    <ul class="mt-4 space-y-2.5 text-sm text-ink-muted">
+                        <li><a href="#faq" class="hover:text-primary transition-colors">Pusat Bantuan & FAQ</a></li>
+                        <li><a href="privacy-policy.html" class="hover:text-primary transition-colors font-medium">Kebijakan Privasi (Privacy Policy)</a></li>
+                        <li><a href="privacy-policy.html#delete-account" class="hover:text-primary transition-colors text-red-600 font-medium">Permintaan Hapus Akun (Data Deletion)</a></li>
+                        <li><a href="https://wa.me/6281615697675" target="_blank" class="hover:text-primary transition-colors">Hubungi Layanan Pelanggan</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-12 pt-8 border-t border-line flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-ink-light">
+                <div>
+                    &copy; 2026 Laci POS (com.ilhaaam24.lacipos). Seluruh hak cipta dilindungi undang-undang.
+                </div>
+                <div>
+                    Dibuat dengan ❤️ untuk kemajuan UMKM Indonesia
+                </div>
+            </div>
+        </div>
     </footer>
-</div>
 
+    <!-- INTERACTIVE JAVASCRIPT FOR ACCORDION & MOBILE MENU -->
+    <script>
+        // 1. Mobile Menu Toggle
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        menuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Close mobile menu when link is clicked
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+        });
+
+        // 2. Accordion FAQ
+        const faqToggles = document.querySelectorAll('.faq-toggle');
+
+        faqToggles.forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const content = toggle.nextElementSibling;
+                const icon = toggle.querySelector('.faq-icon');
+                const isOpen = content.classList.contains('open');
+
+                // Close all other accordions
+                document.querySelectorAll('.faq-content').forEach(c => {
+                    c.classList.remove('open');
+                });
+                document.querySelectorAll('.faq-icon').forEach(i => {
+                    i.textContent = '+';
+                    i.classList.remove('rotate-45');
+                });
+
+                if (!isOpen) {
+                    content.classList.add('open');
+                    icon.textContent = '×';
+                }
+            });
+        });
+    </script>
 </body>
 </html>
+
