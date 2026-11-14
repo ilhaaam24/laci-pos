@@ -10,6 +10,7 @@ class CategoryModel extends Category {
     required super.createdAt,
     required super.updatedAt,
     super.businessId,
+    super.isActive = true,
   });
 
   factory CategoryModel.fromFirestore(DocumentSnapshot doc) {
@@ -26,6 +27,7 @@ class CategoryModel extends Category {
           ? (data['updatedAt'] as Timestamp).toDate()
           : DateTime.now(),
       businessId: data['businessId'],
+      isActive: data['isActive'] ?? true,
     );
   }
 
@@ -37,6 +39,7 @@ class CategoryModel extends Category {
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'businessId': businessId,
+      'isActive': isActive,
     };
   }
 
@@ -49,6 +52,7 @@ class CategoryModel extends Category {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'businessId': businessId,
+      'isActive': isActive,
     };
   }
 
@@ -65,6 +69,7 @@ class CategoryModel extends Category {
           ? DateTime.parse(json['updatedAt'])
           : DateTime.now(),
       businessId: json['businessId'],
+      isActive: json['isActive'] ?? true,
     );
   }
 
@@ -77,6 +82,7 @@ class CategoryModel extends Category {
       createdAt: createdAt,
       updatedAt: updatedAt,
       businessId: businessId,
+      isActive: isActive,
     );
   }
 
@@ -89,9 +95,11 @@ class CategoryModel extends Category {
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
       businessId: category.businessId,
+      isActive: category.isActive,
     );
   }
 
+  @override
   CategoryModel copyWith({
     String? id,
     String? name,
@@ -100,6 +108,7 @@ class CategoryModel extends Category {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? businessId,
+    bool? isActive,
   }) {
     return CategoryModel(
       id: id ?? this.id,
@@ -109,6 +118,7 @@ class CategoryModel extends Category {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       businessId: businessId ?? this.businessId,
+      isActive: isActive ?? this.isActive,
     );
   }
 }

@@ -219,6 +219,28 @@ class KasirPageState extends State<KasirPage> with WidgetsBindingObserver {
 
       if (matched.isNotEmpty) {
         final product = matched.first;
+        final inactiveCategoryIds = context
+            .read<CategoryBloc>()
+            .state
+            .categories
+            .where((c) => !c.isActive)
+            .map((c) => c.id)
+            .toSet();
+
+        if (!product.isActive ||
+            inactiveCategoryIds.contains(product.categoryId)) {
+          HapticFeedback.vibrate();
+          setState(() {
+            _lastScannedProductName = '${product.name} (Nonaktif)';
+            _lastScanSuccess = false;
+          });
+          AppToast.showWarning(
+            context,
+            'Produk ${product.name} sedang dinonaktifkan dari kasir',
+          );
+          continue;
+        }
+
         if (product.trackStock && product.stock <= 0) {
           HapticFeedback.vibrate();
           setState(() {
@@ -1105,7 +1127,8 @@ class KasirPageState extends State<KasirPage> with WidgetsBindingObserver {
                 builder: (context, state) {
                   List<Category> categories = [];
                   if (state.isSuccess) {
-                    categories = state.categories;
+                    categories =
+                        state.categories.where((c) => c.isActive).toList();
                   }
 
                   return SizedBox(
@@ -1310,7 +1333,18 @@ class KasirPageState extends State<KasirPage> with WidgetsBindingObserver {
   }
 
   List<Product> _filterProducts(List<Product> products) {
+    final inactiveCategoryIds = context
+        .read<CategoryBloc>()
+        .state
+        .categories
+        .where((c) => !c.isActive)
+        .map((c) => c.id)
+        .toSet();
+
     return products.where((p) {
+      if (!p.isActive) return false;
+      if (inactiveCategoryIds.contains(p.categoryId)) return false;
+
       final query = _searchQuery.toLowerCase();
       final matchesSearch =
           p.name.toLowerCase().contains(query) ||
@@ -2275,7 +2309,8 @@ class KasirPageState extends State<KasirPage> with WidgetsBindingObserver {
       builder: (context, catState) {
         List<Category> categories = [];
         if (catState.isSuccess) {
-          categories = catState.categories;
+          categories =
+              catState.categories.where((c) => c.isActive).toList();
         }
 
         return Row(

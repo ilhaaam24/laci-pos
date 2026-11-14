@@ -35,8 +35,12 @@ class _ProductsPageState extends State<ProductsPage> {
     final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
     final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final subtextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
+    final subtextColor = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
 
     final currencyFormatter = NumberFormat.currency(
       locale: 'id_ID',
@@ -87,8 +91,11 @@ class _ProductsPageState extends State<ProductsPage> {
         onPressed: () {
           final bState = context.read<BusinessBloc>().state;
           final isPro = bState.businessInfo?.isPro ?? false;
-          final currentProductCount =
-              context.read<ProductBloc>().state.products.length;
+          final currentProductCount = context
+              .read<ProductBloc>()
+              .state
+              .products
+              .length;
 
           if (!isPro && currentProductCount >= 150) {
             showUpgradeProSheet(
@@ -107,7 +114,13 @@ class _ProductsPageState extends State<ProductsPage> {
       ),
       body: Column(
         children: [
-          _buildSearchBar(cardColor, bgColor, borderColor, textColor, subtextColor),
+          _buildSearchBar(
+            cardColor,
+            bgColor,
+            borderColor,
+            textColor,
+            subtextColor,
+          ),
           Expanded(
             child: BlocConsumer<ProductBloc, ProductState>(
               listener: (context, state) {
@@ -139,7 +152,12 @@ class _ProductsPageState extends State<ProductsPage> {
                     .toList();
 
                 if (filteredProducts.isEmpty) {
-                  return _buildEmptyState(cardColor, borderColor, textColor, subtextColor);
+                  return _buildEmptyState(
+                    cardColor,
+                    borderColor,
+                    textColor,
+                    subtextColor,
+                  );
                 }
 
                 return ListView.builder(
@@ -147,7 +165,16 @@ class _ProductsPageState extends State<ProductsPage> {
                   itemCount: filteredProducts.length,
                   itemBuilder: (context, index) {
                     final product = filteredProducts[index];
-                    return _buildProductCard(product, currencyFormatter, isDark, cardColor, bgColor, borderColor, textColor, subtextColor);
+                    return _buildProductCard(
+                      product,
+                      currencyFormatter,
+                      isDark,
+                      cardColor,
+                      bgColor,
+                      borderColor,
+                      textColor,
+                      subtextColor,
+                    );
                   },
                 );
               },
@@ -185,18 +212,10 @@ class _ProductsPageState extends State<ProductsPage> {
           decoration: InputDecoration(
             hintText: 'Cari produk berdasarkan nama...',
             hintStyle: TextStyle(fontSize: 14, color: subtextColor),
-            prefixIcon: Icon(
-              Icons.search,
-              color: subtextColor,
-              size: 20,
-            ),
+            prefixIcon: Icon(Icons.search, color: subtextColor, size: 20),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
-                    icon: Icon(
-                      Icons.clear,
-                      size: 18,
-                      color: subtextColor,
-                    ),
+                    icon: Icon(Icons.clear, size: 18, color: subtextColor),
                     onPressed: () {
                       _searchController.clear();
                       setState(() {
@@ -223,12 +242,22 @@ class _ProductsPageState extends State<ProductsPage> {
     Color textColor,
     Color subtextColor,
   ) {
+    final isActive = product.isActive;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: cardColor,
+        color: isActive
+            ? cardColor
+            : (isDark
+                  ? const Color(0xFF1E293B).withValues(alpha: 0.6)
+                  : const Color(0xFFF8FAFC)),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: borderColor),
+        border: Border.all(
+          color: isActive
+              ? borderColor
+              : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+        ),
       ),
       child: InkWell(
         onTap: () {
@@ -244,7 +273,10 @@ class _ProductsPageState extends State<ProductsPage> {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              _buildProductImage(product, bgColor, borderColor),
+              Opacity(
+                opacity: isActive ? 1.0 : 0.5,
+                child: _buildProductImage(product, bgColor, borderColor),
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -257,24 +289,30 @@ class _ProductsPageState extends State<ProductsPage> {
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
-                        color: textColor,
+                        color: isActive ? textColor : subtextColor,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       formatter.format(product.price),
                       style: TextStyle(
-                        color: isDark ? const Color(0xFF38BDF8) : AppColors.primary,
+                        color: isActive
+                            ? (isDark
+                                  ? const Color(0xFF38BDF8)
+                                  : AppColors.primary)
+                            : subtextColor,
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Row(
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
                       children: [
                         _buildStockBadge(product),
+
                         if (product.sku != null && product.sku!.isNotEmpty) ...[
-                          const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 6,
@@ -296,7 +334,6 @@ class _ProductsPageState extends State<ProductsPage> {
                           ),
                         ],
                         if (product.hasVariants) ...[
-                          const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 6,
@@ -317,7 +354,6 @@ class _ProductsPageState extends State<ProductsPage> {
                           ),
                         ],
                         if (product.hasModifiers) ...[
-                          const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 6,
@@ -341,6 +377,16 @@ class _ProductsPageState extends State<ProductsPage> {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(width: 4),
+              Switch.adaptive(
+                value: isActive,
+                activeTrackColor: AppColors.primary,
+                onChanged: (val) {
+                  context.read<ProductBloc>().add(
+                    UpdateProduct(product.copyWith(isActive: val)),
+                  );
+                },
               ),
               _buildPopupMenu(product, cardColor, borderColor, textColor),
             ],
@@ -445,6 +491,27 @@ class _ProductsPageState extends State<ProductsPage> {
       ),
       itemBuilder: (context) => [
         PopupMenuItem(
+          value: 'toggle_active',
+          child: Row(
+            children: [
+              Icon(
+                product.isActive
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                size: 18,
+                color: textColor,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                product.isActive
+                    ? 'Sembunyikan di Kasir'
+                    : 'Tampilkan di Kasir',
+                style: TextStyle(fontSize: 13, color: textColor),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem(
           value: 'edit',
           child: Row(
             children: [
@@ -485,7 +552,18 @@ class _ProductsPageState extends State<ProductsPage> {
         ),
       ],
       onSelected: (value) {
-        if (value == 'edit') {
+        if (value == 'toggle_active') {
+          final nextVal = !product.isActive;
+          context.read<ProductBloc>().add(
+            UpdateProduct(product.copyWith(isActive: nextVal)),
+          );
+          AppToast.showSuccess(
+            context,
+            nextVal
+                ? 'Produk "${product.name}" ditampilkan di kasir'
+                : 'Produk "${product.name}" disembunyikan dari kasir',
+          );
+        } else if (value == 'edit') {
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -500,7 +578,13 @@ class _ProductsPageState extends State<ProductsPage> {
             ),
           );
         } else if (value == 'delete') {
-          _showDeleteDialog(context, product, cardColor, borderColor, textColor);
+          _showDeleteDialog(
+            context,
+            product,
+            cardColor,
+            borderColor,
+            textColor,
+          );
         }
       },
     );
@@ -599,10 +683,7 @@ class _ProductsPageState extends State<ProductsPage> {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: Text(
-              'Batal',
-              style: TextStyle(color: subtextColor),
-            ),
+            child: Text('Batal', style: TextStyle(color: subtextColor)),
           ),
           ElevatedButton(
             onPressed: () {

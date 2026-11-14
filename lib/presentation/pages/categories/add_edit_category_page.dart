@@ -19,6 +19,7 @@ class _AddEditCategoryPageState extends State<AddEditCategoryPage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
+  late bool _isActive;
   bool _isSaving = false;
 
   @override
@@ -28,6 +29,7 @@ class _AddEditCategoryPageState extends State<AddEditCategoryPage> {
     _descriptionController = TextEditingController(
       text: widget.category?.description ?? '',
     );
+    _isActive = widget.category?.isActive ?? true;
   }
 
   @override
@@ -48,6 +50,7 @@ class _AddEditCategoryPageState extends State<AddEditCategoryPage> {
       description: _descriptionController.text.trim(),
       createdAt: widget.category?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
+      isActive: _isActive,
     );
 
     if (widget.category == null) {
@@ -68,9 +71,15 @@ class _AddEditCategoryPageState extends State<AddEditCategoryPage> {
     final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
     final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final subtextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final labelColor = isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569);
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
+    final subtextColor = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
+    final labelColor = isDark
+        ? const Color(0xFFCBD5E1)
+        : const Color(0xFF475569);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -161,9 +170,89 @@ class _AddEditCategoryPageState extends State<AddEditCategoryPage> {
                         maxLines: 3,
                         style: TextStyle(fontSize: 14, color: textColor),
                         decoration: _buildInputDecoration(
-                          hint: 'Keterangan singkat tentang kelompok kategori ini...',
+                          hint:
+                              'Keterangan singkat tentang kelompok kategori ini...',
                           prefixIcon: Icons.description_outlined,
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 8),
+                  child: Text(
+                    'VISIBILITAS KASIR',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                      color: subtextColor,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: _isActive
+                              ? AppColors.primaryLight
+                              : (isDark
+                                    ? const Color(0xFF334155)
+                                    : const Color(0xFFF1F5F9)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          _isActive
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          size: 20,
+                          color: _isActive ? AppColors.primary : subtextColor,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Tampilkan di Kasir',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: textColor,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _isActive
+                                  ? 'Kategori & produk di dalamnya aktif dan muncul di menu kasir.'
+                                  : 'Kategori ini disembunyikan dari layar transaksi kasir.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: subtextColor,
+                                height: 1.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch.adaptive(
+                        value: _isActive,
+                        activeTrackColor: AppColors.primary,
+                        onChanged: (val) {
+                          setState(() {
+                            _isActive = val;
+                          });
+                        },
                       ),
                     ],
                   ),
@@ -178,7 +267,9 @@ class _AddEditCategoryPageState extends State<AddEditCategoryPage> {
                 style: ElevatedButton.styleFrom(
                   elevation: 0,
                   backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: _isSaving
                     ? const SizedBox(
@@ -186,7 +277,9 @@ class _AddEditCategoryPageState extends State<AddEditCategoryPage> {
                         height: 22,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : Text(
@@ -211,7 +304,9 @@ class _AddEditCategoryPageState extends State<AddEditCategoryPage> {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fillCol = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
-    final borderCol = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final borderCol = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
     final hintCol = isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8);
     final iconCol = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 

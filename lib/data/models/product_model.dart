@@ -20,6 +20,7 @@ class ProductModel extends Product {
     super.variants = const [],
     super.modifierGroups = const [],
     super.trackStock = true,
+    super.isActive = true,
   });
 
   factory ProductModel.fromFirestore(DocumentSnapshot doc) {
@@ -59,6 +60,7 @@ class ProductModel extends Product {
               .toList() ??
           const [],
       trackStock: data['trackStock'] ?? true,
+      isActive: data['isActive'] ?? true,
     );
   }
 
@@ -79,6 +81,7 @@ class ProductModel extends Product {
       'variants': variants.map((v) => v.toJson()).toList(),
       'modifierGroups': modifierGroups.map((g) => g.toJson()).toList(),
       'trackStock': trackStock,
+      'isActive': isActive,
     };
   }
 
@@ -100,6 +103,7 @@ class ProductModel extends Product {
       'variants': variants.map((v) => v.toJson()).toList(),
       'modifierGroups': modifierGroups.map((g) => g.toJson()).toList(),
       'trackStock': trackStock,
+      'isActive': isActive,
     };
   }
 
@@ -139,6 +143,7 @@ class ProductModel extends Product {
               .toList() ??
           const [],
       trackStock: json['trackStock'] ?? true,
+      isActive: json['isActive'] ?? true,
     );
   }
 
@@ -160,6 +165,7 @@ class ProductModel extends Product {
       variants: variants,
       modifierGroups: modifierGroups,
       trackStock: trackStock,
+      isActive: isActive,
     );
   }
 
@@ -181,6 +187,7 @@ class ProductModel extends Product {
       variants: product.variants,
       modifierGroups: product.modifierGroups,
       trackStock: product.trackStock,
+      isActive: product.isActive,
     );
   }
 
@@ -202,6 +209,7 @@ class ProductModel extends Product {
     List<ProductVariant>? variants,
     List<ModifierGroup>? modifierGroups,
     bool? trackStock,
+    bool? isActive,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -220,6 +228,7 @@ class ProductModel extends Product {
       variants: variants ?? this.variants,
       modifierGroups: modifierGroups ?? this.modifierGroups,
       trackStock: trackStock ?? this.trackStock,
+      isActive: isActive ?? this.isActive,
     );
   }
 }

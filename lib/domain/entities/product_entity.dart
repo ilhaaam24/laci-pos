@@ -18,6 +18,7 @@ class Product extends Equatable {
   final List<ProductVariant> variants;
   final List<ModifierGroup> modifierGroups;
   final bool trackStock;
+  final bool isActive;
 
   const Product({
     required this.id,
@@ -36,6 +37,7 @@ class Product extends Equatable {
     this.variants = const [],
     this.modifierGroups = const [],
     this.trackStock = true,
+    this.isActive = true,
   });
 
   bool get hasVariants => variants.isNotEmpty;
@@ -58,6 +60,7 @@ class Product extends Equatable {
     List<ProductVariant>? variants,
     List<ModifierGroup>? modifierGroups,
     bool? trackStock,
+    bool? isActive,
   }) {
     return Product(
       id: id ?? this.id,
@@ -76,6 +79,7 @@ class Product extends Equatable {
       variants: variants ?? this.variants,
       modifierGroups: modifierGroups ?? this.modifierGroups,
       trackStock: trackStock ?? this.trackStock,
+      isActive: isActive ?? this.isActive,
     );
   }
 
@@ -97,5 +101,6 @@ class Product extends Equatable {
     variants,
     modifierGroups,
     trackStock,
+    isActive,
   ];
 }

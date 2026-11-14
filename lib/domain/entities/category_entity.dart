@@ -8,6 +8,7 @@ class Category extends Equatable {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? businessId;
+  final bool isActive;
 
   const Category({
     required this.id,
@@ -17,7 +18,30 @@ class Category extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     this.businessId,
+    this.isActive = true,
   });
+
+  Category copyWith({
+    String? id,
+    String? name,
+    String? description,
+    String? imageUrl,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? businessId,
+    bool? isActive,
+  }) {
+    return Category(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      imageUrl: imageUrl ?? this.imageUrl,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      businessId: businessId ?? this.businessId,
+      isActive: isActive ?? this.isActive,
+    );
+  }
 
   @override
   List<Object?> get props => [
@@ -28,5 +52,6 @@ class Category extends Equatable {
     createdAt,
     updatedAt,
     businessId,
+    isActive,
   ];
 }

@@ -48,10 +48,10 @@ void callbackDispatcher() {
           totalTransactions: totalTransactions,
         );
       }
-      return Future.value(true);
+      return true;
     } catch (e) {
       debugPrint('Background task error: $e');
-      return Future.value(false);
+      return false;
     }
   });
 }

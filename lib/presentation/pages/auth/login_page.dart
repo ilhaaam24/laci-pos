@@ -284,39 +284,44 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 32),
 
                       // Google Login
-                      OutlinedButton(
-                        onPressed: _handleGoogleLogin,
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          side: BorderSide(
-                            color: isDark
-                                ? Colors.grey.shade800
-                                : Colors.grey.shade300,
-                          ),
-                          backgroundColor: surfaceColor,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(
-                              'assets/images/google.png',
-                              height: 24,
-                              width: 24,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Masuk dengan Google',
-                              style: TextStyle(
-                                color: textColor,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                      BlocBuilder<AuthBloc, AuthState>(
+                        builder: (context, state) {
+                          final isLoading = state is AuthLoading;
+                          return OutlinedButton(
+                            onPressed: isLoading ? null : _handleGoogleLogin,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
                               ),
+                              side: BorderSide(
+                                color: isDark
+                                    ? Colors.grey.shade800
+                                    : Colors.grey.shade300,
+                              ),
+                              backgroundColor: surfaceColor,
                             ),
-                          ],
-                        ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Image.asset(
+                                  'assets/images/google.png',
+                                  height: 24,
+                                  width: 24,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Masuk dengan Google',
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ).animate().fadeIn(delay: 1100.ms).slideY(begin: 0.1),
 
                       const Spacer(),

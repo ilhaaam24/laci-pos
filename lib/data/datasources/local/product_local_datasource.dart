@@ -69,6 +69,7 @@ class ProductLocalDataSource {
             syncStatus: Value(syncStatus),
             lastSyncAt: Value(syncStatus == 'synced' ? DateTime.now() : null),
             trackStock: Value(product.trackStock),
+            isActive: Value(product.isActive),
             variants: Value(
               product.variants.isNotEmpty
                   ? jsonEncode(product.variants.map((e) => e.toJson()).toList())
@@ -120,6 +121,7 @@ class ProductLocalDataSource {
             syncStatus: const Value('synced'),
             lastSyncAt: Value(DateTime.now()),
             trackStock: Value(product.trackStock),
+            isActive: Value(product.isActive),
             variants: Value(
               product.variants.isNotEmpty
                   ? jsonEncode(product.variants.map((e) => e.toJson()).toList())
@@ -209,6 +211,7 @@ class ProductLocalDataSource {
       variants: variants,
       modifierGroups: modifierGroups,
       trackStock: row.trackStock,
+      isActive: row.isActive,
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
@@ -8,11 +9,46 @@ class NotificationService {
 
   Future<void> init() async {
     // Request permission for Android 13+
+    try {
+      const AndroidInitializationSettings initializationSettingsAndroid =
+          AndroidInitializationSettings('@mipmap/launcher_icon');
+
+      const DarwinInitializationSettings initializationSettingsIOS =
+          DarwinInitializationSettings(
+            requestAlertPermission: false,
+            requestBadgePermission: false,
+            requestSoundPermission: false,
+          );
+
+      const InitializationSettings initializationSettings =
+          InitializationSettings(
+            android: initializationSettingsAndroid,
+            iOS: initializationSettingsIOS,
+          );
+
+      await _notificationsPlugin.initialize(
+        settings: initializationSettings,
+        onDidReceiveNotificationResponse: (NotificationResponse response) {
+          // Handle notification click if needed
+        },
+      );
+    } catch (e) {
+      debugPrint('NotificationService init error: $e');
+    }
+  }
+
+  /// Request notification permission for Android 13+ when appropriate.
+  /// Should NOT be called blocking main() startup.
+  Future<bool> requestPermission() async {
+    if (kIsWeb) return false;
     if (Platform.isAndroid) {
       final status = await Permission.notification.status;
       if (status.isDenied) {
         await Permission.notification.request();
+        final result = await Permission.notification.request();
+        return result.isGranted;
       }
+      return status.isGranted;
     }
 
     const AndroidInitializationSettings initializationSettingsAndroid =
@@ -37,6 +73,7 @@ class NotificationService {
         // Handle notification click if needed
       },
     );
+    return true;
   }
 
   Future<void> showStockAlert({

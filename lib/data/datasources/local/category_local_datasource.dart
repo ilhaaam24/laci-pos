@@ -45,6 +45,7 @@ class CategoryLocalDataSource {
             businessId: Value(category.businessId),
             syncStatus: Value(syncStatus),
             lastSyncAt: Value(syncStatus == 'synced' ? DateTime.now() : null),
+            isActive: Value(category.isActive),
           ),
         );
   }
@@ -76,6 +77,7 @@ class CategoryLocalDataSource {
             businessId: Value(cat.businessId),
             syncStatus: const Value('synced'),
             lastSyncAt: Value(DateTime.now()),
+            isActive: Value(cat.isActive),
           ),
           mode: InsertMode.insertOrReplace,
         );
@@ -110,6 +112,7 @@ class CategoryLocalDataSource {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       businessId: row.businessId,
+      isActive: row.isActive,
     );
   }
 }

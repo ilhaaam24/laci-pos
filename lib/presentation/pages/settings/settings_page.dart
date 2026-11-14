@@ -298,7 +298,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     return _buildTile(
                       icon: "assets/icons/sync.svg",
                       title: 'Sinkronisasi Data',
-                      badge: !isPro ? const ProBadge() : null,
+                      // badge: !isPro ? const ProBadge() : null,
                       subtitle: isPro
                           ? 'Sinkronkan database lokal dengan cloud'
                           : 'Fitur Pro: Cadangkan database lokal ke cloud',

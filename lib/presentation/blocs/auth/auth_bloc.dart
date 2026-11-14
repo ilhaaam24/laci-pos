@@ -156,9 +156,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     final result = await repository.signInWithGoogle();
-    result.fold((error) => emit(AuthError(error)), (user) {
-      emit(Authenticated(user));
-    });
+    result.fold(
+      (error) {
+        if (error.contains('dibatalkan oleh pengguna')) {
+          emit(Unauthenticated());
+        } else {
+          emit(AuthError(error));
+        }
+      },
+      (user) {
+        sessionService.setUser(user);
+        if (user.businessId != null) {
+          BackgroundService.scheduleDailySummary(user.businessId!);
+        }
+        emit(Authenticated(user));
+      },
+    );
   }
 
   Future<void> _onSignUpRequested(

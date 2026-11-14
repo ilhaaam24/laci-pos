@@ -1,7 +1,9 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../../../firebase_options.dart';
 
 abstract class AuthFirebaseDataSource {
   Future<UserCredential> signInWithEmail({
@@ -65,6 +67,19 @@ class AuthFirebaseDataSourceImpl implements AuthFirebaseDataSource {
   Future<UserCredential> signInWithGoogle() async {
     try {
       log('Starting Google Sign-In flow...');
+
+      // Ensure GoogleSignIn is initialized with serverClientId (Web Client ID)
+      try {
+        final clientId = Platform.isIOS
+            ? DefaultFirebaseOptions.currentPlatform.iosClientId
+            : null;
+        await _googleSignIn.initialize(
+          clientId: clientId,
+          serverClientId: DefaultFirebaseOptions.webClientId,
+        );
+      } catch (initErr) {
+        log('GoogleSignIn.initialize safeguard note: $initErr');
+      }
 
       // 1. Trigger Google Sign-In account picker
       final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();

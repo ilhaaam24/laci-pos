@@ -31,8 +31,12 @@ class _CategoriesPageState extends State<CategoriesPage> {
     final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
     final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final subtextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final borderColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
+    final subtextColor = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -72,7 +76,13 @@ class _CategoriesPageState extends State<CategoriesPage> {
       ),
       body: Column(
         children: [
-          _buildSearchBar(cardColor, bgColor, borderColor, textColor, subtextColor),
+          _buildSearchBar(
+            cardColor,
+            bgColor,
+            borderColor,
+            textColor,
+            subtextColor,
+          ),
           Expanded(
             child: BlocConsumer<CategoryBloc, CategoryState>(
               listener: (context, state) {
@@ -103,7 +113,12 @@ class _CategoriesPageState extends State<CategoriesPage> {
                     .toList();
 
                 if (filteredCategories.isEmpty) {
-                  return _buildEmptyState(cardColor, borderColor, textColor, subtextColor);
+                  return _buildEmptyState(
+                    cardColor,
+                    borderColor,
+                    textColor,
+                    subtextColor,
+                  );
                 }
 
                 return ListView.builder(
@@ -111,7 +126,13 @@ class _CategoriesPageState extends State<CategoriesPage> {
                   itemCount: filteredCategories.length,
                   itemBuilder: (context, index) {
                     final category = filteredCategories[index];
-                    return _buildCategoryCard(category, cardColor, borderColor, textColor, subtextColor);
+                    return _buildCategoryCard(
+                      category,
+                      cardColor,
+                      borderColor,
+                      textColor,
+                      subtextColor,
+                    );
                   },
                 );
               },
@@ -149,18 +170,10 @@ class _CategoriesPageState extends State<CategoriesPage> {
           decoration: InputDecoration(
             hintText: 'Cari kategori...',
             hintStyle: TextStyle(fontSize: 14, color: subtextColor),
-            prefixIcon: Icon(
-              Icons.search,
-              color: subtextColor,
-              size: 20,
-            ),
+            prefixIcon: Icon(Icons.search, color: subtextColor, size: 20),
             suffixIcon: _searchQuery.isNotEmpty
                 ? IconButton(
-                    icon: Icon(
-                      Icons.clear,
-                      size: 18,
-                      color: subtextColor,
-                    ),
+                    icon: Icon(Icons.clear, size: 18, color: subtextColor),
                     onPressed: () {
                       _searchController.clear();
                       setState(() {
@@ -184,12 +197,23 @@ class _CategoriesPageState extends State<CategoriesPage> {
     Color textColor,
     Color subtextColor,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isActive = category.isActive;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: cardColor,
+        color: isActive
+            ? cardColor
+            : (isDark
+                  ? const Color(0xFF1E293B).withValues(alpha: 0.6)
+                  : const Color(0xFFF8FAFC)),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: borderColor),
+        border: Border.all(
+          color: isActive
+              ? borderColor
+              : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+        ),
       ),
       child: InkWell(
         onTap: () {
@@ -205,10 +229,13 @@ class _CategoriesPageState extends State<CategoriesPage> {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              SvgPicture.asset(
-                "assets/icons/category.svg",
-                width: 32,
-                height: 32,
+              Opacity(
+                opacity: isActive ? 1.0 : 0.45,
+                child: SvgPicture.asset(
+                  "assets/icons/category.svg",
+                  width: 32,
+                  height: 32,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -220,7 +247,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
-                        color: textColor,
+                        color: isActive ? textColor : subtextColor,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -228,15 +255,22 @@ class _CategoriesPageState extends State<CategoriesPage> {
                       category.description?.isNotEmpty == true
                           ? category.description!
                           : 'Tidak ada deskripsi',
-                      style: TextStyle(
-                        color: subtextColor,
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: subtextColor, fontSize: 13),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(width: 8),
+              Switch.adaptive(
+                value: isActive,
+                activeTrackColor: AppColors.primary,
+                onChanged: (val) {
+                  context.read<CategoryBloc>().add(
+                    UpdateCategory(category.copyWith(isActive: val)),
+                  );
+                },
               ),
               _buildPopupMenu(category, cardColor, borderColor, textColor),
             ],
@@ -261,6 +295,27 @@ class _CategoriesPageState extends State<CategoriesPage> {
         side: BorderSide(color: borderColor),
       ),
       itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'toggle_active',
+          child: Row(
+            children: [
+              Icon(
+                category.isActive
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                size: 18,
+                color: textColor,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                category.isActive
+                    ? 'Sembunyikan di Kasir'
+                    : 'Tampilkan di Kasir',
+                style: TextStyle(fontSize: 13, color: textColor),
+              ),
+            ],
+          ),
+        ),
         PopupMenuItem(
           value: 'edit',
           child: Row(
@@ -289,7 +344,18 @@ class _CategoriesPageState extends State<CategoriesPage> {
         ),
       ],
       onSelected: (value) {
-        if (value == 'edit') {
+        if (value == 'toggle_active') {
+          final nextVal = !category.isActive;
+          context.read<CategoryBloc>().add(
+            UpdateCategory(category.copyWith(isActive: nextVal)),
+          );
+          AppToast.showSuccess(
+            context,
+            nextVal
+                ? 'Kategori "${category.name}" ditampilkan di kasir'
+                : 'Kategori "${category.name}" disembunyikan dari kasir',
+          );
+        } else if (value == 'edit') {
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -297,7 +363,13 @@ class _CategoriesPageState extends State<CategoriesPage> {
             ),
           );
         } else if (value == 'delete') {
-          _showDeleteDialog(context, category, cardColor, borderColor, textColor);
+          _showDeleteDialog(
+            context,
+            category,
+            cardColor,
+            borderColor,
+            textColor,
+          );
         }
       },
     );
@@ -396,10 +468,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: Text(
-              'Batal',
-              style: TextStyle(color: subtextColor),
-            ),
+            child: Text('Batal', style: TextStyle(color: subtextColor)),
           ),
           ElevatedButton(
             onPressed: () {

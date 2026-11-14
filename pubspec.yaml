@@ -1,6 +1,6 @@
 name: laci
 description: "A new Flutter project."
-version: 1.0.0+7
+version: 1.0.0+9
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 environment:

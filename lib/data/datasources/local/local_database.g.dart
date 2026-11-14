@@ -203,6 +203,21 @@ class $LocalProductsTable extends LocalProducts
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _isActiveMeta = const VerificationMeta(
+    'isActive',
+  );
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+    'is_active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -223,6 +238,7 @@ class $LocalProductsTable extends LocalProducts
     variants,
     modifierGroups,
     trackStock,
+    isActive,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -369,6 +385,12 @@ class $LocalProductsTable extends LocalProducts
         trackStock.isAcceptableOrUnknown(data['track_stock']!, _trackStockMeta),
       );
     }
+    if (data.containsKey('is_active')) {
+      context.handle(
+        _isActiveMeta,
+        isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
+    }
     return context;
   }
 
@@ -450,6 +472,10 @@ class $LocalProductsTable extends LocalProducts
         DriftSqlType.bool,
         data['${effectivePrefix}track_stock'],
       )!,
+      isActive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_active'],
+      )!,
     );
   }
 
@@ -478,6 +504,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
   final String? variants;
   final String? modifierGroups;
   final bool trackStock;
+  final bool isActive;
   const LocalProduct({
     required this.id,
     required this.categoryId,
@@ -497,6 +524,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
     this.variants,
     this.modifierGroups,
     required this.trackStock,
+    required this.isActive,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -533,6 +561,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
       map['modifier_groups'] = Variable<String>(modifierGroups);
     }
     map['track_stock'] = Variable<bool>(trackStock);
+    map['is_active'] = Variable<bool>(isActive);
     return map;
   }
 
@@ -568,6 +597,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
           ? const Value.absent()
           : Value(modifierGroups),
       trackStock: Value(trackStock),
+      isActive: Value(isActive),
     );
   }
 
@@ -595,6 +625,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
       variants: serializer.fromJson<String?>(json['variants']),
       modifierGroups: serializer.fromJson<String?>(json['modifierGroups']),
       trackStock: serializer.fromJson<bool>(json['trackStock']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
     );
   }
   @override
@@ -619,6 +650,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
       'variants': serializer.toJson<String?>(variants),
       'modifierGroups': serializer.toJson<String?>(modifierGroups),
       'trackStock': serializer.toJson<bool>(trackStock),
+      'isActive': serializer.toJson<bool>(isActive),
     };
   }
 
@@ -641,6 +673,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
     Value<String?> variants = const Value.absent(),
     Value<String?> modifierGroups = const Value.absent(),
     bool? trackStock,
+    bool? isActive,
   }) => LocalProduct(
     id: id ?? this.id,
     categoryId: categoryId ?? this.categoryId,
@@ -662,6 +695,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
         ? modifierGroups.value
         : this.modifierGroups,
     trackStock: trackStock ?? this.trackStock,
+    isActive: isActive ?? this.isActive,
   );
   LocalProduct copyWithCompanion(LocalProductsCompanion data) {
     return LocalProduct(
@@ -699,6 +733,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
       trackStock: data.trackStock.present
           ? data.trackStock.value
           : this.trackStock,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
     );
   }
 
@@ -722,7 +757,8 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
           ..write('lastSyncAt: $lastSyncAt, ')
           ..write('variants: $variants, ')
           ..write('modifierGroups: $modifierGroups, ')
-          ..write('trackStock: $trackStock')
+          ..write('trackStock: $trackStock, ')
+          ..write('isActive: $isActive')
           ..write(')'))
         .toString();
   }
@@ -747,6 +783,7 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
     variants,
     modifierGroups,
     trackStock,
+    isActive,
   );
   @override
   bool operator ==(Object other) =>
@@ -769,7 +806,8 @@ class LocalProduct extends DataClass implements Insertable<LocalProduct> {
           other.lastSyncAt == this.lastSyncAt &&
           other.variants == this.variants &&
           other.modifierGroups == this.modifierGroups &&
-          other.trackStock == this.trackStock);
+          other.trackStock == this.trackStock &&
+          other.isActive == this.isActive);
 }
 
 class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
@@ -791,6 +829,7 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
   final Value<String?> variants;
   final Value<String?> modifierGroups;
   final Value<bool> trackStock;
+  final Value<bool> isActive;
   final Value<int> rowid;
   const LocalProductsCompanion({
     this.id = const Value.absent(),
@@ -811,6 +850,7 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
     this.variants = const Value.absent(),
     this.modifierGroups = const Value.absent(),
     this.trackStock = const Value.absent(),
+    this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalProductsCompanion.insert({
@@ -832,6 +872,7 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
     this.variants = const Value.absent(),
     this.modifierGroups = const Value.absent(),
     this.trackStock = const Value.absent(),
+    this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        categoryId = Value(categoryId),
@@ -860,6 +901,7 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
     Expression<String>? variants,
     Expression<String>? modifierGroups,
     Expression<bool>? trackStock,
+    Expression<bool>? isActive,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -881,6 +923,7 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
       if (variants != null) 'variants': variants,
       if (modifierGroups != null) 'modifier_groups': modifierGroups,
       if (trackStock != null) 'track_stock': trackStock,
+      if (isActive != null) 'is_active': isActive,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -904,6 +947,7 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
     Value<String?>? variants,
     Value<String?>? modifierGroups,
     Value<bool>? trackStock,
+    Value<bool>? isActive,
     Value<int>? rowid,
   }) {
     return LocalProductsCompanion(
@@ -925,6 +969,7 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
       variants: variants ?? this.variants,
       modifierGroups: modifierGroups ?? this.modifierGroups,
       trackStock: trackStock ?? this.trackStock,
+      isActive: isActive ?? this.isActive,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -986,6 +1031,9 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
     if (trackStock.present) {
       map['track_stock'] = Variable<bool>(trackStock.value);
     }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1013,6 +1061,7 @@ class LocalProductsCompanion extends UpdateCompanion<LocalProduct> {
           ..write('variants: $variants, ')
           ..write('modifierGroups: $modifierGroups, ')
           ..write('trackStock: $trackStock, ')
+          ..write('isActive: $isActive, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1121,6 +1170,21 @@ class $LocalCategoriesTable extends LocalCategories
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isActiveMeta = const VerificationMeta(
+    'isActive',
+  );
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+    'is_active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1132,6 +1196,7 @@ class $LocalCategoriesTable extends LocalCategories
     businessId,
     syncStatus,
     lastSyncAt,
+    isActive,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1210,6 +1275,12 @@ class $LocalCategoriesTable extends LocalCategories
         ),
       );
     }
+    if (data.containsKey('is_active')) {
+      context.handle(
+        _isActiveMeta,
+        isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
+    }
     return context;
   }
 
@@ -1255,6 +1326,10 @@ class $LocalCategoriesTable extends LocalCategories
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_sync_at'],
       ),
+      isActive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_active'],
+      )!,
     );
   }
 
@@ -1274,6 +1349,7 @@ class LocalCategory extends DataClass implements Insertable<LocalCategory> {
   final String? businessId;
   final String syncStatus;
   final DateTime? lastSyncAt;
+  final bool isActive;
   const LocalCategory({
     required this.id,
     required this.name,
@@ -1284,6 +1360,7 @@ class LocalCategory extends DataClass implements Insertable<LocalCategory> {
     this.businessId,
     required this.syncStatus,
     this.lastSyncAt,
+    required this.isActive,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1305,6 +1382,7 @@ class LocalCategory extends DataClass implements Insertable<LocalCategory> {
     if (!nullToAbsent || lastSyncAt != null) {
       map['last_sync_at'] = Variable<DateTime>(lastSyncAt);
     }
+    map['is_active'] = Variable<bool>(isActive);
     return map;
   }
 
@@ -1327,6 +1405,7 @@ class LocalCategory extends DataClass implements Insertable<LocalCategory> {
       lastSyncAt: lastSyncAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lastSyncAt),
+      isActive: Value(isActive),
     );
   }
 
@@ -1345,6 +1424,7 @@ class LocalCategory extends DataClass implements Insertable<LocalCategory> {
       businessId: serializer.fromJson<String?>(json['businessId']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       lastSyncAt: serializer.fromJson<DateTime?>(json['lastSyncAt']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
     );
   }
   @override
@@ -1360,6 +1440,7 @@ class LocalCategory extends DataClass implements Insertable<LocalCategory> {
       'businessId': serializer.toJson<String?>(businessId),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'lastSyncAt': serializer.toJson<DateTime?>(lastSyncAt),
+      'isActive': serializer.toJson<bool>(isActive),
     };
   }
 
@@ -1373,6 +1454,7 @@ class LocalCategory extends DataClass implements Insertable<LocalCategory> {
     Value<String?> businessId = const Value.absent(),
     String? syncStatus,
     Value<DateTime?> lastSyncAt = const Value.absent(),
+    bool? isActive,
   }) => LocalCategory(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -1383,6 +1465,7 @@ class LocalCategory extends DataClass implements Insertable<LocalCategory> {
     businessId: businessId.present ? businessId.value : this.businessId,
     syncStatus: syncStatus ?? this.syncStatus,
     lastSyncAt: lastSyncAt.present ? lastSyncAt.value : this.lastSyncAt,
+    isActive: isActive ?? this.isActive,
   );
   LocalCategory copyWithCompanion(LocalCategoriesCompanion data) {
     return LocalCategory(
@@ -1403,6 +1486,7 @@ class LocalCategory extends DataClass implements Insertable<LocalCategory> {
       lastSyncAt: data.lastSyncAt.present
           ? data.lastSyncAt.value
           : this.lastSyncAt,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
     );
   }
 
@@ -1417,7 +1501,8 @@ class LocalCategory extends DataClass implements Insertable<LocalCategory> {
           ..write('updatedAt: $updatedAt, ')
           ..write('businessId: $businessId, ')
           ..write('syncStatus: $syncStatus, ')
-          ..write('lastSyncAt: $lastSyncAt')
+          ..write('lastSyncAt: $lastSyncAt, ')
+          ..write('isActive: $isActive')
           ..write(')'))
         .toString();
   }
@@ -1433,6 +1518,7 @@ class LocalCategory extends DataClass implements Insertable<LocalCategory> {
     businessId,
     syncStatus,
     lastSyncAt,
+    isActive,
   );
   @override
   bool operator ==(Object other) =>
@@ -1446,7 +1532,8 @@ class LocalCategory extends DataClass implements Insertable<LocalCategory> {
           other.updatedAt == this.updatedAt &&
           other.businessId == this.businessId &&
           other.syncStatus == this.syncStatus &&
-          other.lastSyncAt == this.lastSyncAt);
+          other.lastSyncAt == this.lastSyncAt &&
+          other.isActive == this.isActive);
 }
 
 class LocalCategoriesCompanion extends UpdateCompanion<LocalCategory> {
@@ -1459,6 +1546,7 @@ class LocalCategoriesCompanion extends UpdateCompanion<LocalCategory> {
   final Value<String?> businessId;
   final Value<String> syncStatus;
   final Value<DateTime?> lastSyncAt;
+  final Value<bool> isActive;
   final Value<int> rowid;
   const LocalCategoriesCompanion({
     this.id = const Value.absent(),
@@ -1470,6 +1558,7 @@ class LocalCategoriesCompanion extends UpdateCompanion<LocalCategory> {
     this.businessId = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.lastSyncAt = const Value.absent(),
+    this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LocalCategoriesCompanion.insert({
@@ -1482,6 +1571,7 @@ class LocalCategoriesCompanion extends UpdateCompanion<LocalCategory> {
     this.businessId = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.lastSyncAt = const Value.absent(),
+    this.isActive = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -1497,6 +1587,7 @@ class LocalCategoriesCompanion extends UpdateCompanion<LocalCategory> {
     Expression<String>? businessId,
     Expression<String>? syncStatus,
     Expression<DateTime>? lastSyncAt,
+    Expression<bool>? isActive,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1509,6 +1600,7 @@ class LocalCategoriesCompanion extends UpdateCompanion<LocalCategory> {
       if (businessId != null) 'business_id': businessId,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (lastSyncAt != null) 'last_sync_at': lastSyncAt,
+      if (isActive != null) 'is_active': isActive,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1523,6 +1615,7 @@ class LocalCategoriesCompanion extends UpdateCompanion<LocalCategory> {
     Value<String?>? businessId,
     Value<String>? syncStatus,
     Value<DateTime?>? lastSyncAt,
+    Value<bool>? isActive,
     Value<int>? rowid,
   }) {
     return LocalCategoriesCompanion(
@@ -1535,6 +1628,7 @@ class LocalCategoriesCompanion extends UpdateCompanion<LocalCategory> {
       businessId: businessId ?? this.businessId,
       syncStatus: syncStatus ?? this.syncStatus,
       lastSyncAt: lastSyncAt ?? this.lastSyncAt,
+      isActive: isActive ?? this.isActive,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1569,6 +1663,9 @@ class LocalCategoriesCompanion extends UpdateCompanion<LocalCategory> {
     if (lastSyncAt.present) {
       map['last_sync_at'] = Variable<DateTime>(lastSyncAt.value);
     }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1587,6 +1684,7 @@ class LocalCategoriesCompanion extends UpdateCompanion<LocalCategory> {
           ..write('businessId: $businessId, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('lastSyncAt: $lastSyncAt, ')
+          ..write('isActive: $isActive, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -9746,6 +9844,7 @@ typedef $$LocalProductsTableCreateCompanionBuilder =
       Value<String?> variants,
       Value<String?> modifierGroups,
       Value<bool> trackStock,
+      Value<bool> isActive,
       Value<int> rowid,
     });
 typedef $$LocalProductsTableUpdateCompanionBuilder =
@@ -9768,6 +9867,7 @@ typedef $$LocalProductsTableUpdateCompanionBuilder =
       Value<String?> variants,
       Value<String?> modifierGroups,
       Value<bool> trackStock,
+      Value<bool> isActive,
       Value<int> rowid,
     });
 
@@ -9867,6 +9967,11 @@ class $$LocalProductsTableFilterComposer
 
   ColumnFilters<bool> get trackStock => $composableBuilder(
     column: $table.trackStock,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -9969,6 +10074,11 @@ class $$LocalProductsTableOrderingComposer
     column: $table.trackStock,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalProductsTableAnnotationComposer
@@ -10049,6 +10159,9 @@ class $$LocalProductsTableAnnotationComposer
     column: $table.trackStock,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
 }
 
 class $$LocalProductsTableTableManager
@@ -10102,6 +10215,7 @@ class $$LocalProductsTableTableManager
                 Value<String?> variants = const Value.absent(),
                 Value<String?> modifierGroups = const Value.absent(),
                 Value<bool> trackStock = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalProductsCompanion(
                 id: id,
@@ -10122,6 +10236,7 @@ class $$LocalProductsTableTableManager
                 variants: variants,
                 modifierGroups: modifierGroups,
                 trackStock: trackStock,
+                isActive: isActive,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -10144,6 +10259,7 @@ class $$LocalProductsTableTableManager
                 Value<String?> variants = const Value.absent(),
                 Value<String?> modifierGroups = const Value.absent(),
                 Value<bool> trackStock = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalProductsCompanion.insert(
                 id: id,
@@ -10164,6 +10280,7 @@ class $$LocalProductsTableTableManager
                 variants: variants,
                 modifierGroups: modifierGroups,
                 trackStock: trackStock,
+                isActive: isActive,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -10202,6 +10319,7 @@ typedef $$LocalCategoriesTableCreateCompanionBuilder =
       Value<String?> businessId,
       Value<String> syncStatus,
       Value<DateTime?> lastSyncAt,
+      Value<bool> isActive,
       Value<int> rowid,
     });
 typedef $$LocalCategoriesTableUpdateCompanionBuilder =
@@ -10215,6 +10333,7 @@ typedef $$LocalCategoriesTableUpdateCompanionBuilder =
       Value<String?> businessId,
       Value<String> syncStatus,
       Value<DateTime?> lastSyncAt,
+      Value<bool> isActive,
       Value<int> rowid,
     });
 
@@ -10269,6 +10388,11 @@ class $$LocalCategoriesTableFilterComposer
 
   ColumnFilters<DateTime> get lastSyncAt => $composableBuilder(
     column: $table.lastSyncAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -10326,6 +10450,11 @@ class $$LocalCategoriesTableOrderingComposer
     column: $table.lastSyncAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalCategoriesTableAnnotationComposer
@@ -10371,6 +10500,9 @@ class $$LocalCategoriesTableAnnotationComposer
     column: $table.lastSyncAt,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
 }
 
 class $$LocalCategoriesTableTableManager
@@ -10419,6 +10551,7 @@ class $$LocalCategoriesTableTableManager
                 Value<String?> businessId = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<DateTime?> lastSyncAt = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalCategoriesCompanion(
                 id: id,
@@ -10430,6 +10563,7 @@ class $$LocalCategoriesTableTableManager
                 businessId: businessId,
                 syncStatus: syncStatus,
                 lastSyncAt: lastSyncAt,
+                isActive: isActive,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -10443,6 +10577,7 @@ class $$LocalCategoriesTableTableManager
                 Value<String?> businessId = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<DateTime?> lastSyncAt = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalCategoriesCompanion.insert(
                 id: id,
@@ -10454,6 +10589,7 @@ class $$LocalCategoriesTableTableManager
                 businessId: businessId,
                 syncStatus: syncStatus,
                 lastSyncAt: lastSyncAt,
+                isActive: isActive,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

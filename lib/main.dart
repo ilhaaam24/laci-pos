@@ -30,33 +30,104 @@ import 'core/services/iap_service.dart';
 import 'presentation/pages/auth/auth_wrapper.dart';
 
 void main() async {
-  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
-  await initializeDateFormatting('id_ID', null);
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('FlutterError: ${details.exception}');
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('PlatformDispatcher error: $error\n$stack');
+    return true;
+  };
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    try {
+      await initializeDateFormatting(
+        'id_ID',
+        null,
+      ).timeout(const Duration(seconds: 3));
+    } catch (e) {
+      debugPrint('initializeDateFormatting warning: $e');
+    }
 
-  await GoogleSignIn.instance.initialize(
-    clientId: Platform.isAndroid
-        ? DefaultFirebaseOptions.currentPlatform.androidClientId
-        : DefaultFirebaseOptions.currentPlatform.iosClientId,
-  );
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      ).timeout(const Duration(seconds: 6));
+    } catch (e) {
+      debugPrint('Firebase.initializeApp warning: $e');
+    }
 
-  await initializeDependencies();
-  await PrinterService().init();
-  await ReceiptSettingsService().init();
-  await HeldOrderService().init();
+    try {
+      final clientId = Platform.isIOS
+          ? DefaultFirebaseOptions.currentPlatform.iosClientId
+          : null;
+      await GoogleSignIn.instance
+          .initialize(
+            clientId: clientId,
+            serverClientId: DefaultFirebaseOptions.webClientId,
+          )
+          .timeout(const Duration(seconds: 3));
+    } catch (e) {
+      debugPrint('GoogleSignIn.initialize warning: $e');
+    }
 
-  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-    await BackgroundService.init();
-    await getIt<NotificationService>().init();
-    await getIt<IapService>().initialize();
+    await initializeDependencies();
+    await _initSecondaryServices();
+  } catch (e, stack) {
+    debugPrint('Fatal main initialization error: $e\n$stack');
+  } finally {
+    // ALWAYS remove splash screen so the app never hangs on splash
+    FlutterNativeSplash.remove();
   }
 
-  FlutterNativeSplash.remove();
-
   runApp(const MyApp());
+}
+
+Future<void> _initSecondaryServices() async {
+  try {
+    await PrinterService().init().timeout(const Duration(seconds: 2));
+  } catch (e) {
+    debugPrint('PrinterService init error: $e');
+  }
+
+  try {
+    await ReceiptSettingsService().init().timeout(const Duration(seconds: 2));
+  } catch (e) {
+    debugPrint('ReceiptSettingsService init error: $e');
+  }
+
+  try {
+    await HeldOrderService().init().timeout(const Duration(seconds: 2));
+  } catch (e) {
+    debugPrint('HeldOrderService init error: $e');
+  }
+
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    try {
+      await BackgroundService.init().timeout(const Duration(seconds: 2));
+    } catch (e) {
+      debugPrint('BackgroundService init error: $e');
+    }
+
+    try {
+      await getIt<NotificationService>().init().timeout(
+        const Duration(seconds: 2),
+      );
+    } catch (e) {
+      debugPrint('NotificationService init error: $e');
+    }
+
+    try {
+      await getIt<IapService>().initialize().timeout(
+        const Duration(seconds: 2),
+      );
+    } catch (e) {
+      debugPrint('IapService init error: $e');
+    }
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -85,7 +156,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(create: (_) => getIt<PromoBloc>()..add(LoadPromos())),
         BlocProvider(create: (_) => getIt<UsersBloc>()),
-        BlocProvider(create: (_) => getIt<ShiftBloc>()..add(CheckActiveShift())),
+        BlocProvider(
+          create: (_) => getIt<ShiftBloc>()..add(CheckActiveShift()),
+        ),
       ],
       child: MaterialApp(
         title: 'Laci POS',

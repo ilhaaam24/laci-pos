@@ -30,6 +30,7 @@ class LocalProducts extends Table {
   TextColumn get variants => text().nullable()();
   TextColumn get modifierGroups => text().nullable()();
   BoolColumn get trackStock => boolean().withDefault(const Constant(true))();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -46,6 +47,7 @@ class LocalCategories extends Table {
   TextColumn get businessId => text().nullable()();
   TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
   DateTimeColumn get lastSyncAt => dateTime().nullable()();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -295,7 +297,7 @@ class LocalDatabase extends _$LocalDatabase {
   LocalDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration {
@@ -384,6 +386,11 @@ class LocalDatabase extends _$LocalDatabase {
             localBusinessInfo,
             localBusinessInfo.subscriptionPlan,
           );
+        }
+        if (from < 10) {
+          // Add isActive toggle column to LocalProducts & LocalCategories
+          await m.addColumn(localProducts, localProducts.isActive);
+          await m.addColumn(localCategories, localCategories.isActive);
         }
       },
     );

@@ -49,6 +49,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
   bool _isUploading = false;
   bool _isSaving = false;
   bool _trackStock = true;
+  bool _isActive = true;
 
   List<ProductVariant> _variants = [];
   List<ModifierGroup> _modifierGroups = [];
@@ -78,6 +79,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
     _variants = List.from(widget.product?.variants ?? []);
     _modifierGroups = List.from(widget.product?.modifierGroups ?? []);
     _trackStock = widget.product?.trackStock ?? true;
+    _isActive = widget.product?.isActive ?? true;
   }
 
   @override
@@ -143,6 +145,7 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
         variants: _variants,
         modifierGroups: _modifierGroups,
         trackStock: _trackStock,
+        isActive: _isActive,
       );
 
       if (widget.product == null) {
@@ -740,9 +743,13 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
 
             // 5. Section: Modifiers & Topping
             _buildModifiersSection(),
+            const SizedBox(height: 16),
+
+            // 6. Section: Visibilitas Kasir
+            _buildVisibilitySection(),
             const SizedBox(height: 24),
 
-            // 6. Submit Button
+            // 7. Submit Button
             SizedBox(
               height: 50,
               child: ElevatedButton(
@@ -1833,6 +1840,98 @@ class _AddEditProductPageState extends State<AddEditProductPage> {
           color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
         ),
       ),
+    );
+  }
+
+  Widget _buildVisibilitySection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final borderColor =
+        isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final subtextColor =
+        isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            'VISIBILITAS KASIR',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+              color: subtextColor,
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: borderColor),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _isActive
+                      ? AppColors.primaryLight
+                      : (isDark
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFF1F5F9)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  _isActive
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  size: 20,
+                  color: _isActive ? AppColors.primary : subtextColor,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tampilkan di Kasir',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _isActive
+                          ? 'Produk aktif dan dapat dipilih saat transaksi kasir'
+                          : 'Produk disembunyikan dari katalog menu kasir',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: subtextColor,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch.adaptive(
+                value: _isActive,
+                activeTrackColor: AppColors.primary,
+                onChanged: (val) {
+                  setState(() => _isActive = val);
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

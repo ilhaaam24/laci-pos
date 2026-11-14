@@ -15,6 +15,9 @@ import 'package:flutter/foundation.dart'
 /// );
 /// ```
 class DefaultFirebaseOptions {
+  static const String webClientId =
+      '747380789752-gpu0fjfv3k45a5o1aktjqs4b244j3mm4.apps.googleusercontent.com';
+
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
       return web;
