@@ -65,7 +65,7 @@ workflows:
         script: |
           # Hitung build number otomatis agar selalu naik dan tidak ditolak Play Store.
           # Saat ini Play Store sudah versi 9, offset ditambahkan agar build number >= 10.
-          BUILD_OFFSET=9
+          BUILD_OFFSET=10
           NEW_BUILD_NUMBER=$(($BUILD_NUMBER + $BUILD_OFFSET))
           echo "Building App Bundle with build number: $NEW_BUILD_NUMBER"
 
