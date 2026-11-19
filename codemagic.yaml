@@ -8,7 +8,6 @@ workflows:
       java: 17
       groups:
         - google_play # Variable group di Codemagic UI
-        - google-play # Fallback jika memakai tanda hubung
       vars:
         PACKAGE_NAME: "com.ilhaaam24.lacipos"
         # Track rilis Play Store: internal / alpha / beta / production
