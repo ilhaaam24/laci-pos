@@ -20,6 +20,8 @@ abstract class AuthFirebaseDataSource {
 
   Future<void> sendEmailVerification();
 
+  Future<void> sendPasswordResetEmail({required String email});
+
   Future<bool> checkEmailVerified();
 
   Future<void> signOut();
@@ -131,6 +133,11 @@ class AuthFirebaseDataSourceImpl implements AuthFirebaseDataSource {
     if (user != null && !user.emailVerified) {
       await user.sendEmailVerification();
     }
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    await _firebaseAuth.sendPasswordResetEmail(email: email);
   }
 
   @override

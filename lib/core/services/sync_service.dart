@@ -124,16 +124,6 @@ class SyncService {
       return;
     }
 
-    // Cloud sync / backup is a PRO feature
-    final business = await businessLocal.getBusinessInfo();
-    if (business != null && !business.isPro) {
-      log(
-        'SyncService: Cloud backup is a PRO feature. Skipping fullSync for free tier.',
-      );
-      _updateState(AppSyncState.idle);
-      return;
-    }
-
     _lastSyncAttempt = DateTime.now();
     _updateState(AppSyncState.syncing);
     try {
@@ -165,14 +155,6 @@ class SyncService {
   Future<void> pushToRemote() async {
     final currentBusinessId = sessionService.businessId;
     if (currentBusinessId == null) return;
-
-    final business = await businessLocal.getBusinessInfo();
-    if (business != null && !business.isPro) {
-      log(
-        'SyncService: Cloud backup is a PRO feature. Skipping pushToRemote for free tier.',
-      );
-      return;
-    }
 
     final pendingEntries = await localDatabase.getPendingSyncEntries();
     if (pendingEntries.isEmpty) return;
@@ -427,14 +409,6 @@ class SyncService {
   Future<void> pullFromRemote() async {
     final currentBusinessId = sessionService.businessId;
     if (currentBusinessId == null) return;
-
-    final localBusiness = await businessLocal.getBusinessInfo();
-    if (localBusiness != null && !localBusiness.isPro) {
-      log(
-        'SyncService: Cloud sync is a PRO feature. Skipping pullFromRemote for free tier.',
-      );
-      return;
-    }
 
     log('Pulling data from remote...');
 

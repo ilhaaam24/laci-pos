@@ -1,0 +1,93 @@
+workflows:
+  flutter-android:
+    name: Laci POS - Android Release & Play Store
+    max_build_duration: 60
+    # Rekomendasi: gunakan linux_x2 untuk Android (lebih cepat dan hemat kuota gratis),
+    # atau mac_mini_m2 jika Anda memiliki subscription khusus macOS.
+    instance_type: linux_x2
+    environment:
+      flutter: stable
+      java: 17
+      android_sdk: latest
+      groups:
+        - google_play # Variable group yang dibuat di Codemagic UI
+      vars:
+        PACKAGE_NAME: "com.ilhaaam24.lacipos"
+        # Track rilis Play Store: internal / alpha / beta / production
+        GOOGLE_PLAY_TRACK: "production"
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: "main"
+          include: true
+          source: true
+      cancel_previous_builds: true
+
+    scripts:
+      - name: Set up local.properties
+        script: |
+          echo "flutter.sdk=$FLUTTER_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+
+      - name: Set up Android Keystore & key.properties
+        script: |
+          # 1. Restore file upload-keystore.jks dari Environment Variable Base64
+          if [ -n "$CM_KEYSTORE" ]; then
+            echo "$CM_KEYSTORE" | base64 --decode > "$CM_BUILD_DIR/android/app/upload-keystore.jks"
+            echo "upload-keystore.jks successfully restored."
+          else
+            echo "WARNING: CM_KEYSTORE variable not found, using existing file if available."
+          fi
+
+          # 2. Buat android/key.properties secara otomatis untuk Gradle
+          cat <<EOF > "$CM_BUILD_DIR/android/key.properties"
+          storePassword=${CM_KEYSTORE_PASSWORD:-laciposRelease2026!}
+          keyPassword=${CM_KEY_PASSWORD:-laciposRelease2026!}
+          keyAlias=${CM_KEY_ALIAS:-upload}
+          storeFile=upload-keystore.jks
+          EOF
+          echo "android/key.properties generated successfully."
+
+      - name: Install dependencies
+        script: |
+          flutter pub get
+
+      - name: Run code analyzer
+        script: |
+          flutter analyze lib/
+
+      - name: Run tests
+        script: |
+          flutter test
+
+      - name: Build Android App Bundle (.aab)
+        script: |
+          # Hitung build number otomatis agar selalu naik dan tidak ditolak Play Store.
+          # Saat ini Play Store sudah versi 9, offset ditambahkan agar build number >= 10.
+          BUILD_OFFSET=9
+          NEW_BUILD_NUMBER=$(($BUILD_NUMBER + $BUILD_OFFSET))
+          echo "Building App Bundle with build number: $NEW_BUILD_NUMBER"
+
+          flutter build appbundle --release \
+            --build-number=$NEW_BUILD_NUMBER
+
+    artifacts:
+      - build/**/outputs/**/*.aab
+      - build/**/outputs/**/mapping.txt
+
+    publishing:
+      email:
+        recipients:
+          - mi1797128@gmail.com
+          - muhammadilhaam188@gmail.com
+        notify:
+          success: true
+          failure: true
+
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: $GOOGLE_PLAY_TRACK
+        in_app_update_priority: 0
+        changes_not_sent_for_review: false
+        submit_as_draft: false

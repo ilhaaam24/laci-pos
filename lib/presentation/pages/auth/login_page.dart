@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
+import 'forgot_password_page.dart';
 import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -208,7 +209,15 @@ class _LoginPageState extends State<LoginPage> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: GestureDetector(
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ForgotPasswordPage(
+                                  initialEmail: _emailController.text.trim(),
+                                ),
+                              ),
+                            );
+                          },
                           child: Text(
                             'Lupa Password?',
                             style: TextStyle(

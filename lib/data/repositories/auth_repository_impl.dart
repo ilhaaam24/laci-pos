@@ -138,6 +138,22 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<String, void>> sendPasswordResetEmail({
+    required String email,
+  }) async {
+    try {
+      await dataSource.sendPasswordResetEmail(email: email);
+      return const Right(null);
+    } on FirebaseAuthException catch (e) {
+      log('FirebaseAuthException during sendPasswordResetEmail: [${e.code}] ${e.message}');
+      return Left(_getFirebaseAuthErrorMessage(e));
+    } catch (e) {
+      log('Exception during sendPasswordResetEmail: $e');
+      return Left(e.toString());
+    }
+  }
+
+  @override
   Future<Either<String, bool>> checkEmailVerified() async {
     try {
       final isVerified = await dataSource.checkEmailVerified();
@@ -185,26 +201,90 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   Future<UserEntity> _getOrUpdateProfile(User firebaseUser) async {
+    final userEmail = (firebaseUser.email ?? '').toLowerCase().trim();
+    UserModel? currentProfile;
+
     try {
       // 1. Cek berdasarkan UID (User yang sudah pernah login)
-      final profileByUid = await userDataSource.getUserProfile(firebaseUser.uid);
-      if (profileByUid != null) {
-        return profileByUid.copyWith(
-          isEmailVerified: firebaseUser.emailVerified,
-        );
-      }
+      currentProfile =
+          await userDataSource.getUserProfile(firebaseUser.uid);
     } catch (e) {
       log('Error getting user profile by UID: $e');
     }
 
-    try {
-      // 2. Cek berdasarkan Email (Staff yang didaftarkan oleh Admin tapi belum pernah login)
-      if (firebaseUser.email != null && firebaseUser.email!.isNotEmpty) {
-        final profileByEmail = await userDataSource.getUserByEmail(
-          firebaseUser.email!,
-        );
+    // 2. Cek apakah ada profil bisnis established untuk email yang sama
+    // (Misal: User pernah login dengan Google, lalu sekarang login via Email/Password atau sebaliknya)
+    if (userEmail.isNotEmpty) {
+      try {
+        final sameEmailProfiles =
+            await userDataSource.getAllUsersByEmail(userEmail);
 
-        if (profileByEmail != null) {
+        UserModel? establishedProfile;
+        for (final p in sameEmailProfiles) {
+          if (p.businessId != null &&
+              p.businessId!.isNotEmpty &&
+              p.id != firebaseUser.uid &&
+              p.role == UserRole.owner &&
+              p.businessId != 'bis_${firebaseUser.uid}') {
+            establishedProfile = p;
+            break;
+          }
+        }
+
+        if (establishedProfile != null) {
+          log(
+            'Found established business ${establishedProfile.businessId} for email $userEmail from previous login (UID: ${establishedProfile.id})',
+          );
+
+          // Jika profil saat ini belum ada, ATAU profil saat ini masih memakai businessId fallback bis_{current_uid},
+          // tautkan ke businessId yang sudah established!
+          if (currentProfile == null ||
+              currentProfile.businessId == 'bis_${firebaseUser.uid}' ||
+              currentProfile.businessId == null) {
+            final linkedUser = UserModel(
+              id: firebaseUser.uid,
+              email: userEmail,
+              name: firebaseUser.displayName ??
+                  currentProfile?.name ??
+                  establishedProfile.name,
+              photoUrl: firebaseUser.photoURL ??
+                  currentProfile?.photoUrl ??
+                  establishedProfile.photoUrl,
+              role: establishedProfile.role,
+              businessId: establishedProfile.businessId,
+              isEmailVerified: firebaseUser.emailVerified,
+            );
+
+            try {
+              await userDataSource.createUserProfile(linkedUser);
+              log(
+                'Successfully linked current UID to established business ${establishedProfile.businessId}',
+              );
+            } catch (e) {
+              log('Error saving linked user profile: $e');
+            }
+
+            return linkedUser;
+          }
+        }
+      } catch (e) {
+        log('Error checking established profiles by email: $e');
+      }
+    }
+
+    // 3. Jika profil saat ini sudah valid dan tidak perlu penautan ulang
+    if (currentProfile != null) {
+      return currentProfile.copyWith(
+        isEmailVerified: firebaseUser.emailVerified,
+      );
+    }
+
+    // 4. Cek apakah staff yang diundang oleh Admin tapi belum pernah login
+    if (userEmail.isNotEmpty) {
+      try {
+        final profileByEmail = await userDataSource.getUserByEmail(userEmail);
+
+        if (profileByEmail != null && profileByEmail.id != firebaseUser.uid) {
           // Jika ditemukan berdasarkan email, update UID-nya dengan UID asli dari Firebase Auth
           final updatedUser = UserModel(
             id: firebaseUser.uid, // Gunakan UID baru
@@ -228,17 +308,17 @@ class AuthRepositoryImpl implements AuthRepository {
 
           return updatedUser;
         }
+      } catch (e) {
+        log('Error getting user by email: $e');
       }
-    } catch (e) {
-      log('Error getting user by email: $e');
     }
 
-    // 3. Jika benar-benar user baru, buat Bisnis Baru (Owner)
+    // 5. Jika benar-benar user baru, buat Bisnis Baru (Owner)
     final businessId = 'bis_${firebaseUser.uid}';
 
     final newUser = UserModel(
       id: firebaseUser.uid,
-      email: firebaseUser.email ?? '',
+      email: userEmail,
       name: firebaseUser.displayName,
       photoUrl: firebaseUser.photoURL,
       role: UserRole.owner,

@@ -17,6 +17,7 @@ abstract class AuthRepository {
   Future<Either<String, void>> deleteAccount();
 
   Future<Either<String, void>> sendEmailVerification();
+  Future<Either<String, void>> sendPasswordResetEmail({required String email});
   Future<Either<String, bool>> checkEmailVerified();
 
   Future<Either<String, UserEntity?>> getCurrentUser();
