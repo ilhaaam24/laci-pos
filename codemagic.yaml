@@ -1,10 +1,8 @@
 workflows:
   flutter-android:
     name: Laci POS - Android Release & Play Store
-    max_build_duration: 60
-    # Rekomendasi: gunakan linux_x2 untuk Android (lebih cepat dan hemat kuota gratis),
-    # atau mac_mini_m2 jika Anda memiliki subscription khusus macOS.
-    instance_type: linux_x2
+    max_build_duration: 120
+    instance_type: mac_mini_m2
     environment:
       flutter: stable
       java: 17
