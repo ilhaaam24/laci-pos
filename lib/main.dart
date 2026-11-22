@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:laci/core/themes/theme.dart';
 import 'package:laci/firebase_options.dart';
 import 'core/di/injection.dart';
@@ -30,61 +31,72 @@ import 'core/services/iap_service.dart';
 import 'core/services/remote_config_service.dart';
 import 'presentation/pages/auth/auth_wrapper.dart';
 
-void main() async {
-  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+const String _sentryDsn = String.fromEnvironment(
+  'SENTRY_DSN',
+  defaultValue:
+      'https://2c57d864ea40a140b39709a90a6ccbcb@o4512474328530944.ingest.us.sentry.io/4512474337116160',
+);
+
+Future<void> main() async {
+  final widgetsBinding = SentryWidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-    debugPrint('FlutterError: ${details.exception}');
-  };
-  PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('PlatformDispatcher error: $error\n$stack');
-    return true;
-  };
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = kReleaseMode ? _sentryDsn : '';
+      options.environment = kReleaseMode ? 'production' : 'development';
+      options.tracesSampleRate = kReleaseMode ? 0.2 : 0.0;
+      options.attachStacktrace = true;
+      options.enableAutoSessionTracking = true;
+      options.sendDefaultPii = false;
+    },
+    appRunner: () async {
+      try {
+        try {
+          await initializeDateFormatting(
+            'id_ID',
+            null,
+          ).timeout(const Duration(seconds: 3));
+        } catch (e) {
+          debugPrint('initializeDateFormatting warning: $e');
+        }
 
-  try {
-    try {
-      await initializeDateFormatting(
-        'id_ID',
-        null,
-      ).timeout(const Duration(seconds: 3));
-    } catch (e) {
-      debugPrint('initializeDateFormatting warning: $e');
-    }
+        try {
+          await Firebase.initializeApp(
+            options: DefaultFirebaseOptions.currentPlatform,
+          ).timeout(const Duration(seconds: 6));
+        } catch (e, stack) {
+          debugPrint('Firebase.initializeApp warning: $e');
+          await Sentry.captureException(e, stackTrace: stack);
+        }
 
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      ).timeout(const Duration(seconds: 6));
-    } catch (e) {
-      debugPrint('Firebase.initializeApp warning: $e');
-    }
+        try {
+          final clientId = Platform.isIOS
+              ? DefaultFirebaseOptions.currentPlatform.iosClientId
+              : null;
+          await GoogleSignIn.instance
+              .initialize(
+                clientId: clientId,
+                serverClientId: DefaultFirebaseOptions.webClientId,
+              )
+              .timeout(const Duration(seconds: 3));
+        } catch (e) {
+          debugPrint('GoogleSignIn.initialize warning: $e');
+        }
 
-    try {
-      final clientId = Platform.isIOS
-          ? DefaultFirebaseOptions.currentPlatform.iosClientId
-          : null;
-      await GoogleSignIn.instance
-          .initialize(
-            clientId: clientId,
-            serverClientId: DefaultFirebaseOptions.webClientId,
-          )
-          .timeout(const Duration(seconds: 3));
-    } catch (e) {
-      debugPrint('GoogleSignIn.initialize warning: $e');
-    }
+        await initializeDependencies();
+        await _initSecondaryServices();
+      } catch (e, stack) {
+        debugPrint('Fatal main initialization error: $e\n$stack');
+        await Sentry.captureException(e, stackTrace: stack);
+      } finally {
+        // ALWAYS remove splash screen so the app never hangs on splash
+        FlutterNativeSplash.remove();
+      }
 
-    await initializeDependencies();
-    await _initSecondaryServices();
-  } catch (e, stack) {
-    debugPrint('Fatal main initialization error: $e\n$stack');
-  } finally {
-    // ALWAYS remove splash screen so the app never hangs on splash
-    FlutterNativeSplash.remove();
-  }
-
-  runApp(const MyApp());
+      runApp(SentryWidget(child: const MyApp()));
+    },
+  );
 }
 
 Future<void> _initSecondaryServices() async {
@@ -172,6 +184,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Laci POS',
         debugShowCheckedModeBanner: false,
+        navigatorObservers: [SentryNavigatorObserver()],
         home: const AuthWrapper(),
         theme: AppThemeLegacy.lightTheme,
         darkTheme: AppThemeLegacy.darkTheme,

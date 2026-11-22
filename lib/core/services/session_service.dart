@@ -1,3 +1,4 @@
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../domain/entities/user_entity.dart';
 
 class SessionService {
@@ -6,12 +7,56 @@ class SessionService {
 
   void setUser(UserEntity? user) {
     _storeUser = user;
-    // If no specific staff is selected, default to the authenticated store user
-    _activeStaff ??= user;
+    if (user == null) {
+      _activeStaff = null;
+    } else {
+      // If no specific staff is selected, default to the authenticated store user
+      _activeStaff ??= user;
+    }
+    _syncSentryUser(user);
   }
 
   void setActiveStaff(UserEntity? staff) {
     _activeStaff = staff;
+    if (Sentry.isEnabled) {
+      try {
+        Sentry.configureScope((scope) {
+          if (staff != null) {
+            scope.setTag('active_staff_role', staff.role.name);
+          } else {
+            scope.removeTag('active_staff_role');
+          }
+        });
+      } catch (_) {}
+    }
+  }
+
+  void _syncSentryUser(UserEntity? user) {
+    if (!Sentry.isEnabled) return;
+    try {
+      Sentry.configureScope((scope) {
+        if (user == null) {
+          scope.setUser(null);
+          scope.removeTag('business_id');
+          scope.removeTag('user_role');
+        } else {
+          scope.setUser(
+            SentryUser(
+              id: user.id,
+              email: user.email,
+              data: {
+                if (user.businessId != null) 'businessId': user.businessId,
+                'role': user.role.name,
+              },
+            ),
+          );
+          if (user.businessId != null && user.businessId!.isNotEmpty) {
+            scope.setTag('business_id', user.businessId!);
+          }
+          scope.setTag('user_role', user.role.name);
+        }
+      });
+    } catch (_) {}
   }
 
   UserEntity? get storeUser => _storeUser;
