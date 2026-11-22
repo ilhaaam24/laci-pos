@@ -68,6 +68,7 @@ import '../services/stock_service.dart';
 import '../services/notification_service.dart';
 import '../services/session_service.dart';
 import '../services/staff_auth_service.dart';
+import '../services/remote_config_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -102,6 +103,7 @@ Future<void> initializeDependencies() async {
 
   getIt.registerLazySingleton<NotificationService>(() => NotificationService());
   getIt.registerLazySingleton<IapService>(() => NoopIapService());
+  getIt.registerLazySingleton<RemoteConfigService>(() => RemoteConfigService());
 
   // Local Data Sources
   getIt.registerLazySingleton<ProductLocalDataSource>(

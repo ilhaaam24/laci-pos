@@ -27,6 +27,7 @@ import 'core/services/printer_service.dart';
 import 'core/services/receipt_settings_service.dart';
 import 'core/services/held_order_service.dart';
 import 'core/services/iap_service.dart';
+import 'core/services/remote_config_service.dart';
 import 'presentation/pages/auth/auth_wrapper.dart';
 
 void main() async {
@@ -126,6 +127,14 @@ Future<void> _initSecondaryServices() async {
       );
     } catch (e) {
       debugPrint('IapService init error: $e');
+    }
+
+    try {
+      await getIt<RemoteConfigService>().init().timeout(
+        const Duration(seconds: 3),
+      );
+    } catch (e) {
+      debugPrint('RemoteConfigService init error: $e');
     }
   }
 }

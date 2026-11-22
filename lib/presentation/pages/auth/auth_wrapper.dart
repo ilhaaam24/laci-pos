@@ -20,6 +20,8 @@ import 'login_page.dart';
 import 'business_setup_page.dart';
 import 'email_verification_page.dart';
 import '../../../core/services/onboarding_service.dart';
+import '../../../core/services/remote_config_service.dart';
+import '../../widgets/app_update_dialog.dart';
 import '../onboarding/onboarding_page.dart';
 
 class AuthWrapper extends StatefulWidget {
@@ -32,11 +34,29 @@ class AuthWrapper extends StatefulWidget {
 class _AuthWrapperState extends State<AuthWrapper> {
   String? _lastUserId;
   bool _hasSeenOnboarding = false;
+  bool _hasCheckedUpdate = false;
 
   @override
   void initState() {
     super.initState();
     _checkOnboardingStatus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAppUpdate();
+    });
+  }
+
+  Future<void> _checkAppUpdate() async {
+    if (_hasCheckedUpdate) return;
+    _hasCheckedUpdate = true;
+
+    try {
+      final result = await getIt<RemoteConfigService>().checkForUpdate();
+      if (mounted && result.hasUpdate) {
+        await AppUpdateDialog.show(context, result);
+      }
+    } catch (e) {
+      log('AuthWrapper: App update check warning: $e');
+    }
   }
 
   Future<void> _checkOnboardingStatus() async {
