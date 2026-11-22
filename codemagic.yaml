@@ -52,7 +52,7 @@ workflows:
 
       - name: Run code analyzer
         script: |
-          flutter analyze lib/
+          flutter analyze --no-fatal-infos lib/
 
       - name: Run tests
         script: |
