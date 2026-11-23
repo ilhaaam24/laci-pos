@@ -9,14 +9,15 @@ void main() {
         'https://play.google.com/store/apps/details?id=com.ilhaaam24.lacipos&pcampaignid=web_share';
     const appStoreUrl = 'https://apps.apple.com/app/id123456789';
 
-    test('returns none when Android build number meets or exceeds minVersion', () {
+    test('returns none when Android semantic version meets or exceeds minVersion (e.g. 1.0.1 >= 1.0.0)', () {
       final result = RemoteConfigService.evaluateUpdate(
         platform: TargetPlatform.android,
+        currentVersion: '1.0.1',
         currentBuildNumber: 10,
-        androidMinVersion: 10,
+        androidMinVersion: '1.0.0',
         androidForceUpdate: true,
         playstoreUrl: playStoreUrl,
-        iosMinVersion: 1,
+        iosMinVersion: '1.0.0',
         iosForceUpdate: false,
         appstoreUrl: 'null',
       );
@@ -25,14 +26,15 @@ void main() {
       expect(result.hasUpdate, isFalse);
     });
 
-    test('returns optional when Android build number is below minVersion and force is false', () {
+    test('returns optional when Android semantic version is below minVersion and force is false', () {
       final result = RemoteConfigService.evaluateUpdate(
         platform: TargetPlatform.android,
-        currentBuildNumber: 9,
-        androidMinVersion: 11,
+        currentVersion: '1.0.1',
+        currentBuildNumber: 10,
+        androidMinVersion: '1.0.2',
         androidForceUpdate: false,
         playstoreUrl: playStoreUrl,
-        iosMinVersion: 1,
+        iosMinVersion: '1.0.0',
         iosForceUpdate: false,
         appstoreUrl: 'null',
       );
@@ -44,14 +46,15 @@ void main() {
       expect(result.storeUrl, playStoreUrl);
     });
 
-    test('returns forced when Android build number is below minVersion and force is true', () {
+    test('returns forced when Android semantic version is below minVersion (1.2.0 < 1.10.0) and force is true', () {
       final result = RemoteConfigService.evaluateUpdate(
         platform: TargetPlatform.android,
+        currentVersion: '1.2.0',
         currentBuildNumber: 10,
-        androidMinVersion: 12,
+        androidMinVersion: '1.10.0',
         androidForceUpdate: true,
         playstoreUrl: playStoreUrl,
-        iosMinVersion: 1,
+        iosMinVersion: '1.0.0',
         iosForceUpdate: false,
         appstoreUrl: 'null',
       );
@@ -61,14 +64,31 @@ void main() {
       expect(result.storeUrl, playStoreUrl);
     });
 
+    test('also supports integer build number minVersion (e.g. "12")', () {
+      final result = RemoteConfigService.evaluateUpdate(
+        platform: TargetPlatform.android,
+        currentVersion: '1.0.1',
+        currentBuildNumber: 10,
+        androidMinVersion: '12',
+        androidForceUpdate: true,
+        playstoreUrl: playStoreUrl,
+        iosMinVersion: '1',
+        iosForceUpdate: false,
+        appstoreUrl: 'null',
+      );
+
+      expect(result.status, AppUpdateStatus.forced);
+    });
+
     test('returns none on iOS when appstore_url is literal "null" or empty', () {
       final result = RemoteConfigService.evaluateUpdate(
         platform: TargetPlatform.iOS,
+        currentVersion: '1.0.0',
         currentBuildNumber: 1,
-        androidMinVersion: 1,
+        androidMinVersion: '1.0.0',
         androidForceUpdate: false,
         playstoreUrl: playStoreUrl,
-        iosMinVersion: 5,
+        iosMinVersion: '2.0.0',
         iosForceUpdate: true,
         appstoreUrl: 'null',
       );
@@ -80,11 +100,12 @@ void main() {
     test('returns forced on iOS when appstore_url is valid and iosForceUpdate is true', () {
       final result = RemoteConfigService.evaluateUpdate(
         platform: TargetPlatform.iOS,
+        currentVersion: '1.0.0',
         currentBuildNumber: 2,
-        androidMinVersion: 1,
+        androidMinVersion: '1.0.0',
         androidForceUpdate: false,
         playstoreUrl: playStoreUrl,
-        iosMinVersion: 5,
+        iosMinVersion: '1.1.0',
         iosForceUpdate: true,
         appstoreUrl: appStoreUrl,
       );
@@ -97,11 +118,12 @@ void main() {
     test('returns none on desktop platforms', () {
       final result = RemoteConfigService.evaluateUpdate(
         platform: TargetPlatform.macOS,
+        currentVersion: '1.0.0',
         currentBuildNumber: 1,
-        androidMinVersion: 99,
+        androidMinVersion: '9.9.9',
         androidForceUpdate: true,
         playstoreUrl: playStoreUrl,
-        iosMinVersion: 99,
+        iosMinVersion: '9.9.9',
         iosForceUpdate: true,
         appstoreUrl: appStoreUrl,
       );
@@ -115,8 +137,9 @@ void main() {
       bool updateTapped = false;
       const forcedResult = AppUpdateCheckResult(
         status: AppUpdateStatus.forced,
-        currentBuildNumber: 9,
-        minVersion: 11,
+        currentVersion: '1.0.1',
+        currentBuildNumber: 10,
+        minVersion: '1.0.2',
         storeUrl: RemoteConfigService.defaultPlayStoreUrl,
       );
 
@@ -144,8 +167,9 @@ void main() {
     testWidgets('renders optional update dialog and dismisses on Nanti Saja tap', (tester) async {
       const optionalResult = AppUpdateCheckResult(
         status: AppUpdateStatus.optional,
-        currentBuildNumber: 9,
-        minVersion: 11,
+        currentVersion: '1.0.1',
+        currentBuildNumber: 10,
+        minVersion: '1.0.2',
         storeUrl: RemoteConfigService.defaultPlayStoreUrl,
       );
 
@@ -182,8 +206,9 @@ void main() {
 
       const optionalResult = AppUpdateCheckResult(
         status: AppUpdateStatus.optional,
-        currentBuildNumber: 9,
-        minVersion: 11,
+        currentVersion: '1.0.1',
+        currentBuildNumber: 10,
+        minVersion: '1.0.2',
         storeUrl: RemoteConfigService.defaultPlayStoreUrl,
       );
 
@@ -202,4 +227,3 @@ void main() {
     });
   });
 }
-

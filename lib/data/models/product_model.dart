@@ -43,7 +43,8 @@ class ProductModel extends Product {
           ? (data['updatedAt'] as Timestamp).toDate()
           : DateTime.now(),
       businessId: data['businessId'],
-      variants: (data['variants'] as List<dynamic>?)
+      variants:
+          (data['variants'] as List<dynamic>?)
               ?.map(
                 (v) => ProductVariant.fromJson(
                   Map<String, dynamic>.from(v as Map),
@@ -51,11 +52,11 @@ class ProductModel extends Product {
               )
               .toList() ??
           const [],
-      modifierGroups: (data['modifierGroups'] as List<dynamic>?)
+      modifierGroups:
+          (data['modifierGroups'] as List<dynamic>?)
               ?.map(
-                (g) => ModifierGroup.fromJson(
-                  Map<String, dynamic>.from(g as Map),
-                ),
+                (g) =>
+                    ModifierGroup.fromJson(Map<String, dynamic>.from(g as Map)),
               )
               .toList() ??
           const [],
@@ -126,7 +127,8 @@ class ProductModel extends Product {
           ? DateTime.parse(json['updatedAt'])
           : DateTime.now(),
       businessId: json['businessId'],
-      variants: (json['variants'] as List<dynamic>?)
+      variants:
+          (json['variants'] as List<dynamic>?)
               ?.map(
                 (v) => ProductVariant.fromJson(
                   Map<String, dynamic>.from(v as Map),
@@ -134,11 +136,11 @@ class ProductModel extends Product {
               )
               .toList() ??
           const [],
-      modifierGroups: (json['modifierGroups'] as List<dynamic>?)
+      modifierGroups:
+          (json['modifierGroups'] as List<dynamic>?)
               ?.map(
-                (g) => ModifierGroup.fromJson(
-                  Map<String, dynamic>.from(g as Map),
-                ),
+                (g) =>
+                    ModifierGroup.fromJson(Map<String, dynamic>.from(g as Map)),
               )
               .toList() ??
           const [],
