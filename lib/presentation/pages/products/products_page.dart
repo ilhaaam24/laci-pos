@@ -4,9 +4,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 
 import '../../blocs/product/product_bloc.dart';
+import '../../blocs/category/category_bloc.dart';
 import '../../blocs/business/business_bloc.dart';
 import '../../widgets/upgrade_pro_sheet.dart';
 import '../../../domain/entities/product_entity.dart';
+import '../../../core/di/injection.dart';
+import '../../../core/services/product_template_service.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
 import 'add_edit_product_page.dart';
@@ -635,9 +638,226 @@ class _ProductsPageState extends State<ProductsPage> {
               textAlign: TextAlign.center,
               style: TextStyle(color: subtextColor, fontSize: 13),
             ),
+            if (_searchQuery.isEmpty) ...[
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                onPressed: () => _showTemplatePickerSheet(
+                  cardColor,
+                  borderColor,
+                  textColor,
+                  subtextColor,
+                ),
+                icon: const Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+                label: const Text(
+                  'Isi Produk Contoh',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.primary),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
+    );
+  }
+
+  void _showTemplatePickerSheet(
+    Color cardColor,
+    Color borderColor,
+    Color textColor,
+    Color subtextColor,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    bool isSeeding = false;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: cardColor,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: borderColor,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Pilih Template Produk Contoh',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: textColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Kategori & produk contoh akan ditambahkan otomatis dan bisa diubah atau dihapus kapan saja.',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        height: 1.4,
+                        color: subtextColor,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF0F172A)
+                            : AppColors.background,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: borderColor),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: [
+                          for (
+                            var i = 0;
+                            i < ProductTemplateService.templates.length;
+                            i++
+                          ) ...[
+                            if (i > 0)
+                              Divider(
+                                height: 1,
+                                thickness: 1,
+                                color: borderColor,
+                              ),
+                            Builder(
+                              builder: (context) {
+                                final template =
+                                    ProductTemplateService.templates[i];
+                                return InkWell(
+                                  onTap: isSeeding
+                                      ? null
+                                      : () async {
+                                          setSheetState(() => isSeeding = true);
+                                          final count =
+                                              await getIt<
+                                                    ProductTemplateService
+                                                  >()
+                                                  .seedTemplate(template.type);
+                                          if (!mounted) return;
+                                          context.read<CategoryBloc>().add(
+                                            LoadCategories(),
+                                          );
+                                          context.read<ProductBloc>().add(
+                                            LoadProducts(),
+                                          );
+                                          if (sheetContext.mounted) {
+                                            Navigator.pop(sheetContext);
+                                          }
+                                          if (count > 0) {
+                                            AppToast.showSuccess(
+                                              context,
+                                              '$count produk contoh (${template.label}) berhasil ditambahkan!',
+                                            );
+                                          } else {
+                                            AppToast.showError(
+                                              context,
+                                              'Gagal menambahkan produk contoh.',
+                                            );
+                                          }
+                                        },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          template.icon,
+                                          color: AppColors.primary,
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 14),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                template.label,
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: textColor,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                '${template.shortDesc} · ${template.products.length} produk',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: subtextColor,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.chevron_right_rounded,
+                                          size: 20,
+                                          color: subtextColor,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (isSeeding) ...[
+                      const SizedBox(height: 8),
+                      const Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

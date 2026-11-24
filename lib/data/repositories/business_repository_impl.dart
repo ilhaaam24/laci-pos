@@ -7,7 +7,9 @@ import '../datasources/firebase/business_firebase_datasource.dart';
 import '../datasources/local/business_local_datasource.dart';
 import '../datasources/local/local_database.dart';
 import '../models/business_model.dart';
+import '../../core/di/injection.dart';
 import '../../core/services/session_service.dart';
+import '../../core/services/sync_service.dart';
 
 class BusinessRepositoryImpl implements BusinessRepository {
   final BusinessFirebaseDataSource remoteDataSource;
@@ -67,8 +69,11 @@ class BusinessRepositoryImpl implements BusinessRepository {
     try {
       final model = BusinessInfoModel.fromEntity(businessInfo);
 
-      // 1. Update local
-      await localDataSource.upsertBusinessInfo(model);
+      // 1. Update local as pendingUpload so remote pull won't overwrite it
+      await localDataSource.upsertBusinessInfo(
+        model,
+        syncStatus: 'pendingUpload',
+      );
 
       // 2. Add to sync queue
       await localDatabase.addToSyncQueue(
@@ -78,6 +83,11 @@ class BusinessRepositoryImpl implements BusinessRepository {
         businessId: model.id, // Business info ID IS the businessId
         data: jsonEncode(model.toJson()),
       );
+
+      // 3. Trigger immediate sync to Firestore
+      try {
+        getIt<SyncService>().fullSync();
+      } catch (_) {}
 
       return const Right(null);
     } catch (e) {

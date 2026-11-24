@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -2460,31 +2461,178 @@ class _PaymentDialogState extends State<PaymentDialog> {
               ),
               const SizedBox(height: 14),
               Center(
-                child: _buildQrisImageWidget(
-                  qrisUrl: qrisUrl,
-                  isDark: isDark,
-                  size: 220,
+                child: GestureDetector(
+                  onTap: (qrisUrl != null && qrisUrl.trim().isNotEmpty)
+                      ? () => _showFullScreenQrisDialog(
+                          qrisUrl: qrisUrl,
+                          businessName:
+                              bState.businessInfo?.businessName ?? 'Laci POS',
+                          grandTotal: grandTotal,
+                        )
+                      : null,
+                  child: _buildQrisImageWidget(
+                    qrisUrl: qrisUrl,
+                    isDark: isDark,
+                    size: 220,
+                  ),
                 ),
               ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                child: Text(
-                  'Nominal: ${_currencyFormatter.format(grandTotal).trim()}',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : AppColors.black,
+              if (qrisUrl != null && qrisUrl.trim().isNotEmpty) ...[
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: () => _showFullScreenQrisDialog(
+                    qrisUrl: qrisUrl,
+                    businessName:
+                        bState.businessInfo?.businessName ?? 'Laci POS',
+                    grandTotal: grandTotal,
                   ),
+                  icon: const Icon(Icons.fullscreen_rounded, size: 18),
+                  label: const Text(
+                    'Perbesar QRIS',
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: isDark
+                        ? Colors.white
+                        : AppColors.textPrimary,
+                    backgroundColor: Colors.transparent,
+                    side: BorderSide(
+                      color: isDark
+                          ? const Color(0xFF334155)
+                          : AppColors.border,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 10),
+              Text(
+                _currencyFormatter.format(grandTotal).trim(),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                  color: isDark ? Colors.white : AppColors.textPrimary,
                 ),
               ),
             ],
           );
         },
       ),
+    );
+  }
+
+  void _showFullScreenQrisDialog({
+    required String qrisUrl,
+    required String businessName,
+    required double grandTotal,
+  }) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.78),
+      builder: (dialogContext) {
+        final screenWidth = MediaQuery.of(dialogContext).size.width;
+        final qrSize = (screenWidth * 0.68).clamp(220.0, 320.0);
+
+        return Dialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    businessName,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Pindai kode QRIS untuk membayar',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: _buildQrisImageWidget(
+                        qrisUrl: qrisUrl,
+                        isDark: false,
+                        size: qrSize,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    _currencyFormatter.format(grandTotal).trim(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.4,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    height: 46,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary,
+                        side: const BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Tutup',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

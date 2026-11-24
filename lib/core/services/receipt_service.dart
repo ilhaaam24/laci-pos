@@ -301,6 +301,16 @@ class ReceiptService {
                       style: const pw.TextStyle(fontSize: 8),
                       textAlign: pw.TextAlign.center,
                     ),
+                    if (!businessInfo.isPro) ...[
+                      pw.SizedBox(height: 6),
+                      pw.Text(
+                        'Dibuat dengan Laci POS',
+                        style: const pw.TextStyle(
+                          fontSize: 7.5,
+                          color: PdfColors.grey600,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

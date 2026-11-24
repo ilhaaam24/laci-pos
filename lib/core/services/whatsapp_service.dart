@@ -73,6 +73,9 @@ class WhatsappService {
     }
     message += '------------------------------------------\n';
     message += 'Terima kasih telah berbelanja!';
+    if (!(businessInfo?.isPro ?? false)) {
+      message += '\n\n_Struk dibuat dengan Laci POS_';
+    }
     return message;
   }
 

@@ -97,5 +97,9 @@
 	<string>Aplikasi membutuhkan akses kamera untuk memindai barcode / SKU produk dan mengambil foto produk.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Aplikasi membutuhkan akses galeri untuk memilih foto produk dan logo.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Aplikasi membutuhkan akses Bluetooth untuk menghubungkan dan mencetak struk pada printer thermal.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Aplikasi membutuhkan akses Bluetooth untuk menghubungkan dan mencetak struk pada printer thermal.</string>
 </dict>
 </plist>

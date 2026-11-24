@@ -18,6 +18,7 @@ import 'kasir/widgets/close_shift_dialog.dart';
 import 'kasir/widgets/open_shift_dialog.dart';
 import 'kasir/widgets/shift_control_sheet.dart';
 import '../../core/di/injection.dart';
+import '../../core/services/session_service.dart';
 import '../../core/services/staff_auth_service.dart';
 import 'kasir/widgets/staff_pin_dialog.dart';
 
@@ -135,15 +136,23 @@ class MainPageState extends State<MainPage> {
 
         final isTablet = MediaQuery.of(context).size.width >= 720;
         final isDark = Theme.of(context).brightness == Brightness.dark;
+        final isDemoMode = getIt<SessionService>().isDemoMode;
 
         return Scaffold(
           key: MainPage.scaffoldKey,
           drawer: isTablet
               ? _buildTabletDrawer(context, state.user, filteredPages, isDark)
               : null,
-          body: IndexedStack(
-            index: _currentIndex,
-            children: filteredPages.map((e) => e.$2).toList(),
+          body: Column(
+            children: [
+              if (isDemoMode) _buildDemoBanner(context, isDark),
+              Expanded(
+                child: IndexedStack(
+                  index: _currentIndex,
+                  children: filteredPages.map((e) => e.$2).toList(),
+                ),
+              ),
+            ],
           ),
           bottomNavigationBar: isTablet
               ? null
@@ -244,6 +253,73 @@ class MainPageState extends State<MainPage> {
                 ),
         );
       },
+    );
+  }
+
+  Widget _buildDemoBanner(BuildContext context, bool isDark) {
+    final bgColor = isDark
+        ? const Color(0xFF0F2922)
+        : AppColors.primaryLight;
+    final fgColor = isDark
+        ? const Color(0xFF6EE7B7)
+        : AppColors.primaryDark;
+    final borderColor = isDark
+        ? const Color(0xFF1E463B)
+        : AppColors.primary.withValues(alpha: 0.18);
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: bgColor,
+        border: Border(bottom: BorderSide(color: borderColor)),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline_rounded, size: 15, color: fgColor),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Mode Demo · Data hanya tersimpan sementara',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: fgColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () => context.read<AuthBloc>().add(SignOutRequested()),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.primary : AppColors.primary,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Daftar',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

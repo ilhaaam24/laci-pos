@@ -2,6 +2,9 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../domain/entities/user_entity.dart';
 
 class SessionService {
+  static const String demoUserId = 'demo_user';
+  static const String demoBusinessId = 'demo_business';
+
   UserEntity? _storeUser;
   UserEntity? _activeStaff;
 
@@ -68,4 +71,6 @@ class SessionService {
   String? get businessId => _storeUser?.businessId ?? _activeStaff?.businessId;
 
   bool get isAuthenticated => _storeUser != null;
+
+  bool get isDemoMode => _storeUser?.id == demoUserId;
 }

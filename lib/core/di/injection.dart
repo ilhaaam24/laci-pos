@@ -69,6 +69,7 @@ import '../services/notification_service.dart';
 import '../services/session_service.dart';
 import '../services/staff_auth_service.dart';
 import '../services/remote_config_service.dart';
+import '../services/product_template_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -299,6 +300,13 @@ Future<void> initializeDependencies() async {
       transactionLocalDataSource: getIt(),
       localDatabase: getIt(),
       sessionService: getIt(),
+    ),
+  );
+
+  getIt.registerLazySingleton<ProductTemplateService>(
+    () => ProductTemplateService(
+      categoryRepository: getIt(),
+      productRepository: getIt(),
     ),
   );
 

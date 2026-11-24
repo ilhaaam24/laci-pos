@@ -7,8 +7,11 @@ import '../../../core/services/session_service.dart';
 import '../../../core/services/background_service.dart';
 import '../../../core/services/sync_service.dart';
 import '../../../core/services/iap_service.dart';
+import '../../../core/services/product_template_service.dart';
 import '../../../core/di/injection.dart';
+import '../../../data/datasources/local/business_local_datasource.dart';
 import '../../../data/datasources/local/local_database.dart';
+import '../../../data/models/business_model.dart';
 
 // Events
 abstract class AuthEvent extends Equatable {
@@ -27,6 +30,8 @@ class SignInRequested extends AuthEvent {
 }
 
 class GoogleSignInRequested extends AuthEvent {}
+
+class EnterDemoModeRequested extends AuthEvent {}
 
 class SignUpRequested extends AuthEvent {
   final String email;
@@ -85,6 +90,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AppStarted>(_onAppStarted);
     on<SignInRequested>(_onSignInRequested);
     on<GoogleSignInRequested>(_onGoogleSignInRequested);
+    on<EnterDemoModeRequested>(_onEnterDemoModeRequested);
     on<SignUpRequested>(_onSignUpRequested);
     on<SignOutRequested>(_onSignOutRequested);
     on<DeleteAccountRequested>(_onDeleteAccountRequested);
@@ -124,8 +130,54 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
       emit(Authenticated(event.user!));
     } else {
+      if (sessionService.isDemoMode) return;
       sessionService.setUser(null);
       emit(Unauthenticated());
+    }
+  }
+
+  Future<void> _onEnterDemoModeRequested(
+    EnterDemoModeRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      await localDatabase.clearAllData();
+      final now = DateTime.now();
+
+      final demoBusiness = BusinessInfoModel(
+        id: SessionService.demoBusinessId,
+        businessName: 'Kedai Kopi Demo',
+        address: 'Jl. Contoh UMKM No. 10, Jakarta',
+        phone: '0812-3456-7890',
+        email: 'demo@lacipos.app',
+        qrisUrl: '',
+        logoUrl: '',
+        createdAt: now,
+        updatedAt: now,
+      );
+      await getIt<BusinessLocalDataSource>().upsertBusinessInfo(demoBusiness);
+
+      const demoUser = UserEntity(
+        id: SessionService.demoUserId,
+        email: 'demo@lacipos.app',
+        name: 'Kasir Demo',
+        role: UserRole.owner,
+        businessId: SessionService.demoBusinessId,
+        isEmailVerified: true,
+      );
+      sessionService.setUser(demoUser);
+
+      try {
+        await getIt<ProductTemplateService>().seedTemplate(
+          BusinessTemplateType.coffeeShop,
+        );
+      } catch (_) {}
+
+      emit(Authenticated(demoUser));
+    } catch (e) {
+      sessionService.setUser(null);
+      emit(AuthError('Gagal membuka Mode Demo: $e'));
     }
   }
 
@@ -200,15 +252,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
-    try {
-      if (sessionService.businessId != null) {
-        await getIt<SyncService>().pushToRemote();
-      }
-    } catch (_) {}
-    try {
-      await getIt<IapService>().logout();
-    } catch (_) {}
-    await repository.signOut();
+    final wasDemo = sessionService.isDemoMode;
+    if (!wasDemo) {
+      try {
+        if (sessionService.businessId != null) {
+          await getIt<SyncService>().pushToRemote();
+        }
+      } catch (_) {}
+      try {
+        await getIt<IapService>().logout();
+      } catch (_) {}
+      await repository.signOut();
+    }
     // Clear local database on sign out to prevent data leakage
     await localDatabase.clearAllData();
     sessionService.setUser(null);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/services/app_review_service.dart';
 import '../../../../core/services/printer_service.dart';
 import '../../../../core/services/whatsapp_service.dart';
 import '../../../../core/style/app_colors.dart';
@@ -45,6 +46,11 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
   void initState() {
     super.initState();
     _customerPhone = widget.customerPhone;
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted) {
+        AppReviewService.recordCompletedTransactionAndPromptIfEligible();
+      }
+    });
   }
 
   Future<void> _handleReprint() async {

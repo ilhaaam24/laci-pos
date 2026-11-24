@@ -98,6 +98,10 @@ class SyncService {
 
   /// Full bi-directional sync
   Future<void> fullSync() async {
+    if (sessionService.isDemoMode) {
+      return;
+    }
+
     if (!connectivityService.isOnline) {
       _updateState(AppSyncState.offline);
       return;
@@ -452,7 +456,7 @@ class SyncService {
     log(
       'SyncService: Pulled business info: ${business.id} (${business.businessName})',
     );
-    await businessLocal.upsertBusinessInfo(business);
+    await businessLocal.upsertFromRemote(business);
     log('SyncService: Upserted business info to local');
 
     log('Pull completed.');

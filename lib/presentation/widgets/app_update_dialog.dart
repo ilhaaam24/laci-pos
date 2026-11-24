@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/services/remote_config_service.dart';
 import '../../core/style/app_colors.dart';
@@ -8,16 +9,9 @@ class AppUpdateDialog extends StatelessWidget {
   final AppUpdateCheckResult result;
   final VoidCallback? onUpdateTap;
 
-  const AppUpdateDialog({
-    super.key,
-    required this.result,
-    this.onUpdateTap,
-  });
+  const AppUpdateDialog({super.key, required this.result, this.onUpdateTap});
 
-  static Future<void> show(
-    BuildContext context,
-    AppUpdateCheckResult result,
-  ) {
+  static Future<void> show(BuildContext context, AppUpdateCheckResult result) {
     return showDialog<void>(
       context: context,
       barrierDismissible: !result.isForced,
@@ -64,8 +58,9 @@ class AppUpdateDialog extends StatelessWidget {
     final bgColor = isDark ? const Color(0xFF1E293B) : AppColors.surface;
     final borderColor = isDark ? const Color(0xFF334155) : AppColors.border;
     final textColor = isDark ? Colors.white : AppColors.textPrimary;
-    final subtextColor =
-        isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary;
+    final subtextColor = isDark
+        ? const Color(0xFF94A3B8)
+        : AppColors.textSecondary;
 
     final isForced = result.isForced;
 
@@ -88,23 +83,13 @@ class AppUpdateDialog extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Center(
-                  child: Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.primary.withValues(alpha: 0.16)
-                          : AppColors.primaryLight,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(
-                      Icons.system_update_rounded,
-                      size: 32,
-                      color: AppColors.primary,
-                    ),
+                  child: SvgPicture.asset(
+                    'assets/icons/app_update.svg',
+                    width: 128,
+                    height: 128,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 Text(
                   isForced ? 'Pembaruan Diperlukan' : 'Pembaruan Tersedia',
                   textAlign: TextAlign.center,
@@ -187,4 +172,3 @@ class AppUpdateDialog extends StatelessWidget {
     );
   }
 }
-

@@ -44,7 +44,10 @@ class BusinessLocalDataSource {
     );
   }
 
-  Future<void> upsertBusinessInfo(BusinessInfoModel business) async {
+  Future<void> upsertBusinessInfo(
+    BusinessInfoModel business, {
+    String syncStatus = 'synced',
+  }) async {
     final existing = await getBusinessInfo(business.id);
 
     // Conflict resolution: "Highest Entitlement Wins"
@@ -90,10 +93,43 @@ class BusinessLocalDataSource {
             subscriptionTier: Value(finalTier),
             subscriptionExpiresAt: Value(finalExpiresAt),
             subscriptionPlan: Value(finalPlan),
-            syncStatus: const Value('synced'),
+            syncStatus: Value(syncStatus),
             lastSyncAt: Value(DateTime.now()),
           ),
         );
+  }
+
+  /// Safely merges remote business info without overwriting un-synced local edits.
+  Future<void> upsertFromRemote(BusinessInfoModel remote) async {
+    final existingRow = await (db.select(db.localBusinessInfo)
+          ..where((t) => t.id.equals(remote.id)))
+        .get()
+        .then((list) => list.firstOrNull);
+
+    if (existingRow != null && existingRow.syncStatus == 'pendingUpload') {
+      // Local edit hasn't been pushed to Firestore yet; preserve local fields
+      // while still merging any upgraded Pro entitlement from remote.
+      if (remote.isPro &&
+          (existingRow.subscriptionTier != remote.subscriptionTier ||
+              (remote.subscriptionExpiresAt != null &&
+                  (existingRow.subscriptionExpiresAt == null ||
+                      remote.subscriptionExpiresAt!.isAfter(
+                        existingRow.subscriptionExpiresAt!,
+                      ))))) {
+        await (db.update(db.localBusinessInfo)
+              ..where((t) => t.id.equals(remote.id)))
+            .write(
+              LocalBusinessInfoCompanion(
+                subscriptionTier: Value(remote.subscriptionTier),
+                subscriptionExpiresAt: Value(remote.subscriptionExpiresAt),
+                subscriptionPlan: Value(remote.subscriptionPlan),
+              ),
+            );
+      }
+      return;
+    }
+
+    await upsertBusinessInfo(remote, syncStatus: 'synced');
   }
 
   Future<void> markAsSynced(String id) async {

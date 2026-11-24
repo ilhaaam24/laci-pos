@@ -14,7 +14,9 @@ import '../../blocs/business/business_bloc.dart';
 import '../../blocs/customer/customer_bloc.dart';
 import '../../blocs/promo/promo_bloc.dart';
 import '../../blocs/shift/shift_bloc.dart';
+import '../../blocs/transaction/transaction_bloc.dart';
 import '../../../domain/entities/shift_entity.dart';
+import '../../../domain/entities/transaction_entity.dart';
 import '../../../domain/entities/product_entity.dart';
 import '../../../domain/entities/category_entity.dart';
 import '../../../domain/entities/customer_entity.dart';
@@ -98,6 +100,10 @@ class KasirPageState extends State<KasirPage> with WidgetsBindingObserver {
     context.read<CustomerBloc>().add(LoadCustomers());
     context.read<PromoBloc>().add(LoadPromos());
     context.read<ShiftBloc>().add(CheckActiveShift());
+    final txState = context.read<TransactionBloc>().state;
+    if (txState is TransactionInitial) {
+      context.read<TransactionBloc>().add(LoadTransactions());
+    }
     final bState = context.read<BusinessBloc>().state;
     if (bState.businessInfo == null) {
       context.read<BusinessBloc>().add(LoadBusinessInfo());
@@ -1113,9 +1119,29 @@ class KasirPageState extends State<KasirPage> with WidgetsBindingObserver {
     );
   }
 
+  static const String _bestsellerCategoryId = 'bestseller';
+
+  Map<String, int> _computeProductSalesMap(TransactionState txState) {
+    final Map<String, int> counts = {};
+    if (txState is TransactionLoaded) {
+      for (final tx in txState.transactions) {
+        if (tx.status != TransactionStatus.completed) continue;
+        for (final item in tx.items) {
+          counts[item.productId] = (counts[item.productId] ?? 0) + item.quantity;
+        }
+      }
+    }
+    return counts;
+  }
+
   // 3. Category Horizontal Pills & Grid/List View Toggle
   Widget _buildCategoryAndFilterBar() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final salesMap = _computeProductSalesMap(
+      context.watch<TransactionBloc>().state,
+    );
+    final hasBestsellers = salesMap.isNotEmpty;
+
     return KeyedSubtree(
       key: _categoryBarKey,
       child: Padding(
@@ -1131,16 +1157,27 @@ class KasirPageState extends State<KasirPage> with WidgetsBindingObserver {
                         state.categories.where((c) => c.isActive).toList();
                   }
 
+                  final leadingCount = hasBestsellers ? 2 : 1;
+
                   return SizedBox(
                     height: 38,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      itemCount: categories.length + 1,
+                      itemCount: categories.length + leadingCount,
                       itemBuilder: (context, index) {
                         final isAll = index == 0;
-                        final category = isAll ? null : categories[index - 1];
-                        final id = isAll ? 'all' : category!.id;
-                        final name = isAll ? 'Semua' : category!.name;
+                        final isBestseller = hasBestsellers && index == 1;
+                        final category = (isAll || isBestseller)
+                            ? null
+                            : categories[index - leadingCount];
+                        final id = isAll
+                            ? 'all'
+                            : (isBestseller
+                                ? _bestsellerCategoryId
+                                : category!.id);
+                        final name = isAll
+                            ? 'Semua'
+                            : (isBestseller ? 'Terlaris' : category!.name);
                         final isSelected = _selectedCategoryId == id;
 
                         return Padding(
@@ -1152,7 +1189,7 @@ class KasirPageState extends State<KasirPage> with WidgetsBindingObserver {
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 180),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
+                                horizontal: 14,
                                 vertical: 8,
                               ),
                               decoration: BoxDecoration(
@@ -1175,21 +1212,36 @@ class KasirPageState extends State<KasirPage> with WidgetsBindingObserver {
                                 ),
                               ),
                               alignment: Alignment.center,
-                              child: Text(
-                                name,
-                                style: TextStyle(
-                                  color: isSelected
-                                      ? (isDark
-                                            ? const Color(0xFF0F172A)
-                                            : Colors.white)
-                                      : (isDark
-                                            ? const Color(0xFFCBD5E1)
-                                            : const Color(0xFF334155)),
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.w500,
-                                  fontSize: 13,
-                                ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (isBestseller) ...[
+                                    Icon(
+                                      Icons.local_fire_department_rounded,
+                                      size: 15,
+                                      color: isSelected
+                                          ? const Color(0xFFF59E0B)
+                                          : const Color(0xFFD97706),
+                                    ),
+                                    const SizedBox(width: 4),
+                                  ],
+                                  Text(
+                                    name,
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? (isDark
+                                                ? const Color(0xFF0F172A)
+                                                : Colors.white)
+                                          : (isDark
+                                                ? const Color(0xFFCBD5E1)
+                                                : const Color(0xFF334155)),
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -1341,7 +1393,12 @@ class KasirPageState extends State<KasirPage> with WidgetsBindingObserver {
         .map((c) => c.id)
         .toSet();
 
-    return products.where((p) {
+    final isBestsellerFilter = _selectedCategoryId == _bestsellerCategoryId;
+    final salesMap = isBestsellerFilter
+        ? _computeProductSalesMap(context.read<TransactionBloc>().state)
+        : const <String, int>{};
+
+    final filtered = products.where((p) {
       if (!p.isActive) return false;
       if (inactiveCategoryIds.contains(p.categoryId)) return false;
 
@@ -1349,10 +1406,23 @@ class KasirPageState extends State<KasirPage> with WidgetsBindingObserver {
       final matchesSearch =
           p.name.toLowerCase().contains(query) ||
           (p.sku?.toLowerCase().contains(query) ?? false);
-      final matchesCategory =
-          _selectedCategoryId == 'all' || p.categoryId == _selectedCategoryId;
+      final matchesCategory = isBestsellerFilter
+          ? (salesMap[p.id] ?? 0) > 0
+          : (_selectedCategoryId == 'all' ||
+                p.categoryId == _selectedCategoryId);
       return matchesSearch && matchesCategory;
     }).toList();
+
+    if (isBestsellerFilter) {
+      filtered.sort(
+        (a, b) => (salesMap[b.id] ?? 0).compareTo(salesMap[a.id] ?? 0),
+      );
+      if (filtered.length > 20) {
+        return filtered.sublist(0, 20);
+      }
+    }
+
+    return filtered;
   }
 
   // Individual Product Card (Grid View)
@@ -2362,6 +2432,10 @@ class KasirPageState extends State<KasirPage> with WidgetsBindingObserver {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenHeight = MediaQuery.of(context).size.height;
     final isShort = screenHeight < 520;
+    final hasBestsellers = _computeProductSalesMap(
+      context.watch<TransactionBloc>().state,
+    ).isNotEmpty;
+    final leadingCount = hasBestsellers ? 2 : 1;
 
     return KeyedSubtree(
       key: _categoryBarKey,
@@ -2397,17 +2471,26 @@ class KasirPageState extends State<KasirPage> with WidgetsBindingObserver {
             SizedBox(height: isShort ? 6 : 10),
             Expanded(
               child: ListView.builder(
-                itemCount: categories.length + 1,
+                itemCount: categories.length + leadingCount,
                 padding: EdgeInsets.symmetric(vertical: isShort ? 2 : 4),
                 itemBuilder: (context, index) {
                   final isAll = index == 0;
-                  final cat = isAll ? null : categories[index - 1];
-                  final id = isAll ? 'all' : cat!.id;
-                  final name = isAll ? 'All Menu' : cat!.name;
+                  final isBestseller = hasBestsellers && index == 1;
+                  final cat = (isAll || isBestseller)
+                      ? null
+                      : categories[index - leadingCount];
+                  final id = isAll
+                      ? 'all'
+                      : (isBestseller ? _bestsellerCategoryId : cat!.id);
+                  final name = isAll
+                      ? 'All Menu'
+                      : (isBestseller ? 'Terlaris' : cat!.name);
                   final isSelected = _selectedCategoryId == id;
                   final icon = isAll
                       ? Icons.restaurant_menu_rounded
-                      : _getCategoryIcon(name);
+                      : (isBestseller
+                            ? Icons.local_fire_department_rounded
+                            : _getCategoryIcon(name));
 
                   return Padding(
                     padding: EdgeInsets.symmetric(
