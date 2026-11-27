@@ -22,6 +22,7 @@ import 'presentation/blocs/shift/shift_bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'core/services/analytics_service.dart';
 import 'core/services/background_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/printer_service.dart';
@@ -184,7 +185,11 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Laci POS',
         debugShowCheckedModeBanner: false,
-        navigatorObservers: [SentryNavigatorObserver()],
+        navigatorObservers: [
+          SentryNavigatorObserver(),
+          if (AnalyticsService.navigatorObserver != null)
+            AnalyticsService.navigatorObserver!,
+        ],
         home: const AuthWrapper(),
         theme: AppThemeLegacy.lightTheme,
         darkTheme: AppThemeLegacy.darkTheme,

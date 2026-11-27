@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/di/injection.dart';
+import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/app_review_service.dart';
+import '../../../../core/services/session_service.dart';
 import '../../../../core/services/printer_service.dart';
 import '../../../../core/services/whatsapp_service.dart';
 import '../../../../core/style/app_colors.dart';
@@ -46,6 +49,22 @@ class _TransactionSuccessDialogState extends State<TransactionSuccessDialog> {
   void initState() {
     super.initState();
     _customerPhone = widget.customerPhone;
+
+    final isDemo = getIt<SessionService>().isDemoMode;
+    final methods = widget.transaction.payments
+        .map((p) => p.type.name)
+        .toSet()
+        .join(',');
+    AnalyticsService.logTransactionCompleted(
+      totalAmount: widget.transaction.totalAmount,
+      itemCount: widget.transaction.items.fold<int>(
+        0,
+        (sum, item) => sum + item.quantity,
+      ),
+      paymentMethods: methods,
+      isDemo: isDemo,
+    );
+
     Future.delayed(const Duration(milliseconds: 1200), () {
       if (mounted) {
         AppReviewService.recordCompletedTransactionAndPromptIfEligible();

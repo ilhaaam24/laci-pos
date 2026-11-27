@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/printer_service.dart';
 import '../../../../core/style/app_colors.dart';
 import '../../../../domain/entities/customer_entity.dart';
@@ -2534,6 +2535,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
     required String businessName,
     required double grandTotal,
   }) {
+    AnalyticsService.logQrisFullscreenOpened();
     showDialog<void>(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.78),

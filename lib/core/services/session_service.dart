@@ -1,5 +1,6 @@
 import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../domain/entities/user_entity.dart';
+import 'analytics_service.dart';
 
 class SessionService {
   static const String demoUserId = 'demo_user';
@@ -17,6 +18,12 @@ class SessionService {
       _activeStaff ??= user;
     }
     _syncSentryUser(user);
+    AnalyticsService.setUser(
+      userId: user?.id,
+      role: user?.role.name,
+      businessId: user?.businessId,
+      isDemo: isDemoMode,
+    );
   }
 
   void setActiveStaff(UserEntity? staff) {

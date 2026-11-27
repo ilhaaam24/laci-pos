@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:laci/core/style/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/services/analytics_service.dart';
 import '../../core/utils/app_toast.dart';
 
 /// Shows the premium upgrade sheet or responsive dialog.
@@ -10,6 +11,7 @@ Future<void> showUpgradeProSheet(
   String? featureName,
   VoidCallback? onVoucherTap,
 }) {
+  AnalyticsService.logUpgradeProViewed(featureName: featureName);
   final isTablet = MediaQuery.of(context).size.width >= 600;
 
   if (isTablet) {

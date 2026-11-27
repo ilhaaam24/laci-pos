@@ -95,6 +95,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "747380789752-2f5hj918c54ntfn211em1hdu1er0ovf9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ilhaaam24.lacipos",
+            "certificate_hash": "74ded778244922974336dabefd7000ca6407b77d"
+          }
+        },
+        {
           "client_id": "747380789752-jvhq5ru6t6pk6fh59tuu7erh1u3d2d85.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

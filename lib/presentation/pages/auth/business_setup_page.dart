@@ -7,6 +7,7 @@ import '../../blocs/product/product_bloc.dart';
 import '../../../domain/entities/business_entity.dart';
 import '../../../domain/repositories/business_repository.dart';
 import '../../../core/di/injection.dart';
+import '../../../core/services/analytics_service.dart';
 import '../../../core/services/product_template_service.dart';
 import '../../../core/style/app_colors.dart';
 import '../../../core/utils/app_toast.dart';
@@ -395,6 +396,12 @@ class _BusinessSetupPageState extends State<BusinessSetupPage> {
     }
 
     if (!mounted) return;
+
+    AnalyticsService.logBusinessSetupCompleted(
+      templateType: _selectedTemplate.name,
+      seededSamples: _seedSampleProducts,
+      sampleCount: _seededProductCount,
+    );
 
     context.read<BusinessBloc>().add(UpdateBusinessInfo(updatedInfo));
   }

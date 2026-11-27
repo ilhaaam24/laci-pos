@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../domain/entities/user_entity.dart';
 import '../../../domain/repositories/auth_repository.dart';
+import '../../../core/services/analytics_service.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/background_service.dart';
 import '../../../core/services/sync_service.dart';
@@ -174,6 +175,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         );
       } catch (_) {}
 
+      AnalyticsService.logDemoModeStarted();
       emit(Authenticated(demoUser));
     } catch (e) {
       sessionService.setUser(null);
@@ -197,6 +199,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (user.businessId != null) {
           BackgroundService.scheduleDailySummary(user.businessId!);
         }
+        AnalyticsService.logLogin('email');
         emit(Authenticated(user));
       },
     );
@@ -221,6 +224,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (user.businessId != null) {
           BackgroundService.scheduleDailySummary(user.businessId!);
         }
+        AnalyticsService.logLogin('google');
         emit(Authenticated(user));
       },
     );
@@ -242,6 +246,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (user.businessId != null) {
           BackgroundService.scheduleDailySummary(user.businessId!);
         }
+        AnalyticsService.logSignUp('email');
         emit(Authenticated(user));
       },
     );
